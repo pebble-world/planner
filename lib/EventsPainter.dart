@@ -1,0 +1,55 @@
+import 'package:flutter/material.dart';
+import 'package:planner/Lines.dart';
+import 'package:planner/Manager.dart';
+import 'package:planner/PlannerEntry.dart';
+import 'package:vibration/vibration.dart';
+
+class EventsPainter extends CustomPainter {
+  var _lines;
+  final Manager manager;
+  static PlannerEntry draggedEntry;
+  final Function(PlannerEntry) onEntryChanged;
+
+  Paint linePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+  EventsPainter({@required this.manager, @required this.onEntryChanged}) {
+    _lines = Lines(manager: manager);
+    
+    debugPrint('EventsPainter created');
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    manager.setSize(size.width, size.height);
+    _lines.draw(canvas);
+
+    if(manager.touchPos == null && draggedEntry != null) {
+      draggedEntry.endDrag();
+      if(onEntryChanged !=  null) {
+        onEntryChanged(draggedEntry);
+      }
+      draggedEntry = null;
+      debugPrint('drag removed');
+    }
+
+    manager.entries.forEach((entry) {
+      if(manager.touchPos != null && draggedEntry == null && entry.canvasRect.contains(manager.touchPos)) {
+        Vibration.vibrate(duration: 50);
+        draggedEntry = entry;
+        draggedEntry.startDrag(manager.touchPos);
+        debugPrint('drag started');
+      } else if (draggedEntry == entry) {
+        draggedEntry.updateDrag(manager.touchPos);
+      }
+      entry.paint(manager, canvas);
+    });
+  }  
+
+  @override
+  bool shouldRepaint(EventsPainter oldDelegate) {
+    return true;
+  }
+}
