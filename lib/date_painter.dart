@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:planner/Manager.dart';
-import 'package:planner/DateLabel.dart';
+import 'package:planner/manager.dart';
+import 'package:planner/date_label.dart';
 
 class DatePainter extends CustomPainter {
   List<DateLabel> _dates = List<DateLabel>();

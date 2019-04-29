@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:planner/Manager.dart';
+import 'package:planner/manager.dart';
 
 enum DragType {
   body,

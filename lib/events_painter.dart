@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:planner/Lines.dart';
-import 'package:planner/Manager.dart';
-import 'package:planner/PlannerEntry.dart';
+import 'package:planner/lines.dart';
+import 'package:planner/manager.dart';
+import 'package:planner/planner_entry.dart';
 import 'package:vibration/vibration.dart';
 
 class EventsPainter extends CustomPainter {

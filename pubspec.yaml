@@ -1,8 +1,8 @@
 name: planner
 description: A calendar event schedule interface.
 version: 0.0.1
-author:
-homepage:
+author: Mute <info@mutecode.com>
+homepage: http://forum.mutecode.com/
 
 environment:
   sdk: ">=2.1.0 <3.0.0"

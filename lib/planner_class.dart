@@ -1,11 +1,11 @@
 
 import 'package:flutter/material.dart';
-import 'package:planner/DatePainter.dart';
-import 'package:planner/HourPainter.dart';
-import 'package:planner/EventsPainter.dart';
-import 'package:planner/Manager.dart';
-import 'package:planner/PlannerDatePos.dart';
-import 'package:planner/PlannerEntry.dart';
+import 'package:planner/date_painter.dart';
+import 'package:planner/hour_painter.dart';
+import 'package:planner/events_painter.dart';
+import 'package:planner/manager.dart';
+import 'package:planner/planner_date_pos.dart';
+import 'package:planner/planner_entry.dart';
 import 'package:after_layout/after_layout.dart';
 import 'package:positioned_tap_detector/positioned_tap_detector.dart';
 

@@ -19,7 +19,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_range_slider: ^1.1.0 
+  
+  #flutter_range_slider: ^1.2.0 
   planner:
     path: ../
 

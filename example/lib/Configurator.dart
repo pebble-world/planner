@@ -1,6 +1,6 @@
 import 'Config.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_range_slider/flutter_range_slider.dart';
+//import 'package:flutter_range_slider/flutter_range_slider.dart';
 
 class Configurator extends StatefulWidget {
   final Config config;
@@ -45,20 +45,21 @@ class _ConfiguratorState extends State<Configurator> {
           children: <Widget>[
             Container(
               width: 50,
-              child: Text('Hours'),
+              child: Text('Max Hour'),
             ),
-            RangeSlider(
-              min: 0,
+            Slider(
+              min: 12,
               max: 24,
-              divisions: 24,
-              lowerValue: widget.config.minHour.toDouble(),
-              upperValue: widget.config.maxHour.toDouble(),
-              onChanged: (double lower, double upper) {
-                widget.config.minHour = lower.toInt();
-                widget.config.maxHour = upper.toInt();
+              divisions: 12,
+              //lowerValue: widget.config.minHour.toDouble(),
+              value: widget.config.maxHour.toDouble(),
+              
+              onChangeEnd: (double value) {
+                //widget.config.minHour = lower.toInt();
+                widget.config.maxHour = value.toInt();
               },
-              showValueIndicator: true,
-              valueIndicatorMaxDecimals: 0,
+              //showValueIndicator: true,
+              //valueIndicatorMaxDecimals: 0,
             )
           ],
         ),

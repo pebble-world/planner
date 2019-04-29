@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:planner/Manager.dart';
+import 'package:planner/manager.dart';
 
-class DateLabel {
+class HourLabel {
   Offset position;
   String label;
 
@@ -11,13 +11,13 @@ class DateLabel {
 
   final Manager manager;
 
-  DateLabel({@required this.label, @required this.position, @required this.manager}) {
+  HourLabel({@required this.label, @required this.position, @required this.manager}) {
     _span = TextSpan(text: label);
     _tp = TextPainter(text: _span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
     _tp.layout();
   }
 
   void paint(Canvas canvas) {
-    _tp.paint(canvas, manager.getPositionForLabel(position));
+    _tp.paint(canvas, manager.getPositionForHour(position));
   }
 }

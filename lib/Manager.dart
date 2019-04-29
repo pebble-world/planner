@@ -1,8 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:planner/PlannerDatePos.dart';
-import 'package:planner/PlannerEntry.dart';
+import 'package:planner/planner_date_pos.dart';
+import 'package:planner/planner_entry.dart';
 
 class Manager {
   Manager({
