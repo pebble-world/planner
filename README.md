@@ -2,7 +2,7 @@
 
 A calendar event scheduler interface. The widget is preferably used (almost) fullscreen. It displays events in a table. 
 
-![screenshot](screenshots/flutter_01.png)
+![screenshot](https://github.com/ourtrip/planner/blob/master/screenshots/flutter_01.png)
 
 ## Features
 - Scrollable hours handle.
