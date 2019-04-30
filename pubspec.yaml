@@ -1,8 +1,9 @@
 name: planner
-description: A calendar event schedule interface.
-version: 0.0.2
+description: A calendar event schedule interface. Displays events in an editable grid with day and hour labels.
+version: 0.1.0
 author: Mute <info@mutecode.com>
-homepage: http://forum.mutecode.com/
+homepage: https://github.com/ourtrip/planner
+repository: https://github.com/ourtrip/planner
 
 environment:
   sdk: ">=2.1.0 <3.0.0"

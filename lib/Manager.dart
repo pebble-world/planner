@@ -5,21 +5,27 @@ import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 
 class Manager {
-  Manager({
-    @required this.blockWidth, @required this.blockHeight, 
-    @required this.minHour, @required this.maxHour,
-    @required this.labels, @required this.entries}) {
-      _canvasWidth = blockWidth * labels.length;
-      _canvasHeight = blockHeight * (maxHour - minHour);
-      entries.forEach((entry) {
-        entry.createPainters(minHour);
-      });
+  Manager(
+      {@required this.blockWidth,
+      @required this.blockHeight,
+      @required this.minHour,
+      @required this.maxHour,
+      @required this.labels,
+      @required this.entries}) {
+    _canvasWidth = blockWidth * labels.length;
+    _canvasHeight = blockHeight * (maxHour - minHour);
+    entries.forEach((entry) {
+      entry.createPainters(minHour);
+    });
   }
 
-  void update({
-    @required int blockWidth, @required int blockHeight, 
-    @required int minHour, @required int maxHour,
-    @required List<String> labels, @required List<PlannerEntry> entries}) {
+  void update(
+      {@required int blockWidth,
+      @required int blockHeight,
+      @required int minHour,
+      @required int maxHour,
+      @required List<String> labels,
+      @required List<PlannerEntry> entries}) {
     this.blockHeight = blockHeight;
     this.blockWidth = blockWidth;
     this.minHour = minHour;
@@ -53,25 +59,28 @@ class Manager {
     _vScroll = value;
     _limitVScroll();
   }
+
   double _hScroll = 0;
   double get hScroll => _hScroll;
-  set hScroll (double value) {
+  set hScroll(double value) {
     _hScroll = value;
     _limitHScroll();
   }
 
   double _minZoom = 0.5;
   double _zoom = 1;
-  double _previousZoom  = 0;
+  double _previousZoom = 0;
   double get zoom => _zoom;
   set zoom(double value) {
-    if(value > 3) _zoom = 3;
-    else if(value < _minZoom) _zoom = _minZoom; 
+    if (value > 3)
+      _zoom = 3;
+    else if (value < _minZoom)
+      _zoom = _minZoom;
     else {
       _zoom = value;
-      if(_previousZoom != 0) {
+      if (_previousZoom != 0) {
         double _zoomFactor = _zoom - _previousZoom;
-        vScroll += _screenHeight * -_zoomFactor; 
+        vScroll += _screenHeight * -_zoomFactor;
       }
       _previousZoom = zoom;
     }
@@ -83,18 +92,18 @@ class Manager {
   Offset get touchPos => _touchPos;
   set touchPos(Offset pos) {
     _touchPos = pos;
-    if(_touchPos != null) {
+    if (_touchPos != null) {
       _touchPos -= eventsPainterOffset;
       _touchPos = getCanvasPosition(_touchPos);
     }
-  } 
+  }
 
   // method is used on double tap. Returns zero when not tapped on entry
   PlannerEntry getPlannerEntry(Offset position) {
     Offset canvasPos = getCanvasPosition(position - eventsPainterOffset);
     PlannerEntry result;
     entries.forEach((entry) {
-      if(entry.canvasRect.contains(canvasPos)) {
+      if (entry.canvasRect.contains(canvasPos)) {
         result = entry;
       }
     });
@@ -129,11 +138,13 @@ class Manager {
   }
 
   Offset getScreenPosition(Offset canvasPos) {
-    return Offset(hScroll + canvasPos.dx * _scale, vScroll + canvasPos.dy * _scale * _zoom);
-  } 
+    return Offset(hScroll + canvasPos.dx * _scale,
+        vScroll + canvasPos.dy * _scale * _zoom);
+  }
 
   Offset getCanvasPosition(Offset screenPos) {
-    return Offset((screenPos.dx - hScroll) / _scale, (screenPos.dy - vScroll) / _scale / _zoom);
+    return Offset((screenPos.dx - hScroll) / _scale,
+        (screenPos.dy - vScroll) / _scale / _zoom);
   }
 
   Offset getPositionForHour(Offset pos) {
@@ -146,20 +157,19 @@ class Manager {
 
   void _limitHScroll() {
     double limit = -(_canvasWidth - _screenWidth / _scale) * _scale;
-    if(limit >= 0 || _hScroll > 0) {
+    if (limit >= 0 || _hScroll > 0) {
       _hScroll = 0;
-    }
-    else if(limit < 0 && _hScroll < limit) {
+    } else if (limit < 0 && _hScroll < limit) {
       _hScroll = limit;
     }
   }
 
   void _limitVScroll() {
-    double limit = -(_canvasHeight * _zoom - _screenHeight - blockHeight) * _scale;
-    if(limit >= 0 || _vScroll > 0) {
+    double limit =
+        -(_canvasHeight * _zoom - _screenHeight - blockHeight) * _scale;
+    if (limit >= 0 || _vScroll > 0) {
       _vScroll = 0;
-    }
-    else if(_vScroll < limit) {
+    } else if (_vScroll < limit) {
       _vScroll = limit;
     }
   }

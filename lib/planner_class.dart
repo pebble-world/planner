@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:planner/date_painter.dart';
 import 'package:planner/hour_painter.dart';
@@ -8,7 +7,6 @@ import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 import 'package:after_layout/after_layout.dart';
 import 'package:positioned_tap_detector/positioned_tap_detector.dart';
-
 
 class Planner extends StatefulWidget {
   final List<String> labels;
@@ -22,16 +20,18 @@ class Planner extends StatefulWidget {
   final Function(PlannerEntry) onEntryDoubleTap;
   final Function(PlannerEntry) onEntryChanged;
 
-  Planner({Key key, 
-    @required this.labels, 
-    @required this.minHour, 
-    @required this.maxHour, 
-    @required this.entries,
-    this.blockHeight = 40,
-    this.blockWidth = 200,
-    this.onEntryChanged,
-    this.onEntryDoubleTap,
-    this.onPlannerDoubleTap}) : super(key: key);
+  Planner(
+      {Key key,
+      @required this.labels,
+      @required this.minHour,
+      @required this.maxHour,
+      @required this.entries,
+      this.blockHeight = 40,
+      this.blockWidth = 200,
+      this.onEntryChanged,
+      this.onEntryDoubleTap,
+      this.onPlannerDoubleTap})
+      : super(key: key);
 
   @override
   _PlannerState createState() => _PlannerState();
@@ -52,19 +52,19 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
   void initState() {
     super.initState();
     manager = Manager(
-      blockWidth: widget.blockWidth, 
+      blockWidth: widget.blockWidth,
       blockHeight: widget.blockHeight,
-      labels: widget.labels, 
+      labels: widget.labels,
       minHour: widget.minHour,
       maxHour: widget.maxHour,
       entries: widget.entries,
     );
-    
   }
 
   @override
   void afterFirstLayout(BuildContext context) {
-    final RenderBox eventBox = _keyEventPainter.currentContext.findRenderObject();
+    final RenderBox eventBox =
+        _keyEventPainter.currentContext.findRenderObject();
     manager.eventsPainterOffset = eventBox.localToGlobal(Offset.zero);
     debugPrint('offset: ${manager.eventsPainterOffset}');
   }
@@ -72,9 +72,9 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
   @override
   Widget build(BuildContext context) {
     manager.update(
-      blockWidth: 200, 
+      blockWidth: 200,
       blockHeight: 40,
-      labels: widget.labels, 
+      labels: widget.labels,
       minHour: widget.minHour,
       maxHour: widget.maxHour,
       entries: widget.entries,
@@ -141,13 +141,15 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                 child: PositionedTapDetector(
                   onDoubleTap: (position) {
                     var entry = manager.getPlannerEntry(position.global);
-                    if(entry == null) {
-                      PlannerDatePos pos = manager.getPlannerDatePos(position.global);
-                      if(widget.onPlannerDoubleTap != null)
-                      widget.onPlannerDoubleTap(pos.day, pos.hour, pos.minutes);
+                    if (entry == null) {
+                      PlannerDatePos pos =
+                          manager.getPlannerDatePos(position.global);
+                      if (widget.onPlannerDoubleTap != null)
+                        widget.onPlannerDoubleTap(
+                            pos.day, pos.hour, pos.minutes);
                     } else {
-                      if(widget.onEntryDoubleTap != null)
-                      widget.onEntryDoubleTap(entry);
+                      if (widget.onEntryDoubleTap != null)
+                        widget.onEntryDoubleTap(entry);
                     }
                   },
                   child: GestureDetector(
@@ -158,15 +160,14 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                         manager.zoom = _previousZoom * detail.scale;
                       });
                     },
-                    
                     onLongPressDragStart: (details) {
                       setState(() {
-                        manager.touchPos = details.globalPosition; 
+                        manager.touchPos = details.globalPosition;
                       });
                     },
                     onLongPressDragUpdate: (details) {
                       setState(() {
-                        manager.touchPos = details.globalPosition; 
+                        manager.touchPos = details.globalPosition;
                       });
                     },
                     onLongPressDragUp: (details) {
@@ -174,18 +175,14 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                         manager.touchPos = null;
                       });
                     },
-
-                    
-
                     child: ClipRect(
                       child: Container(
                         key: _keyEventPainter,
                         color: Colors.grey[900],
                         child: CustomPaint(
                           painter: EventsPainter(
-                            manager: manager,
-                            onEntryChanged: widget.onEntryChanged
-                          ),
+                              manager: manager,
+                              onEntryChanged: widget.onEntryChanged),
                           child: Container(),
                         ),
                       ),

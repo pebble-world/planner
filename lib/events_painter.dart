@@ -11,13 +11,13 @@ class EventsPainter extends CustomPainter {
   final Function(PlannerEntry) onEntryChanged;
 
   Paint linePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+    ..color = Colors.white
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
 
   EventsPainter({@required this.manager, @required this.onEntryChanged}) {
     _lines = Lines(manager: manager);
-    
+
     debugPrint('EventsPainter created');
   }
 
@@ -26,9 +26,9 @@ class EventsPainter extends CustomPainter {
     manager.setSize(size.width, size.height);
     _lines.draw(canvas);
 
-    if(manager.touchPos == null && draggedEntry != null) {
+    if (manager.touchPos == null && draggedEntry != null) {
       draggedEntry.endDrag();
-      if(onEntryChanged !=  null) {
+      if (onEntryChanged != null) {
         onEntryChanged(draggedEntry);
       }
       draggedEntry = null;
@@ -36,7 +36,9 @@ class EventsPainter extends CustomPainter {
     }
 
     manager.entries.forEach((entry) {
-      if(manager.touchPos != null && draggedEntry == null && entry.canvasRect.contains(manager.touchPos)) {
+      if (manager.touchPos != null &&
+          draggedEntry == null &&
+          entry.canvasRect.contains(manager.touchPos)) {
         Vibration.vibrate(duration: 50);
         draggedEntry = entry;
         draggedEntry.startDrag(manager.touchPos);
@@ -46,7 +48,7 @@ class EventsPainter extends CustomPainter {
       }
       entry.paint(manager, canvas);
     });
-  }  
+  }
 
   @override
   bool shouldRepaint(EventsPainter oldDelegate) {

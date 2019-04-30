@@ -7,13 +7,17 @@ class HourLabel {
   String label;
 
   TextSpan _span;
-  TextPainter _tp; 
+  TextPainter _tp;
 
   final Manager manager;
 
-  HourLabel({@required this.label, @required this.position, @required this.manager}) {
+  HourLabel(
+      {@required this.label, @required this.position, @required this.manager}) {
     _span = TextSpan(text: label);
-    _tp = TextPainter(text: _span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
+    _tp = TextPainter(
+        text: _span,
+        textAlign: TextAlign.left,
+        textDirection: TextDirection.ltr);
     _tp.layout();
   }
 

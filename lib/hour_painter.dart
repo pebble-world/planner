@@ -6,16 +6,16 @@ class HourPainter extends CustomPainter {
   var _hours = List<HourLabel>();
   final Manager manager;
 
-
-  HourPainter({@required this.manager }) {
+  HourPainter({@required this.manager}) {
     double ypos = 0;
-    for(int i = manager.minHour; i < manager.maxHour; i++) {
-      _hours.add(HourLabel(label: i.toString(), position: Offset(10, ypos), manager: manager));
+    for (int i = manager.minHour; i < manager.maxHour; i++) {
+      _hours.add(HourLabel(
+          label: i.toString(), position: Offset(10, ypos), manager: manager));
       ypos += manager.blockHeight;
     }
   }
 
-  @override 
+  @override
   void paint(Canvas canvas, Size size) {
     //debugPrint('canvas width ${size.width} height ${size.height}');
 
