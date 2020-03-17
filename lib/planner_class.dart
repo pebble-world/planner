@@ -160,17 +160,17 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                         manager.zoom = _previousZoom * detail.scale;
                       });
                     },
-                    onLongPressDragStart: (details) {
+                    onLongPressStart: (details) {
                       setState(() {
                         manager.touchPos = details.globalPosition;
                       });
                     },
-                    onLongPressDragUpdate: (details) {
+                    onLongPressMoveUpdate: (details) {
                       setState(() {
                         manager.touchPos = details.globalPosition;
                       });
                     },
-                    onLongPressDragUp: (details) {
+                    onLongPressEnd: (details) {
                       setState(() {
                         manager.touchPos = null;
                       });
