@@ -42,16 +42,12 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
   double _vDrag = 0.0;
   double _hDragStart;
   double _hDrag = 0.0;
-  double _previousZoom;
   Manager manager;
   GlobalKey _keyEventPainter = GlobalKey();
-
   Offset lastTapPos = Offset.zero;
 
   @override
   void initState() {
-    print("blockWidth ${widget.blockWidth}");
-    print("blockHeight ${widget.blockHeight}");
     super.initState();
     manager = Manager(
       blockWidth: widget.blockWidth,
@@ -87,6 +83,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
         // Header
         GestureDetector(
           onHorizontalDragStart: (detail) {
+            print("onHorizontalDragStart");
             _hDragStart = detail.globalPosition.dx;
             _hDrag = manager.hScroll;
           },
@@ -153,10 +150,10 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     }
                   },
                   child: GestureDetector(
-                    onScaleStart: (detail) => _previousZoom = manager.zoom,
+                    onScaleStart: (detail) => manager.previousZoom = manager.zoom,
                     onScaleUpdate: (detail) {
                       setState(() {
-                        manager.zoom = _previousZoom * detail.scale;
+                        manager.zoom = manager.previousZoom * detail.scale;
                       });
                     },
                     onLongPressStart: (details) {

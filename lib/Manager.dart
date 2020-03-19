@@ -37,10 +37,6 @@ class Manager {
     print("update manager $blockHeight");
     print("zoom $zoom");
     print("_scale $_scale");
-    print("_screenWidth $_screenWidth");
-    print("_screenHeight $_screenHeight");
-    print("_canvasWidth $_canvasWidth");
-    print("_canvasHeight $_canvasHeight");
     this.blockHeight = blockHeight;
     entries.forEach((entry) {
       entry.createPainters(minHour);
@@ -76,22 +72,26 @@ class Manager {
   }
 
   double _minZoom = 0.5;
+  double previousZoom = 1;
+
   double _zoom = 1;
-  double _previousZoom = 0;
   double get zoom => _zoom;
   set zoom(double value) {
+    print("set zoom $value");
     if (value > 3)
       _zoom = 3;
     else if (value < _minZoom)
       _zoom = _minZoom;
     else {
       _zoom = value;
-      if (_previousZoom != 0) {
-        double _zoomFactor = _zoom - _previousZoom;
+      if (previousZoom != 0) {
+        double _zoomFactor = _zoom - previousZoom;
         vScroll += _screenHeight * -_zoomFactor;
       }
-      _previousZoom = zoom;
+      previousZoom = zoom;
     }
+    print("new _previousZoom $previousZoom");
+    print("new zoom $_zoom");
   }
 
   Offset eventsPainterOffset = Offset.zero;
@@ -142,6 +142,7 @@ class Manager {
     debugPrint('scale to: ${_scale.toString()}');
     _limitHScroll();
     _limitVScroll();
+    zoom = 1;
     //debugPrint('hscroll: $hScroll, canvasWidth: $_canvasWidth');
   }
 

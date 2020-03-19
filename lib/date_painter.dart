@@ -20,6 +20,7 @@ class DatePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    print("paint DatePainter");
     //PlannerCam().setSize(size.width, size.height);
     canvas.drawColor(Colors.black, BlendMode.overlay);
     _dates.forEach((date) => date.paint(canvas));
