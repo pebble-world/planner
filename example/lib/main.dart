@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:planner/manager.dart';
 import 'package:planner/planner.dart';
-import 'package:flutter/rendering.dart';
+import 'package:provider/provider.dart';
 
 import 'Config.dart';
 
@@ -63,38 +64,36 @@ class _MyHomePageState extends State<MyHomePage> {
     config.setLabels(5);
 
     entries = List<PlannerEntry>();
+    entries.add(PlannerEntry(day: 0, hour: 12, title: 'entry 1', content: 'some content to show in this entry', color: Colors.blue));
     entries.add(PlannerEntry(
-      day: 0,
-      hour: 12,
-      title: 'entry 1',
-      content: 'some content to show in this entry',
-      color: Colors.blue
-    ));
-    entries.add(PlannerEntry(
-      day: 1,
-      hour: 11,
-      duration: 180,
-      title: 'entry 2 is a bit longer and does not fit inside its box',
-      content: 'This is the content of entry 2. It takes up a bit more space.',
-      color: Colors.green
-    ));
+        day: 1,
+        hour: 11,
+        duration: 180,
+        title: 'entry 2 is a bit longer and does not fit inside its box',
+        content: 'This is the content of entry 2. It takes up a bit more space.',
+        color: Colors.green));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Planner(
-      labels: config.labels,
-      minHour: config.minHour,
-      maxHour: config.maxHour,
-      entries: entries,
-      onEntryDoubleTap: onEntryDoubleTap,
-      onPlannerDoubleTap: onPlannerDoubleTap,
-      onEntryChanged: onEntryChanged,
-    );
+    return MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (context) => ManagerProvider(
+            labels: config.labels,
+            minHour: config.minHour,
+            maxHour: config.maxHour,
+            entries: entries,
+          )),
+        ],
+        child: Planner(
+          onEntryDoubleTap: onEntryDoubleTap,
+          onPlannerDoubleTap: onPlannerDoubleTap,
+          onEntryChanged: onEntryChanged,
+        ));
   }
 
   void onEntryChanged(PlannerEntry entry) {
-    print ('entry changed');
+    print('entry changed');
     // the argument is the changed entry
     // This method should be used if you need extra checks on the
     // new position and save them to a database
@@ -104,22 +103,17 @@ class _MyHomePageState extends State<MyHomePage> {
     // this should probably provide a way to change the
     // event's content
     showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(entry.title),
-          content: Text(entry.content),
-          actions: [
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(title: Text(entry.title), content: Text(entry.content), actions: [
             FlatButton(
               child: Text('Ok'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             )
-          ]    
-        );
-      }
-    );
+          ]);
+        });
   }
 
   // minutes will be rounded according to planner grid. Can be 0, 15, 30 or 45
@@ -135,7 +129,8 @@ class _MyHomePageState extends State<MyHomePage> {
       color: Colors.red,
     );
     setState(() {
-     entries.add(entry); 
+      entry.createPainters(config.minHour);
+      entries.add(entry);
     });
   }
 }

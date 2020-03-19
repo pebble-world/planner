@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 
-class Manager {
-  Manager(
-      {@required this.blockWidth,
-      @required this.blockHeight,
-      @required this.minHour,
+class ManagerProvider with ChangeNotifier {
+
+  ManagerProvider(
+      {@required this.minHour,
       @required this.maxHour,
       @required this.labels,
       @required this.entries}) {
@@ -19,37 +18,13 @@ class Manager {
     });
   }
 
-  void update(
-      {@required int blockWidth,
-      @required int blockHeight,
-      @required int minHour,
-      @required int maxHour,
-      @required List<String> labels,
-      @required List<PlannerEntry> entries}) {
-
-    this.blockWidth = blockWidth;
-    this.minHour = minHour;
-    this.maxHour = maxHour;
-    this.labels = labels;
-    this.entries = entries;
-    _canvasWidth = blockWidth * labels.length;
-    _canvasHeight = blockHeight * (maxHour - minHour);
-    print("update manager $blockHeight");
-    print("zoom $zoom");
-    print("_scale $_scale");
-    this.blockHeight = blockHeight;
-    entries.forEach((entry) {
-      entry.createPainters(minHour);
-    });
-  }
-
   List<String> labels;
   int minHour;
   int maxHour;
   List<PlannerEntry> entries;
 
-  int blockWidth;
-  int blockHeight;
+  int blockWidth = 200;
+  int blockHeight = 40;
   int _canvasWidth;
   int _canvasHeight;
 

@@ -4,7 +4,7 @@ import 'package:planner/hour_label.dart';
 
 class HourPainter extends CustomPainter {
   var _hours = List<HourLabel>();
-  final Manager manager;
+  final ManagerProvider manager;
 
   HourPainter({@required this.manager}) {
     double ypos = 0;

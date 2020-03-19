@@ -7,14 +7,11 @@ import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 import 'package:after_layout/after_layout.dart';
 import 'package:positioned_tap_detector/positioned_tap_detector.dart';
+import 'package:provider/provider.dart';
 
 class Planner extends StatefulWidget {
-  final List<String> labels;
-  final int minHour;
-  final int maxHour;
-  final List<PlannerEntry> entries;
-  final blockWidth;
-  final blockHeight;
+  final blockWidth = 200;
+  final blockHeight = 40;
 
   final Function(int day, int hour, int minute) onPlannerDoubleTap;
   final Function(PlannerEntry) onEntryDoubleTap;
@@ -22,12 +19,6 @@ class Planner extends StatefulWidget {
 
   Planner(
       {Key key,
-      @required this.labels,
-      @required this.minHour,
-      @required this.maxHour,
-      @required this.entries,
-      this.blockHeight = 40,
-      this.blockWidth = 200,
       this.onEntryChanged,
       this.onEntryDoubleTap,
       this.onPlannerDoubleTap})
@@ -42,42 +33,25 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
   double _vDrag = 0.0;
   double _hDragStart;
   double _hDrag = 0.0;
-  Manager manager;
+  ManagerProvider manager;
   GlobalKey _keyEventPainter = GlobalKey();
   Offset lastTapPos = Offset.zero;
 
-  @override
-  void initState() {
-    super.initState();
-    manager = Manager(
-      blockWidth: widget.blockWidth,
-      blockHeight: widget.blockHeight,
-      labels: widget.labels,
-      minHour: widget.minHour,
-      maxHour: widget.maxHour,
-      entries: widget.entries,
-    );
-  }
 
   @override
   void afterFirstLayout(BuildContext context) {
     //Calculate Calendar Position
     final RenderBox eventBox = _keyEventPainter.currentContext.findRenderObject();
-    manager.eventsPainterOffset = eventBox.localToGlobal(Offset.zero);
-    print('offset: ${manager.eventsPainterOffset}');
+    Provider.of<ManagerProvider>(context, listen: false).eventsPainterOffset = eventBox.localToGlobal(Offset.zero);
+    //print('offset: ${manager.eventsPainterOffset}');
+    setState(() {
+      print("reload");
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    manager.update(
-      blockWidth: 200,
-      blockHeight: 40,
-      labels: widget.labels,
-      minHour: widget.minHour,
-      maxHour: widget.maxHour,
-      entries: widget.entries,
-    );
-
+    final manager = Provider.of<ManagerProvider>(context);
     return Column(
       children: [
         // Header
@@ -142,12 +116,15 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                 child: PositionedTapDetector(
                   onDoubleTap: (position) {
                     var entry = manager.getPlannerEntry(position.global);
+                    print(entry);
                     if (entry == null) {
                       PlannerDatePos pos = manager.getPlannerDatePos(position.global);
+                      print(pos);
                       if (widget.onPlannerDoubleTap != null) widget.onPlannerDoubleTap(pos.day, pos.hour, pos.minutes);
                     } else {
                       if (widget.onEntryDoubleTap != null) widget.onEntryDoubleTap(entry);
                     }
+                    manager.entries.forEach((entry) => print(entry.toString()));
                   },
                   child: GestureDetector(
                     onScaleStart: (detail) => manager.previousZoom = manager.zoom,

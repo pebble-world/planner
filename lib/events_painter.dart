@@ -6,7 +6,7 @@ import 'package:vibration/vibration.dart';
 
 class EventsPainter extends CustomPainter {
   var _lines;
-  final Manager manager;
+  final ManagerProvider manager;
   static PlannerEntry draggedEntry;
   final Function(PlannerEntry) onEntryChanged;
 
@@ -31,6 +31,7 @@ class EventsPainter extends CustomPainter {
     }
 
     manager.entries.forEach((entry) {
+      print(entry.toString());
       if (manager.touchPos != null && draggedEntry == null && entry.canvasRect.contains(manager.touchPos)) {
         Vibration.vibrate(duration: 50);
         draggedEntry = entry;

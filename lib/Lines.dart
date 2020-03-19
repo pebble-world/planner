@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:planner/manager.dart';
 
 class Lines {
-  final Manager manager;
+  final ManagerProvider manager;
 
   // paint for main horizontal lines
   Paint hpaint = Paint()
@@ -91,7 +91,7 @@ class Lines {
 class Line {
   Offset start;
   Offset end;
-  Manager manager;
+  ManagerProvider manager;
 
   Line({this.start, this.end, @required this.manager});
 

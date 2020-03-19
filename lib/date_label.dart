@@ -9,7 +9,7 @@ class DateLabel {
   TextSpan _span;
   TextPainter _tp;
 
-  final Manager manager;
+  final ManagerProvider manager;
 
   DateLabel({@required this.label, @required this.position, @required this.manager}) {
     _span = TextSpan(text: label, style: TextStyle(color: Colors.red));

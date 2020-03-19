@@ -4,7 +4,7 @@ import 'package:planner/date_label.dart';
 
 class DatePainter extends CustomPainter {
   List<DateLabel> _dates = List<DateLabel>();
-  final Manager manager;
+  final ManagerProvider manager;
 
   DatePainter({@required this.manager}) {
     double xpos = 60;
