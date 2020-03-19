@@ -50,6 +50,8 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
 
   @override
   void initState() {
+    print("blockWidth ${widget.blockWidth}");
+    print("blockHeight ${widget.blockHeight}");
     super.initState();
     manager = Manager(
       blockWidth: widget.blockWidth,
@@ -63,10 +65,10 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
 
   @override
   void afterFirstLayout(BuildContext context) {
-    final RenderBox eventBox =
-        _keyEventPainter.currentContext.findRenderObject();
+    //Calculate Calendar Position
+    final RenderBox eventBox = _keyEventPainter.currentContext.findRenderObject();
     manager.eventsPainterOffset = eventBox.localToGlobal(Offset.zero);
-    debugPrint('offset: ${manager.eventsPainterOffset}');
+    print('offset: ${manager.eventsPainterOffset}');
   }
 
   @override
@@ -82,6 +84,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
 
     return Column(
       children: [
+        // Header
         GestureDetector(
           onHorizontalDragStart: (detail) {
             _hDragStart = detail.globalPosition.dx;
@@ -96,8 +99,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
           },
           child: ClipRect(
             child: Container(
-              constraints: BoxConstraints(
-                  minWidth: double.infinity, maxWidth: double.infinity),
+              constraints: BoxConstraints(minWidth: double.infinity, maxWidth: double.infinity),
               color: Colors.black,
               height: 50.0,
               child: CustomPaint(
@@ -112,6 +114,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
         Expanded(
           child: Row(
             children: [
+              // Hour Sidebar
               GestureDetector(
                 onVerticalDragStart: (detail) {
                   _vDragStart = detail.globalPosition.dy;
@@ -137,26 +140,22 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                       )),
                 ),
               ),
+              // Calendar
               Expanded(
                 child: PositionedTapDetector(
                   onDoubleTap: (position) {
                     var entry = manager.getPlannerEntry(position.global);
                     if (entry == null) {
-                      PlannerDatePos pos =
-                          manager.getPlannerDatePos(position.global);
-                      if (widget.onPlannerDoubleTap != null)
-                        widget.onPlannerDoubleTap(
-                            pos.day, pos.hour, pos.minutes);
+                      PlannerDatePos pos = manager.getPlannerDatePos(position.global);
+                      if (widget.onPlannerDoubleTap != null) widget.onPlannerDoubleTap(pos.day, pos.hour, pos.minutes);
                     } else {
-                      if (widget.onEntryDoubleTap != null)
-                        widget.onEntryDoubleTap(entry);
+                      if (widget.onEntryDoubleTap != null) widget.onEntryDoubleTap(entry);
                     }
                   },
                   child: GestureDetector(
                     onScaleStart: (detail) => _previousZoom = manager.zoom,
                     onScaleUpdate: (detail) {
                       setState(() {
-                        //_zoom = _previousZoom * detail.scale;
                         manager.zoom = _previousZoom * detail.scale;
                       });
                     },
@@ -175,16 +174,13 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                         manager.touchPos = null;
                       });
                     },
-                    child: ClipRect(
-                      child: Container(
-                        key: _keyEventPainter,
-                        color: Colors.grey[900],
-                        child: CustomPaint(
-                          painter: EventsPainter(
-                              manager: manager,
-                              onEntryChanged: widget.onEntryChanged),
-                          child: Container(),
-                        ),
+                    child: Container(
+                      key: _keyEventPainter,
+                      //decoration: BoxDecoration(                        border: Border.all(color: Colors.red),                      ), //       <--- BoxDecoration here
+                      color: Colors.grey[900],
+                      child: CustomPaint(
+                        painter: EventsPainter(manager: manager, onEntryChanged: widget.onEntryChanged),
+                        child: Container(),
                       ),
                     ),
                   ),

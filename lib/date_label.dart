@@ -11,9 +11,8 @@ class DateLabel {
 
   final Manager manager;
 
-  DateLabel(
-      {@required this.label, @required this.position, @required this.manager}) {
-    _span = TextSpan(text: label);
+  DateLabel({@required this.label, @required this.position, @required this.manager}) {
+    _span = TextSpan(text: label, style: TextStyle(color: Colors.red));
     _tp = TextPainter(
       text: _span,
       textAlign: TextAlign.left,

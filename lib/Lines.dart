@@ -22,8 +22,7 @@ class Lines {
   Lines({@required this.manager}) {
     // vertical lines: drawn after each day
     Offset vstart = Offset(manager.blockWidth.toDouble(), 0);
-    Offset vend = Offset(
-        manager.blockWidth.toDouble(), manager.blockHeight.toDouble() * 24);
+    Offset vend = Offset(manager.blockWidth.toDouble(), manager.blockHeight.toDouble() * 24);
     for (int i = 0; i < manager.labels.length; i++) {
       vlines.add(Line(start: vstart, end: vend, manager: manager));
       vstart = vstart.translate(manager.blockWidth.toDouble(), 0);
@@ -31,13 +30,11 @@ class Lines {
     }
 
     // horizontal lines: for every 15 minutes, but only drawn if zoomed out
-    double step = manager.blockHeight.toDouble() /
-        4; // vSize stands for one hour, so this step is 15 minutes
+    double step = manager.blockHeight.toDouble() / 4; // vSize stands for one hour, so this step is 15 minutes
 
     // this is the position for the first line
     Offset hstart = Offset(0, step);
-    Offset hend =
-        Offset((manager.blockWidth.toDouble() * (manager.labels.length)), step);
+    Offset hend = Offset((manager.blockWidth.toDouble() * (manager.labels.length)), step);
     int lines = (manager.maxHour - manager.minHour) * 4;
 
     for (int i = 0; i < lines; i++) {
@@ -99,7 +96,6 @@ class Line {
   Line({this.start, this.end, @required this.manager});
 
   void draw(Canvas canvas, Paint paint) {
-    canvas.drawLine(manager.getScreenPosition(start),
-        manager.getScreenPosition(end), paint);
+    canvas.drawLine(manager.getScreenPosition(start), manager.getScreenPosition(end), paint);
   }
 }

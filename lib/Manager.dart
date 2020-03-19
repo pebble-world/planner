@@ -26,7 +26,7 @@ class Manager {
       @required int maxHour,
       @required List<String> labels,
       @required List<PlannerEntry> entries}) {
-    this.blockHeight = blockHeight;
+
     this.blockWidth = blockWidth;
     this.minHour = minHour;
     this.maxHour = maxHour;
@@ -34,6 +34,14 @@ class Manager {
     this.entries = entries;
     _canvasWidth = blockWidth * labels.length;
     _canvasHeight = blockHeight * (maxHour - minHour);
+    print("update manager $blockHeight");
+    print("zoom $zoom");
+    print("_scale $_scale");
+    print("_screenWidth $_screenWidth");
+    print("_screenHeight $_screenHeight");
+    print("_canvasWidth $_canvasWidth");
+    print("_canvasHeight $_canvasHeight");
+    this.blockHeight = blockHeight;
     entries.forEach((entry) {
       entry.createPainters(minHour);
     });
@@ -131,20 +139,18 @@ class Manager {
     this._screenHeight = height;
     _scale = this._screenWidth / 1000;
     _minZoom = _screenHeight / _canvasHeight / _scale;
-    //debugPrint('scale: ${_scale.toString()}');
+    debugPrint('scale to: ${_scale.toString()}');
     _limitHScroll();
     _limitVScroll();
     //debugPrint('hscroll: $hScroll, canvasWidth: $_canvasWidth');
   }
 
   Offset getScreenPosition(Offset canvasPos) {
-    return Offset(hScroll + canvasPos.dx * _scale,
-        vScroll + canvasPos.dy * _scale * _zoom);
+    return Offset(hScroll + canvasPos.dx * _scale, vScroll + canvasPos.dy * _scale * _zoom);
   }
 
   Offset getCanvasPosition(Offset screenPos) {
-    return Offset((screenPos.dx - hScroll) / _scale,
-        (screenPos.dy - vScroll) / _scale / _zoom);
+    return Offset((screenPos.dx - hScroll) / _scale, (screenPos.dy - vScroll) / _scale / _zoom);
   }
 
   Offset getPositionForHour(Offset pos) {
@@ -165,8 +171,7 @@ class Manager {
   }
 
   void _limitVScroll() {
-    double limit =
-        -(_canvasHeight * _zoom - _screenHeight - blockHeight) * _scale;
+    double limit = -(_canvasHeight * _zoom - _screenHeight - blockHeight) * _scale;
     if (limit >= 0 || _vScroll > 0) {
       _vScroll = 0;
     } else if (_vScroll < limit) {

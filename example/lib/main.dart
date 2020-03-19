@@ -1,14 +1,12 @@
-import 'Config.dart';
-import 'Configurator.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:planner/planner.dart';
+import 'package:flutter/rendering.dart';
+
+import 'Config.dart';
 
 void main() {
-  SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft])
-    .then((_) {
-      runApp(new MyApp());
-    });
+  //debugPaintSizeEnabled=true;
+  runApp(new MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -57,9 +55,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   List<PlannerEntry> entries;
 
-  @override void initState() {
+  @override
+  void initState() {
     super.initState();
     config = Config();
+    //Days
     config.setLabels(5);
 
     entries = List<PlannerEntry>();
@@ -82,47 +82,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Planner Demo'),
-        actions: [
-          FlatButton.icon(
-            icon: Icon(Icons.settings, color: Colors.white,),
-            label: Text('settings', style: TextStyle(color: Colors.white),),
-            onPressed: () => {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text('Planner Configuration'),
-                    content: Configurator(config: config),
-                    actions: [
-                      new FlatButton(
-                        child: new Text('Close'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          setState(() {
-                            
-                          });
-                        },
-                      )
-                    ] 
-                  );
-                }
-              )
-            },
-          )
-        ],
-      ),
-      body: Planner(
-        labels: config.labels,
-        minHour: config.minHour,
-        maxHour: config.maxHour,
-        entries: entries,
-        onEntryDoubleTap: onEntryDoubleTap,
-        onPlannerDoubleTap: onPlannerDoubleTap,
-        onEntryChanged: onEntryChanged,
-      ),
+    return Planner(
+      labels: config.labels,
+      minHour: config.minHour,
+      maxHour: config.maxHour,
+      entries: entries,
+      onEntryDoubleTap: onEntryDoubleTap,
+      onPlannerDoubleTap: onPlannerDoubleTap,
+      onEntryChanged: onEntryChanged,
     );
   }
 

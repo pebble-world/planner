@@ -11,13 +11,9 @@ class HourLabel {
 
   final Manager manager;
 
-  HourLabel(
-      {@required this.label, @required this.position, @required this.manager}) {
-    _span = TextSpan(text: label);
-    _tp = TextPainter(
-        text: _span,
-        textAlign: TextAlign.left,
-        textDirection: TextDirection.ltr);
+  HourLabel({@required this.label, @required this.position, @required this.manager}) {
+    _span = TextSpan(text: label, style: TextStyle(color: Colors.red));
+    _tp = TextPainter(text: _span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
     _tp.layout();
   }
 

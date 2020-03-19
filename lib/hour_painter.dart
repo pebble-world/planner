@@ -9,15 +9,14 @@ class HourPainter extends CustomPainter {
   HourPainter({@required this.manager}) {
     double ypos = 0;
     for (int i = manager.minHour; i < manager.maxHour; i++) {
-      _hours.add(HourLabel(
-          label: i.toString(), position: Offset(10, ypos), manager: manager));
+      _hours.add(HourLabel(label: i.toString(), position: Offset(10, ypos), manager: manager));
       ypos += manager.blockHeight;
     }
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    //debugPrint('canvas width ${size.width} height ${size.height}');
+    debugPrint('canvas width ${size.width} height ${size.height}');
 
     //PlannerCam().setSize(size.width, size.height);
     _hours.forEach((hour) => hour.paint(canvas));
