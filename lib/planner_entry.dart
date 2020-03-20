@@ -39,7 +39,6 @@ class PlannerEntry {
       {@required this.day, @required this.hour, this.title, this.content, @required this.color, this.minutes = 0, this.duration = 60});
 
   void createPainters(int minHour) {
-    print(this.minHour);
     this.minHour = minHour;
     Offset a = Offset(day * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
@@ -102,9 +101,7 @@ class PlannerEntry {
 
   void _paintHandle(ManagerProvider manager, Canvas canvas, Offset topLeft) {
     Offset bottomRight = topLeft.translate(200.0, 6.0);
-    Rect r;
-
-    r = Rect.fromPoints(
+    Rect r = Rect.fromPoints(
       manager.getScreenPosition(topLeft),
       manager.getScreenPosition(bottomRight),
     );
@@ -164,8 +161,6 @@ class PlannerEntry {
 
   Rect getCurrentRect() {
     Rect result;
-    print(dragType);
-    print(canvasRect);
     switch (dragType) {
       case DragType.none:
         {

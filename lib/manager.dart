@@ -52,7 +52,6 @@ class ManagerProvider with ChangeNotifier {
   double _zoom = 1;
   double get zoom => _zoom;
   set zoom(double value) {
-    print("set zoom $value");
     if (value > 3)
       _zoom = 3;
     else if (value < _minZoom)
@@ -65,8 +64,6 @@ class ManagerProvider with ChangeNotifier {
       }
       previousZoom = zoom;
     }
-    print("new _previousZoom $previousZoom");
-    print("new zoom $_zoom");
   }
 
   Offset eventsPainterOffset = Offset.zero;

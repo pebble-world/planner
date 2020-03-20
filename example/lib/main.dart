@@ -53,12 +53,11 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Config config;
-
   List<PlannerEntry> entries;
 
   @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context) {
+
     config = Config();
     //Days
     config.setLabels(5);
@@ -72,10 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: 'entry 2 is a bit longer and does not fit inside its box',
         content: 'This is the content of entry 2. It takes up a bit more space.',
         color: Colors.green));
-  }
 
-  @override
-  Widget build(BuildContext context) {
     return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (context) => ManagerProvider(
@@ -85,11 +81,12 @@ class _MyHomePageState extends State<MyHomePage> {
             entries: entries,
           )),
         ],
-        child: Planner(
+        child: Scaffold(
+      body: Planner(
           onEntryDoubleTap: onEntryDoubleTap,
           onPlannerDoubleTap: onPlannerDoubleTap,
           onEntryChanged: onEntryChanged,
-        ));
+        )));
   }
 
   void onEntryChanged(PlannerEntry entry) {

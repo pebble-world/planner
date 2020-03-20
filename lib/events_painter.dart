@@ -17,7 +17,6 @@ class EventsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    print("draw EventsPainter $size");
     manager.setSize(size.width, size.height);
     _lines.draw(canvas);
 
@@ -31,9 +30,8 @@ class EventsPainter extends CustomPainter {
     }
 
     manager.entries.forEach((entry) {
-      print(entry.toString());
       if (manager.touchPos != null && draggedEntry == null && entry.canvasRect.contains(manager.touchPos)) {
-        Vibration.vibrate(duration: 50);
+        //Vibration.vibrate(duration: 50);
         draggedEntry = entry;
         draggedEntry.startDrag(manager.touchPos);
         debugPrint('drag started');

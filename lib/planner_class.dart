@@ -1,13 +1,14 @@
+import 'package:after_layout/after_layout.dart';
 import 'package:flutter/material.dart';
-import 'package:planner/date_painter.dart';
-import 'package:planner/hour_painter.dart';
 import 'package:planner/events_painter.dart';
+import 'package:planner/hour_container.dart';
 import 'package:planner/manager.dart';
 import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
-import 'package:after_layout/after_layout.dart';
 import 'package:positioned_tap_detector/positioned_tap_detector.dart';
 import 'package:provider/provider.dart';
+
+import 'date_container.dart';
 
 class Planner extends StatefulWidget {
   final blockWidth = 200;
@@ -17,12 +18,7 @@ class Planner extends StatefulWidget {
   final Function(PlannerEntry) onEntryDoubleTap;
   final Function(PlannerEntry) onEntryChanged;
 
-  Planner(
-      {Key key,
-      this.onEntryChanged,
-      this.onEntryDoubleTap,
-      this.onPlannerDoubleTap})
-      : super(key: key);
+  Planner({Key key, this.onEntryChanged, this.onEntryDoubleTap, this.onPlannerDoubleTap}) : super(key: key);
 
   @override
   _PlannerState createState() => _PlannerState();
@@ -37,16 +33,13 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
   GlobalKey _keyEventPainter = GlobalKey();
   Offset lastTapPos = Offset.zero;
 
-
   @override
   void afterFirstLayout(BuildContext context) {
     //Calculate Calendar Position
     final RenderBox eventBox = _keyEventPainter.currentContext.findRenderObject();
     Provider.of<ManagerProvider>(context, listen: false).eventsPainterOffset = eventBox.localToGlobal(Offset.zero);
     //print('offset: ${manager.eventsPainterOffset}');
-    setState(() {
-      print("reload");
-    });
+
   }
 
   @override
@@ -55,33 +48,42 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
     return Column(
       children: [
         // Header
-        GestureDetector(
-          onHorizontalDragStart: (detail) {
-            print("onHorizontalDragStart");
-            _hDragStart = detail.globalPosition.dx;
-            _hDrag = manager.hScroll;
-          },
-          onHorizontalDragUpdate: (detail) {
-            setState(() {
-              _hDrag += detail.globalPosition.dx - _hDragStart;
-              _hDragStart = detail.globalPosition.dx;
-              manager.hScroll = _hDrag;
-            });
-          },
-          child: ClipRect(
-            child: Container(
-              constraints: BoxConstraints(minWidth: double.infinity, maxWidth: double.infinity),
-              color: Colors.black,
-              height: 50.0,
-              child: CustomPaint(
-                painter: DatePainter(
-                  manager: manager,
-                ),
-                child: Container(),
+        Row(
+            children: [
+              Container(
+                width: 50.0,
+                height: 50.0,
+                color: Colors.black,
+                child: Icon(Icons.calendar_today, color: Colors.white,),
               ),
-            ),
+              // Day
+              Expanded(
+                child: GestureDetector(
+                  onHorizontalDragStart: (detail) {
+                    _hDragStart = detail.globalPosition.dx;
+                    _hDrag = manager.hScroll;
+                  },
+                  onHorizontalDragUpdate: (detail) {
+                    setState(() {
+                      _hDrag += detail.globalPosition.dx - _hDragStart;
+                      _hDragStart = detail.globalPosition.dx;
+                      manager.hScroll = _hDrag;
+                    });
+                  },
+                  child: ClipRect(
+                    child: Container(
+                      //constraints: BoxConstraints(minWidth: double.infinity, maxWidth: double.infinity),
+                      color: Colors.black,
+                      height: 50.0,
+                      child: DateContainer(
+                          manager: manager,
+                        ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
         Expanded(
           child: Row(
             children: [
@@ -103,12 +105,10 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                       width: 50.0,
                       //constraints: BoxConstraints.expand(),
                       color: Colors.black,
-                      child: CustomPaint(
-                        painter: HourPainter(
+                      child: HourContainer(
                           manager: manager,
                         ),
-                        child: Container(),
-                      )),
+                      ),
                 ),
               ),
               // Calendar
@@ -116,10 +116,8 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                 child: PositionedTapDetector(
                   onDoubleTap: (position) {
                     var entry = manager.getPlannerEntry(position.global);
-                    print(entry);
                     if (entry == null) {
                       PlannerDatePos pos = manager.getPlannerDatePos(position.global);
-                      print(pos);
                       if (widget.onPlannerDoubleTap != null) widget.onPlannerDoubleTap(pos.day, pos.hour, pos.minutes);
                     } else {
                       if (widget.onEntryDoubleTap != null) widget.onEntryDoubleTap(entry);
