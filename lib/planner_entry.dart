@@ -76,18 +76,12 @@ class PlannerEntry {
     canvas.drawRect(screenRect, fillPaint);
     canvas.drawRect(screenRect, strokePaint);
 
-    Offset hpos = rect.topLeft;
-    _paintHandle(manager, canvas, hpos);
-    hpos = rect.bottomLeft.translate(0.0, -6.0);
-    _paintHandle(manager, canvas, hpos);
-
-    Rect clipRect = Rect.fromPoints(
-        manager.getScreenPosition(rect.topLeft.translate(2, 7)), manager.getScreenPosition(rect.bottomRight.translate(-2, -7)));
+    _paintHandle(manager, canvas, rect.topLeft.translate(0, 1));
+    _paintHandle(manager, canvas, rect.bottomLeft.translate(0, -1));
 
     canvas.save();
-    canvas.clipRect(clipRect);
     Offset cpos = rect.topLeft;
-    cpos = cpos.translate(5.0, 10.0);
+    cpos = cpos.translate(5.0, 2.0);
     cpos = manager.getScreenPosition(cpos);
     if (titlePainter != null) {
       titlePainter.paint(canvas, cpos);
@@ -100,21 +94,16 @@ class PlannerEntry {
   }
 
   void _paintHandle(ManagerProvider manager, Canvas canvas, Offset topLeft) {
-    Offset bottomRight = topLeft.translate(200.0, 6.0);
-    Rect r = Rect.fromPoints(
-      manager.getScreenPosition(topLeft),
-      manager.getScreenPosition(bottomRight),
-    );
-    canvas.drawRect(r, strokePaint);
+    Paint handlerPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
 
     // draw lines
-    Offset left = topLeft.translate(80.0, 2.0);
+    Offset left = topLeft.translate(80.0, 0.0);
     Offset right = left.translate(40.0, 0.0);
-    canvas.drawLine(manager.getScreenPosition(left), manager.getScreenPosition(right), linePaint);
+    canvas.drawLine(manager.getScreenPosition(left), manager.getScreenPosition(right), handlerPaint);
 
-    left = left.translate(0.0, 2.0);
-    right = right.translate(0.0, 2.0);
-    canvas.drawLine(manager.getScreenPosition(left), manager.getScreenPosition(right), linePaint);
   }
 
   void startDrag(Offset pos) {

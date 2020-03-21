@@ -6,13 +6,13 @@ class Lines {
 
   // paint for main horizontal lines
   Paint hpaint = Paint()
-    ..color = Color.fromARGB(100, 255, 255, 255)
+    ..color = Color(0xff297fca)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1;
 
   // paint for all vertical lines
   Paint vpaint = Paint()
-    ..color = Color.fromARGB(50, 255, 255, 255)
+    ..color = Color(0xff297fca)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1;
 
@@ -39,8 +39,20 @@ class Lines {
 
     for (int i = 0; i < lines; i++) {
       hlines.add(Line(start: hstart, end: hend, manager: manager));
+      double start = 0;
+      //half hour
+      if ((i) % 4 == 0) {
+        start = 0;
+      //30Minutes
+      } else if ((i) % 2 == 0 ) {
+        start = -50;
+        //15 Minutes
+      } else {
+        start = 0;
+      }
+
       // increase for next 15 minute line
-      hstart = hstart.translate(0, step);
+      hstart = hstart = Offset(start, step * (2 + i));
       hend = hend.translate(0, step);
     }
   }
@@ -58,7 +70,7 @@ class Lines {
 
     // .. and set the color for this line
     Paint div2paint = Paint()
-      ..color = Color.fromARGB((color2 * 75).toInt(), 255, 255, 255)
+      ..color = Color(0xff297fca).withAlpha((color2 * 75).toInt())
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
@@ -68,7 +80,7 @@ class Lines {
     if (color3 > 1) color3 = 1;
 
     Paint div3paint = Paint()
-      ..color = Color.fromARGB((color3 * 50).toInt(), 255, 255, 255)
+      ..color = Color(0xff297fca).withAlpha((color2 * 50).toInt())
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 

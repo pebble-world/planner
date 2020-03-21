@@ -14,7 +14,7 @@ class Planner extends StatefulWidget {
   final blockWidth = 200;
   final blockHeight = 40;
 
-  final Function(int day, int hour, int minute) onPlannerDoubleTap;
+  final Function(int day, int hour, int minute, ManagerProvider manger) onPlannerDoubleTap;
   final Function(PlannerEntry) onEntryDoubleTap;
   final Function(PlannerEntry) onEntryChanged;
 
@@ -53,8 +53,6 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
               Container(
                 width: 50.0,
                 height: 50.0,
-                color: Colors.black,
-                child: Icon(Icons.calendar_today, color: Colors.white,),
               ),
               // Day
               Expanded(
@@ -73,7 +71,6 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                   child: ClipRect(
                     child: Container(
                       //constraints: BoxConstraints(minWidth: double.infinity, maxWidth: double.infinity),
-                      color: Colors.black,
                       height: 50.0,
                       child: DateContainer(
                           manager: manager,
@@ -103,8 +100,6 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                 child: ClipRect(
                   child: Container(
                       width: 50.0,
-                      //constraints: BoxConstraints.expand(),
-                      color: Colors.black,
                       child: HourContainer(
                           manager: manager,
                         ),
@@ -118,7 +113,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     var entry = manager.getPlannerEntry(position.global);
                     if (entry == null) {
                       PlannerDatePos pos = manager.getPlannerDatePos(position.global);
-                      if (widget.onPlannerDoubleTap != null) widget.onPlannerDoubleTap(pos.day, pos.hour, pos.minutes);
+                      if (widget.onPlannerDoubleTap != null) widget.onPlannerDoubleTap(pos.day, pos.hour, pos.minutes, manager);
                     } else {
                       if (widget.onEntryDoubleTap != null) widget.onEntryDoubleTap(entry);
                     }
@@ -148,8 +143,6 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     },
                     child: Container(
                       key: _keyEventPainter,
-                      //decoration: BoxDecoration(                        border: Border.all(color: Colors.red),                      ), //       <--- BoxDecoration here
-                      color: Colors.grey[900],
                       child: CustomPaint(
                         painter: EventsPainter(manager: manager, onEntryChanged: widget.onEntryChanged),
                         child: Container(),

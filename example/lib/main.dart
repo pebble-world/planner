@@ -114,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   // minutes will be rounded according to planner grid. Can be 0, 15, 30 or 45
-  void onPlannerDoubleTap(int day, int hour, int minute) {
+  void onPlannerDoubleTap(int day, int hour, int minute, ManagerProvider manager) {
     print('day: $day hour: $hour minute: $minute');
     PlannerEntry entry = PlannerEntry(
       title: 'new planner entry',
@@ -122,12 +122,11 @@ class _MyHomePageState extends State<MyHomePage> {
       day: day,
       hour: hour,
       minutes: minute,
-      duration: 60, // minutes
+      duration: 30, // minutes
       color: Colors.red,
     );
-    setState(() {
-      entry.createPainters(config.minHour);
-      entries.add(entry);
-    });
+    entry.createPainters(config.minHour);
+    manager.entries.add(entry);
+    manager.redraw();
   }
 }

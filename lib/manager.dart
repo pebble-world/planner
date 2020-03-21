@@ -151,4 +151,8 @@ class ManagerProvider with ChangeNotifier {
       _vScroll = limit;
     }
   }
+
+  void redraw(){
+    notifyListeners();
+  }
 }
