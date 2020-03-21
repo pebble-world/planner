@@ -30,11 +30,6 @@ class PlannerEntry {
   Offset dragOffset;
   DragType dragType = DragType.none;
 
-  static Paint linePaint = Paint()
-    ..color = Colors.white
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1;
-
   PlannerEntry(
       {@required this.day, @required this.hour, this.title, this.content, @required this.color, this.minutes = 0, this.duration = 60});
 
@@ -45,16 +40,13 @@ class PlannerEntry {
     canvasRect = Rect.fromPoints(a, b);
 
     if (title != null) {
-      var span = TextSpan(text: title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10));
+      var span = TextSpan(text: title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.red));
       titlePainter = TextPainter(text: span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
       titlePainter.maxLines = 1;
-      titlePainter.layout(maxWidth: 190);
     }
     if (content != null) {
       var span = TextSpan(text: content, style: TextStyle(fontSize: 8));
       contentPainter = TextPainter(text: span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
-      contentPainter.maxLines = 4;
-      contentPainter.layout(maxWidth: 180);
     }
 
     fillPaint = Paint()
@@ -84,10 +76,14 @@ class PlannerEntry {
     cpos = cpos.translate(5.0, 2.0);
     cpos = manager.getScreenPosition(cpos);
     if (titlePainter != null) {
+      titlePainter.layout(maxWidth: 190 * manager.getScale());
       titlePainter.paint(canvas, cpos);
       cpos = cpos.translate(0.0, 15.0);
     }
-    if (contentPainter != null) {
+    if (contentPainter != null && duration > 15) {
+      //2 lines per 15 Minutes
+      contentPainter.maxLines = ((duration - 15) ~/ 7);
+      contentPainter.layout(maxWidth: 180 * manager.getScale());
       contentPainter.paint(canvas, cpos);
     }
     canvas.restore();

@@ -134,6 +134,10 @@ class ManagerProvider with ChangeNotifier {
     return Offset(hScroll + pos.dx * _scale, pos.dy * _scale);
   }
 
+  num getScale(){
+    return _scale;
+  }
+
   void _limitHScroll() {
     double limit = -(_canvasWidth - _screenWidth / _scale) * _scale;
     if (limit >= 0 || _hScroll > 0) {
