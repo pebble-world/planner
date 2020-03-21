@@ -135,6 +135,9 @@ class PlannerEntry {
     } else if (dragType == DragType.bottomHandle) {
       duration += (dragOffset.dy / 10.0).round() * 15;
     }
+    if(duration < 15){
+      duration = 15;
+    }
 
     Offset a = Offset(day * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
