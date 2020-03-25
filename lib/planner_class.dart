@@ -39,71 +39,52 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
     final RenderBox eventBox = _keyEventPainter.currentContext.findRenderObject();
     Provider.of<ManagerProvider>(context, listen: false).eventsPainterOffset = eventBox.localToGlobal(Offset.zero);
     //print('offset: ${manager.eventsPainterOffset}');
-
   }
 
   @override
   Widget build(BuildContext context) {
     final manager = Provider.of<ManagerProvider>(context);
+    print("redraw");
     return Column(
       children: [
         // Header
         Row(
-            children: [
-              Container(
-                width: 50.0,
-                height: 50.0,
-              ),
-              // Day
-              Expanded(
-                child: GestureDetector(
-                  onHorizontalDragStart: (detail) {
-                    _hDragStart = detail.globalPosition.dx;
-                    _hDrag = manager.hScroll;
-                  },
-                  onHorizontalDragUpdate: (detail) {
-                    setState(() {
-                      _hDrag += detail.globalPosition.dx - _hDragStart;
-                      _hDragStart = detail.globalPosition.dx;
-                      manager.hScroll = _hDrag;
-                    });
-                  },
-                  child: ClipRect(
-                    child: Container(
-                      //constraints: BoxConstraints(minWidth: double.infinity, maxWidth: double.infinity),
-                      height: 50.0,
-                      child: DateContainer(
-                          manager: manager,
-                        ),
+          children: [
+            Container(
+              width: 50.0,
+              height: 50.0,
+            ),
+            // Day
+            Expanded(
+              child: ClipRect(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Color(0xff297fca),
+                        width: 0.5,
+                      ),
                     ),
+                  ),
+                  height: 50.0,
+                  child: DateContainer(
+                    manager: manager,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
         Expanded(
           child: Row(
             children: [
               // Hour Sidebar
-              GestureDetector(
-                onVerticalDragStart: (detail) {
-                  _vDragStart = detail.globalPosition.dy;
-                  _vDrag = manager.vScroll;
-                },
-                onVerticalDragUpdate: (detail) {
-                  setState(() {
-                    _vDrag += detail.globalPosition.dy - _vDragStart;
-                    _vDragStart = detail.globalPosition.dy;
-                    manager.vScroll = _vDrag;
-                  });
-                },
-                child: ClipRect(
-                  child: Container(
-                      width: 50.0,
-                      child: HourContainer(
-                          manager: manager,
-                        ),
-                      ),
+              ClipRect(
+                child: Container(
+                  width: 50.0,
+                  child: HourContainer(
+                    manager: manager,
+                  ),
                 ),
               ),
               // Calendar
@@ -120,12 +101,6 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     manager.entries.forEach((entry) => print(entry.toString()));
                   },
                   child: GestureDetector(
-                    onScaleStart: (detail) => manager.previousZoom = manager.zoom,
-                    onScaleUpdate: (detail) {
-                      setState(() {
-                        manager.zoom = manager.previousZoom * detail.scale;
-                      });
-                    },
                     onLongPressStart: (details) {
                       setState(() {
                         manager.touchPos = details.globalPosition;

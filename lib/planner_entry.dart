@@ -18,6 +18,7 @@ class PlannerEntry {
   Paint fillPaint;
   Paint strokePaint;
   Color color;
+  Color origColor;
 
   String title;
   String content;
@@ -30,8 +31,10 @@ class PlannerEntry {
   Offset dragOffset;
   DragType dragType = DragType.none;
 
-  PlannerEntry(
-      {@required this.day, @required this.hour, this.title, this.content, @required this.color, this.minutes = 0, this.duration = 60});
+  PlannerEntry({@required this.day, @required this.hour, this.title, this.content, @required this.color, this.minutes = 0, this.duration = 60}){
+    this.color = this.color.withAlpha(150);
+    this.origColor = this.color;
+  }
 
   void createPainters(int minHour) {
     this.minHour = minHour;
@@ -49,16 +52,18 @@ class PlannerEntry {
       contentPainter = TextPainter(text: span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
     }
 
+
+  }
+
+  void paint(ManagerProvider manager, Canvas canvas) {
     fillPaint = Paint()
-      ..color = color.withAlpha(100)
+      ..color = color
       ..style = PaintingStyle.fill;
     strokePaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-  }
 
-  void paint(ManagerProvider manager, Canvas canvas) {
     Rect rect = getCurrentRect();
     Rect screenRect = Rect.fromPoints(
       manager.getScreenPosition(rect.topLeft),
@@ -91,7 +96,7 @@ class PlannerEntry {
 
   void _paintHandle(ManagerProvider manager, Canvas canvas, Offset topLeft) {
     Paint handlerPaint = Paint()
-      ..color = color
+      ..color = color.withAlpha(255)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 
@@ -110,6 +115,7 @@ class PlannerEntry {
     } else {
       dragType = DragType.body;
     }
+    color = origColor.withAlpha(50);
     dragStartPos = pos;
     dragOffset = Offset.zero;
   }
@@ -135,6 +141,7 @@ class PlannerEntry {
     } else if (dragType == DragType.bottomHandle) {
       duration += (dragOffset.dy / 10.0).round() * 15;
     }
+    color = origColor;
     if(duration < 15){
       duration = 15;
     }

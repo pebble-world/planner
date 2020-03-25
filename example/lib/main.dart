@@ -60,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     config = Config();
     //Days
-    config.setLabels(5);
+    config.setLabels(3);
 
     entries = List<PlannerEntry>();
     entries.add(PlannerEntry(day: 0, hour: 12, title: 'entry 1', content: 'some content to show in this entry', color: Colors.blue));

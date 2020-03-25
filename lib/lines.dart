@@ -20,6 +20,7 @@ class Lines {
   List<Line> vlines = List<Line>();
 
   Lines({@required this.manager}) {
+    print("lines....");
     // vertical lines: drawn after each day
     Offset vstart = Offset(manager.blockWidth.toDouble(), 0);
     Offset vend = Offset(manager.blockWidth.toDouble(), manager.blockHeight.toDouble() * 24);
@@ -45,7 +46,7 @@ class Lines {
         start = 0;
       //30Minutes
       } else if ((i) % 2 == 0 ) {
-        start = -50;
+        //start = -50;
         //15 Minutes
       } else {
         start = 0;
@@ -63,24 +64,15 @@ class Lines {
       line.draw(canvas, vpaint);
     });
 
-    // now we need to determine the visibility for 30 minite lines, depending on zoom factor
-    double color2 = manager.zoom - 1;
-    if (color2 < 0) color2 = 0;
-    if (color2 > 1) color2 = 1;
 
     // .. and set the color for this line
     Paint div2paint = Paint()
-      ..color = Color(0xff297fca).withAlpha((color2 * 75).toInt())
+      ..color = Color(0xff297fca).withAlpha((1 * 75).toInt())
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    // same for the next zoomlevel, which shows 15 and 45 minute lines
-    double color3 = manager.zoom - 2;
-    if (color3 < 0) color3 = 0;
-    if (color3 > 1) color3 = 1;
-
     Paint div3paint = Paint()
-      ..color = Color(0xff297fca).withAlpha((color2 * 50).toInt())
+      ..color = Color(0xff297fca).withAlpha((1 * 50).toInt())
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
@@ -89,10 +81,10 @@ class Lines {
       if ((i + 1) % 4 == 0) {
         // hour
         hlines[i].draw(canvas, hpaint);
-      } else if ((i + 1) % 2 == 0 && color2 != 0) {
+      } else if ((i + 1) % 2 == 0) {
         // half an hour
         hlines[i].draw(canvas, div2paint);
-      } else if (color3 != 0) {
+      } else {
         // 15 and 45 minutes
         hlines[i].draw(canvas, div3paint);
       }
