@@ -18,11 +18,14 @@ class PlannerEntry {
   Paint fillPaint;
   Paint strokePaint;
   Color color;
-  Color origColor;
+  Color _origColor;
 
   String title;
   String content;
 
+  int customer;
+  String customerName;
+  List<int> patients;
   Rect canvasRect;
   TextPainter titlePainter;
   TextPainter contentPainter;
@@ -31,9 +34,18 @@ class PlannerEntry {
   Offset dragOffset;
   DragType dragType = DragType.none;
 
-  PlannerEntry({@required this.day, @required this.hour, this.title, this.content, @required this.color, this.minutes = 0, this.duration = 60}){
+  PlannerEntry(
+      {@required this.day,
+      @required this.hour,
+      this.title,
+      this.content,
+      @required this.color,
+      this.minutes = 0,
+      this.duration = 30,
+      this.customer,
+      this.customerName}) {
     this.color = this.color.withAlpha(150);
-    this.origColor = this.color;
+    this._origColor = this.color;
   }
 
   void createPainters(int minHour) {
@@ -51,8 +63,6 @@ class PlannerEntry {
       var span = TextSpan(text: content, style: TextStyle(fontSize: 8));
       contentPainter = TextPainter(text: span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
     }
-
-
   }
 
   void paint(ManagerProvider manager, Canvas canvas) {
@@ -104,7 +114,6 @@ class PlannerEntry {
     Offset left = topLeft.translate(80.0, 0.0);
     Offset right = left.translate(40.0, 0.0);
     canvas.drawLine(manager.getScreenPosition(left), manager.getScreenPosition(right), handlerPaint);
-
   }
 
   void startDrag(Offset pos) {
@@ -115,7 +124,7 @@ class PlannerEntry {
     } else {
       dragType = DragType.body;
     }
-    color = origColor.withAlpha(50);
+    color = _origColor.withAlpha(50);
     dragStartPos = pos;
     dragOffset = Offset.zero;
   }
@@ -141,8 +150,8 @@ class PlannerEntry {
     } else if (dragType == DragType.bottomHandle) {
       duration += (dragOffset.dy / 10.0).round() * 15;
     }
-    color = origColor;
-    if(duration < 15){
+    color = _origColor;
+    if (duration < 15) {
       duration = 15;
     }
 

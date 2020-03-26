@@ -31,9 +31,7 @@ class ManagerProvider with ChangeNotifier {
   double _screenWidth;
   double _screenHeight;
   double _scale = 1;
-
   double _zoom = 1;
-  double get zoom => _zoom;
 
   Offset eventsPainterOffset = Offset.zero;
 
@@ -65,7 +63,7 @@ class ManagerProvider with ChangeNotifier {
     result.day = (canvasPos.dx / blockWidth).floor();
     result.hour = minHour + (canvasPos.dy / 40).floor();
     result.minutes = ((canvasPos.dy.toInt() % blockHeight) / 10).floor() * 15;
-    print("zoom $zoom");
+    print("zoom $_zoom");
     return result;
   }
 

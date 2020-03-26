@@ -11,9 +11,6 @@ import 'package:provider/provider.dart';
 import 'date_container.dart';
 
 class Planner extends StatefulWidget {
-  final blockWidth = 200;
-  final blockHeight = 40;
-
   final Function(int day, int hour, int minute, ManagerProvider manger) onPlannerDoubleTap;
   final Function(PlannerEntry) onEntryDoubleTap;
   final Function(PlannerEntry) onEntryChanged;
@@ -25,10 +22,6 @@ class Planner extends StatefulWidget {
 }
 
 class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
-  double _vDragStart;
-  double _vDrag = 0.0;
-  double _hDragStart;
-  double _hDrag = 0.0;
   ManagerProvider manager;
   GlobalKey _keyEventPainter = GlobalKey();
   Offset lastTapPos = Offset.zero;
@@ -44,7 +37,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
   @override
   Widget build(BuildContext context) {
     final manager = Provider.of<ManagerProvider>(context);
-    print("redraw");
+    print("redraw calendar");
     return Column(
       children: [
         // Header
@@ -98,7 +91,6 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     } else {
                       if (widget.onEntryDoubleTap != null) widget.onEntryDoubleTap(entry);
                     }
-                    manager.entries.forEach((entry) => print(entry.toString()));
                   },
                   child: GestureDetector(
                     onLongPressStart: (details) {
