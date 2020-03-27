@@ -10,10 +10,10 @@ import 'package:provider/provider.dart';
 
 import 'date_container.dart';
 
-class Planner extends StatefulWidget {
+class Planner<T> extends StatefulWidget {
   final Function(int day, int hour, int minute, ManagerProvider manger) onPlannerDoubleTap;
-  final Function(PlannerEntry) onEntryDoubleTap;
-  final Function(PlannerEntry) onEntryChanged;
+  final Function(PlannerEntry<T>) onEntryDoubleTap;
+  final Function(PlannerEntry<T>) onEntryChanged;
 
   Planner({Key key, this.onEntryChanged, this.onEntryDoubleTap, this.onPlannerDoubleTap}) : super(key: key);
 
