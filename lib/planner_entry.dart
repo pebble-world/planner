@@ -9,7 +9,7 @@ enum DragType {
   none,
 }
 
-class PlannerEntry {
+class PlannerEntry<T> {
   int column;
   int hour;
   int minutes;
@@ -20,7 +20,7 @@ class PlannerEntry {
   String title;
   String content;
 
-  dynamic entity;
+  T entity;
 
   Rect canvasRect;
   TextPainter titlePainter;
