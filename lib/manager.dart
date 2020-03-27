@@ -5,20 +5,15 @@ import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 
 class ManagerProvider with ChangeNotifier {
-
-  ManagerProvider(
-      {@required this.minHour,
-        @required this.maxHour,
-        @required this.labels,
-        @required this.entries}) {
-    _canvasWidth = blockWidth * labels.length;
+  ManagerProvider({@required this.minHour, @required this.maxHour, @required this.colums, @required this.entries}) {
+    _canvasWidth = blockWidth * colums.length;
     _canvasHeight = blockHeight * (maxHour - minHour);
     entries.forEach((entry) {
       entry.createPainters(minHour);
     });
   }
 
-  List<String> labels;
+  List<String> colums;
   int minHour;
   int maxHour;
   List<PlannerEntry> entries;
@@ -60,8 +55,8 @@ class ManagerProvider with ChangeNotifier {
   PlannerDatePos getPlannerDatePos(Offset position) {
     Offset canvasPos = getCanvasPosition(position - eventsPainterOffset);
     PlannerDatePos result = new PlannerDatePos();
-    result.day = (canvasPos.dx / blockWidth).floor();
-    result.hour = minHour + (canvasPos.dy / 40).floor();
+    result.column = (canvasPos.dx / blockWidth).floor();
+    result.hour = minHour + (canvasPos.dy / blockHeight).floor();
     result.minutes = ((canvasPos.dy.toInt() % blockHeight) / 10).floor() * 15;
     print("zoom $_zoom");
     return result;
@@ -70,25 +65,25 @@ class ManagerProvider with ChangeNotifier {
   void setSize(double width, double height) {
     this._screenWidth = width;
     this._screenHeight = height;
-    _scale = this._screenWidth / (200 * labels.length);
+    _scale = this._screenWidth / (blockWidth * colums.length);
     _zoom = _screenHeight / _canvasHeight / _scale;
     debugPrint('scale to: ${_scale.toString()}');
     debugPrint('_zoom to: ${_zoom.toString()}');
   }
 
   Offset getScreenPosition(Offset canvasPos) {
-    return Offset( canvasPos.dx * _scale ,  canvasPos.dy * _scale * _zoom);
+    return Offset(canvasPos.dx * _scale, canvasPos.dy * _scale * _zoom);
   }
 
   Offset getCanvasPosition(Offset screenPos) {
-    return Offset((screenPos.dx ) / _scale, (screenPos.dy ) / _scale / _zoom);
+    return Offset((screenPos.dx) / _scale, (screenPos.dy) / _scale / _zoom);
   }
 
-  num getScale(){
+  num getScale() {
     return _scale;
   }
 
-  void redraw(){
+  void redraw() {
     notifyListeners();
   }
 }

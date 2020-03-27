@@ -24,7 +24,7 @@ class Lines {
     // vertical lines: drawn after each day
     Offset vstart = Offset(manager.blockWidth.toDouble(), 0);
     Offset vend = Offset(manager.blockWidth.toDouble(), manager.blockHeight.toDouble() * 24);
-    for (int i = 0; i < manager.labels.length; i++) {
+    for (int i = 0; i < manager.colums.length; i++) {
       vlines.add(Line(start: vstart, end: vend, manager: manager));
       vstart = vstart.translate(manager.blockWidth.toDouble(), 0);
       vend = vend.translate(manager.blockWidth.toDouble(), 0);
@@ -35,7 +35,7 @@ class Lines {
 
     // this is the position for the first line
     Offset hstart = Offset(0, step);
-    Offset hend = Offset((manager.blockWidth.toDouble() * (manager.labels.length)), step);
+    Offset hend = Offset((manager.blockWidth.toDouble() * (manager.colums.length)), step);
     int lines = (manager.maxHour - manager.minHour) * 4;
 
     for (int i = 0; i < lines; i++) {
@@ -44,8 +44,8 @@ class Lines {
       //half hour
       if ((i) % 4 == 0) {
         start = 0;
-      //30Minutes
-      } else if ((i) % 2 == 0 ) {
+        //30Minutes
+      } else if ((i) % 2 == 0) {
         //start = -50;
         //15 Minutes
       } else {
@@ -63,7 +63,6 @@ class Lines {
     vlines.forEach((line) {
       line.draw(canvas, vpaint);
     });
-
 
     // .. and set the color for this line
     Paint div2paint = Paint()

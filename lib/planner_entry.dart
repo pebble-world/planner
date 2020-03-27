@@ -9,14 +9,13 @@ enum DragType {
 }
 
 class PlannerEntry {
-  int day;
+  int column;
   int hour;
   int minutes;
   int duration;
   int minHour;
 
-  Paint fillPaint;
-  Paint strokePaint;
+  int resourceId;
   Color color;
   Color _origColor;
 
@@ -26,16 +25,19 @@ class PlannerEntry {
   int customer;
   String customerName;
   List<int> patients;
+
   Rect canvasRect;
   TextPainter titlePainter;
   TextPainter contentPainter;
+  Paint fillPaint;
+  Paint strokePaint;
 
   Offset dragStartPos;
   Offset dragOffset;
   DragType dragType = DragType.none;
 
   PlannerEntry(
-      {@required this.day,
+      {@required this.column,
       @required this.hour,
       this.title,
       this.content,
@@ -50,17 +52,17 @@ class PlannerEntry {
 
   void createPainters(int minHour) {
     this.minHour = minHour;
-    Offset a = Offset(day * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
+    Offset a = Offset(column * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
     canvasRect = Rect.fromPoints(a, b);
 
     if (title != null) {
-      var span = TextSpan(text: title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.red));
+      var span = TextSpan(text: title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.black));
       titlePainter = TextPainter(text: span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
       titlePainter.maxLines = 1;
     }
     if (content != null) {
-      var span = TextSpan(text: content, style: TextStyle(fontSize: 8));
+      var span = TextSpan(text: content, style: TextStyle(fontSize: 8, color: Colors.black));
       contentPainter = TextPainter(text: span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
     }
   }
@@ -138,7 +140,7 @@ class PlannerEntry {
       int newDay = ((canvasRect.topLeft.dx + dragOffset.dx) / 200.0).round();
       // 10 pixels is 15 minutes
       double newHour = (((canvasRect.topLeft.dy + dragOffset.dy) / 10.0).round() / 4) + minHour;
-      day = newDay;
+      column = newDay;
       hour = newHour.floor();
       minutes = ((newHour - newHour.floor()) * 60).floor();
     } else if (dragType == DragType.topHandle) {
@@ -155,7 +157,7 @@ class PlannerEntry {
       duration = 15;
     }
 
-    Offset a = Offset(day * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
+    Offset a = Offset(column * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
     canvasRect = Rect.fromPoints(a, b);
 
@@ -201,6 +203,6 @@ class PlannerEntry {
 
   @override
   String toString() {
-    return 'PlannerEntry{day: $day, hour: $hour, minutes: $minutes, duration: $duration, minHour: $minHour, fillPaint: $fillPaint, strokePaint: $strokePaint, color: $color, title: $title, content: $content, canvasRect: $canvasRect, titlePainter: $titlePainter, contentPainter: $contentPainter, dragStartPos: $dragStartPos, dragOffset: $dragOffset, dragType: $dragType}';
+    return 'PlannerEntry{day: $column, hour: $hour, minutes: $minutes, duration: $duration, minHour: $minHour, fillPaint: $fillPaint, strokePaint: $strokePaint, color: $color, title: $title, content: $content, canvasRect: $canvasRect, titlePainter: $titlePainter, contentPainter: $contentPainter, dragStartPos: $dragStartPos, dragOffset: $dragOffset, dragType: $dragType}';
   }
 }

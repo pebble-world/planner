@@ -57,15 +57,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-
     config = Config();
     //Days
     config.setLabels(3);
 
     entries = List<PlannerEntry>();
-    entries.add(PlannerEntry(day: 0, hour: 12, title: 'entry 1', content: 'some content to show in this entry', color: Colors.blue));
+    entries.add(PlannerEntry(column: 0, hour: 12, title: 'entry 1', content: 'some content to show in this entry', color: Colors.blue));
     entries.add(PlannerEntry(
-        day: 1,
+        column: 1,
         hour: 11,
         duration: 180,
         title: 'entry 2 is a bit longer and does not fit inside its box',
@@ -74,15 +73,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
     return MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (context) => ManagerProvider(
-            labels: config.labels,
-            minHour: config.minHour,
-            maxHour: config.maxHour,
-            entries: entries,
-          )),
+          ChangeNotifierProvider(
+              create: (context) => ManagerProvider(
+                    colums: config.labels,
+                    minHour: config.minHour,
+                    maxHour: config.maxHour,
+                    entries: entries,
+                  )),
         ],
         child: Scaffold(
-      body: Planner(
+            body: Planner(
           onEntryDoubleTap: onEntryDoubleTap,
           onPlannerDoubleTap: onPlannerDoubleTap,
           onEntryChanged: onEntryChanged,
@@ -119,7 +119,7 @@ class _MyHomePageState extends State<MyHomePage> {
     PlannerEntry entry = PlannerEntry(
       title: 'new planner entry',
       content: 'some content explaining what this is about',
-      day: day,
+      column: day,
       hour: hour,
       minutes: minute,
       duration: 30, // minutes

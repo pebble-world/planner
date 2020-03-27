@@ -87,7 +87,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     var entry = manager.getPlannerEntry(position.global);
                     if (entry == null) {
                       PlannerDatePos pos = manager.getPlannerDatePos(position.global);
-                      if (widget.onPlannerDoubleTap != null) widget.onPlannerDoubleTap(pos.day, pos.hour, pos.minutes, manager);
+                      if (widget.onPlannerDoubleTap != null) widget.onPlannerDoubleTap(pos.column, pos.hour, pos.minutes, manager);
                     } else {
                       if (widget.onEntryDoubleTap != null) widget.onEntryDoubleTap(entry);
                     }
