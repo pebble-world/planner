@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:planner/lines.dart';
 import 'package:planner/manager.dart';
 import 'package:planner/planner_entry.dart';
-import 'package:vibration/vibration.dart';
 
 class EventsPainter extends CustomPainter {
   var _lines;
@@ -21,7 +20,7 @@ class EventsPainter extends CustomPainter {
     _lines.draw(canvas);
 
     if (manager.touchPos == null && draggedEntry != null) {
-      draggedEntry.endDrag();
+      draggedEntry.endDrag(manager);
       if (onEntryChanged != null) {
         onEntryChanged(draggedEntry);
       }

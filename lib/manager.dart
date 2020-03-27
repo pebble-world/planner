@@ -5,7 +5,8 @@ import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 
 class ManagerProvider with ChangeNotifier {
-  ManagerProvider({@required this.minHour, @required this.maxHour, @required this.colums, @required this.entries}) {
+  ManagerProvider(
+      {@required this.minHour, @required this.maxHour, @required this.colums, @required this.entries, @required this.startDate}) {
     _canvasWidth = blockWidth * colums.length;
     _canvasHeight = blockHeight * (maxHour - minHour);
     entries.forEach((entry) {
@@ -13,7 +14,13 @@ class ManagerProvider with ChangeNotifier {
     });
   }
 
+  DateTime startDate = DateTime.now();
+  //true => resourceView: all columns are the same day
+  //false => WeekView: Date = Startdate + index
+  bool resourceView = true;
+
   List<String> colums;
+  DateTime date;
   int minHour;
   int maxHour;
   List<PlannerEntry> entries;
@@ -65,7 +72,7 @@ class ManagerProvider with ChangeNotifier {
   void setSize(double width, double height) {
     this._screenWidth = width;
     this._screenHeight = height;
-    _scale = this._screenWidth / (blockWidth * colums.length);
+    _scale = this._screenWidth / _canvasWidth;
     _zoom = _screenHeight / _canvasHeight / _scale;
     debugPrint('scale to: ${_scale.toString()}');
     debugPrint('_zoom to: ${_zoom.toString()}');

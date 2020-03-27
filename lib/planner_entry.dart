@@ -9,15 +9,14 @@ enum DragType {
 }
 
 class PlannerEntry {
-  DateTime day;
   int column;
+  DateTime day;
   int hour;
   int minutes;
   int duration;
   int minHour;
   int resourceId;
   Color color;
-  Color _origColor;
 
   String title;
   String content;
@@ -46,11 +45,11 @@ class PlannerEntry {
       this.duration = 30,
       this.customer,
       this.customerName}) {
-    this.color = this.color.withAlpha(150);
-    this._origColor = this.color;
+    this.color = this.color;
   }
 
   void createPainters(int minHour) {
+    color = color.withAlpha(150);
     this.minHour = minHour;
     Offset a = Offset(column * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
@@ -126,7 +125,7 @@ class PlannerEntry {
     } else {
       dragType = DragType.body;
     }
-    color = _origColor.withAlpha(50);
+    color = color.withAlpha(50);
     dragStartPos = pos;
     dragOffset = Offset.zero;
   }
@@ -135,7 +134,7 @@ class PlannerEntry {
     dragOffset = pos - dragStartPos;
   }
 
-  void endDrag() {
+  void endDrag(ManagerProvider manager) {
     if (dragType == DragType.body) {
       int newDay = ((canvasRect.topLeft.dx + dragOffset.dx) / 200.0).round();
       // 10 pixels is 15 minutes
@@ -152,9 +151,19 @@ class PlannerEntry {
     } else if (dragType == DragType.bottomHandle) {
       duration += (dragOffset.dy / 10.0).round() * 15;
     }
-    color = _origColor;
+    //Reset Color
+    color = color.withAlpha(150);
+
+    //Min duration is 15 Minutes
     if (duration < 15) {
       duration = 15;
+    }
+
+    //Recalculate Date
+    if (manager.resourceView) {
+      day = manager.startDate;
+    } else {
+      day = manager.startDate.add(Duration(days: column));
     }
 
     Offset a = Offset(column * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
