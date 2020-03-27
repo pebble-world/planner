@@ -9,12 +9,12 @@ enum DragType {
 }
 
 class PlannerEntry {
+  DateTime day;
   int column;
   int hour;
   int minutes;
   int duration;
   int minHour;
-
   int resourceId;
   Color color;
   Color _origColor;
