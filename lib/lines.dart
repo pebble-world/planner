@@ -24,7 +24,7 @@ class Lines {
     // vertical lines: drawn after each day
     Offset vstart = Offset(manager.blockWidth.toDouble(), 0);
     Offset vend = Offset(manager.blockWidth.toDouble(), manager.blockHeight.toDouble() * 24);
-    for (int i = 0; i < manager.colums.length; i++) {
+    for (int i = 0; i < manager.config.colums.length; i++) {
       vlines.add(Line(start: vstart, end: vend, manager: manager));
       vstart = vstart.translate(manager.blockWidth.toDouble(), 0);
       vend = vend.translate(manager.blockWidth.toDouble(), 0);
@@ -35,8 +35,8 @@ class Lines {
 
     // this is the position for the first line
     Offset hstart = Offset(0, step);
-    Offset hend = Offset((manager.blockWidth.toDouble() * (manager.colums.length)), step);
-    int lines = (manager.maxHour - manager.minHour) * 4;
+    Offset hend = Offset((manager.blockWidth.toDouble() * (manager.config.colums.length)), step);
+    int lines = (manager.config.maxHour - manager.config.minHour) * 4;
 
     for (int i = 0; i < lines; i++) {
       hlines.add(Line(start: hstart, end: hend, manager: manager));

@@ -1,28 +1,20 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:planner/config.dart';
 import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 
 class ManagerProvider with ChangeNotifier {
-  ManagerProvider(
-      {@required this.minHour, @required this.maxHour, @required this.colums, @required this.entries, @required this.startDate}) {
-    _canvasWidth = blockWidth * colums.length;
-    _canvasHeight = blockHeight * (maxHour - minHour);
+  ManagerProvider({@required this.entries, @required this.config}) {
+    _canvasWidth = blockWidth * config.colums.length;
+    _canvasHeight = blockHeight * (config.maxHour - config.minHour);
     entries.forEach((entry) {
-      entry.createPainters(minHour);
+      entry.createPainters(config);
     });
   }
 
-  DateTime startDate = DateTime.now();
-  //true => resourceView: all columns are the same day
-  //false => WeekView: Date = Startdate + index
-  bool resourceView = true;
-
-  List<String> colums;
-  DateTime date;
-  int minHour;
-  int maxHour;
+  Config config;
   List<PlannerEntry> entries;
 
   int blockWidth = 200;
@@ -63,7 +55,7 @@ class ManagerProvider with ChangeNotifier {
     Offset canvasPos = getCanvasPosition(position - eventsPainterOffset);
     PlannerDatePos result = new PlannerDatePos();
     result.column = (canvasPos.dx / blockWidth).floor();
-    result.hour = minHour + (canvasPos.dy / blockHeight).floor();
+    result.hour = config.minHour + (canvasPos.dy / blockHeight).floor();
     result.minutes = ((canvasPos.dy.toInt() % blockHeight) / 10).floor() * 15;
     print("zoom $_zoom");
     return result;

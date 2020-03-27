@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:planner/config.dart';
 import 'package:planner/manager.dart';
 
 enum DragType {
@@ -10,20 +11,16 @@ enum DragType {
 
 class PlannerEntry {
   int column;
-  DateTime day;
   int hour;
   int minutes;
   int duration;
-  int minHour;
   int resourceId;
   Color color;
 
   String title;
   String content;
 
-  int customer;
-  String customerName;
-  List<int> patients;
+  dynamic entity;
 
   Rect canvasRect;
   TextPainter titlePainter;
@@ -40,18 +37,17 @@ class PlannerEntry {
       @required this.hour,
       this.title,
       this.content,
+      this.entity,
       @required this.color,
       this.minutes = 0,
-      this.duration = 30,
-      this.customer,
-      this.customerName}) {
-    this.color = this.color;
-  }
+      this.duration = 30});
 
-  void createPainters(int minHour) {
+  //// Recalculates the Entry Position
+  void createPainters(Config config) {
+    //Calculate Column
+
     color = color.withAlpha(150);
-    this.minHour = minHour;
-    Offset a = Offset(column * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
+    Offset a = Offset(column * 200.0, (hour - config.minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
     canvasRect = Rect.fromPoints(a, b);
 
@@ -138,12 +134,12 @@ class PlannerEntry {
     if (dragType == DragType.body) {
       int newDay = ((canvasRect.topLeft.dx + dragOffset.dx) / 200.0).round();
       // 10 pixels is 15 minutes
-      double newHour = (((canvasRect.topLeft.dy + dragOffset.dy) / 10.0).round() / 4) + minHour;
+      double newHour = (((canvasRect.topLeft.dy + dragOffset.dy) / 10.0).round() / 4) + manager.config.minHour;
       column = newDay;
       hour = newHour.floor();
       minutes = ((newHour - newHour.floor()) * 60).floor();
     } else if (dragType == DragType.topHandle) {
-      double newHour = (((canvasRect.topLeft.dy + dragOffset.dy) / 10.0).round() / 4) + minHour;
+      double newHour = (((canvasRect.topLeft.dy + dragOffset.dy) / 10.0).round() / 4) + manager.config.minHour;
       int newMinutes = ((newHour - newHour.floor()) * 60).floor();
       duration += ((hour - newHour.floor()) * 60) - (newMinutes - minutes);
       hour = newHour.floor();
@@ -159,14 +155,7 @@ class PlannerEntry {
       duration = 15;
     }
 
-    //Recalculate Date
-    if (manager.resourceView) {
-      day = manager.startDate;
-    } else {
-      day = manager.startDate.add(Duration(days: column));
-    }
-
-    Offset a = Offset(column * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
+    Offset a = Offset(column * 200.0, (hour - manager.config.minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
     canvasRect = Rect.fromPoints(a, b);
 
@@ -208,10 +197,5 @@ class PlannerEntry {
         }
     }
     return result;
-  }
-
-  @override
-  String toString() {
-    return 'PlannerEntry{day: $column, hour: $hour, minutes: $minutes, duration: $duration, minHour: $minHour, fillPaint: $fillPaint, strokePaint: $strokePaint, color: $color, title: $title, content: $content, canvasRect: $canvasRect, titlePainter: $titlePainter, contentPainter: $contentPainter, dragStartPos: $dragStartPos, dragOffset: $dragOffset, dragType: $dragType}';
   }
 }

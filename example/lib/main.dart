@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:planner/config.dart';
 import 'package:planner/manager.dart';
 import 'package:planner/planner.dart';
 import 'package:provider/provider.dart';
-
-import 'Config.dart';
 
 void main() {
   //debugPaintSizeEnabled=true;
@@ -59,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     config = Config();
     //Days
-    config.setLabels(3);
+    config.colums = {1: "Peter", 2: "Michael"};
 
     entries = List<PlannerEntry>();
     entries.add(PlannerEntry(column: 0, hour: 12, title: 'entry 1', content: 'some content to show in this entry', color: Colors.blue));
@@ -75,9 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
         providers: [
           ChangeNotifierProvider(
               create: (context) => ManagerProvider(
-                    colums: config.labels,
-                    minHour: config.minHour,
-                    maxHour: config.maxHour,
+                    config: config,
                     entries: entries,
                   )),
         ],
@@ -125,7 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
       duration: 30, // minutes
       color: Colors.red,
     );
-    entry.createPainters(config.minHour);
+    entry.createPainters(config);
     manager.entries.add(entry);
     manager.redraw();
   }
