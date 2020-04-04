@@ -7,8 +7,6 @@ import 'package:planner/planner_entry.dart';
 
 class ManagerProvider with ChangeNotifier {
   ManagerProvider({@required List<PlannerEntry> entries, @required this.config}) {
-    _canvasWidth = blockWidth * config.colums.length;
-    _canvasHeight = blockHeight * (config.maxHour - config.minHour);
     updateEntries(entries);
   }
 
@@ -18,14 +16,18 @@ class ManagerProvider with ChangeNotifier {
 
   void updateEntries(List<PlannerEntry> entries){
     this._entries = entries;
+    _canvasWidth = blockWidth * config.colums.length;
+    _canvasHeight = blockHeight * (config.maxHour - config.minHour);
     entries.forEach((entry) {
       entry.createPainters(config);
     });
     notifyListeners();
   }
   void addEntry(PlannerEntry entry){
-    entry.createPainters(config);
     _entries.add(entry);
+    _canvasWidth = blockWidth * config.colums.length;
+    _canvasHeight = blockHeight * (config.maxHour - config.minHour);
+    entry.createPainters(config);
     notifyListeners();
   }
 
