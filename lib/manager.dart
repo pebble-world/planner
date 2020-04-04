@@ -11,11 +11,11 @@ class ManagerProvider with ChangeNotifier {
   }
 
   Config config;
-  List<PlannerEntry> _entries;
-  List<PlannerEntry> get entries => _entries;
+  Map<UniqueKey, PlannerEntry> _entries;
+  List<PlannerEntry> get entries => _entries.entries.map((e) => e.value).toList();
 
-  void updateEntries(List<PlannerEntry> entries){
-    this._entries = entries;
+  void updateEntries(List<PlannerEntry> entries) {
+    this._entries =  Map.fromIterable(entries, key: (e) => e.key, value: (e) => e);
     _canvasWidth = blockWidth * config.colums.length;
     _canvasHeight = blockHeight * (config.maxHour - config.minHour);
     entries.forEach((entry) {
@@ -23,8 +23,14 @@ class ManagerProvider with ChangeNotifier {
     });
     notifyListeners();
   }
-  void addEntry(PlannerEntry entry){
-    _entries.add(entry);
+
+  void addEntry(PlannerEntry entry) {
+    _entries.update(
+      entry.key,
+      // You can ignore the incoming parameter if you want to always update the value even if it is already in the map
+      (existingValue) => entry,
+      ifAbsent: () => entry,
+    );
     _canvasWidth = blockWidth * config.colums.length;
     _canvasHeight = blockHeight * (config.maxHour - config.minHour);
     entry.createPainters(config);
@@ -57,9 +63,9 @@ class ManagerProvider with ChangeNotifier {
   PlannerEntry getPlannerEntry(Offset position) {
     Offset canvasPos = getCanvasPosition(position - eventsPainterOffset);
     PlannerEntry result;
-    _entries.forEach((entry) {
-      if (entry.canvasRect.contains(canvasPos)) {
-        result = entry;
+    _entries.entries.forEach((entry) {
+      if (entry.value.canvasRect.contains(canvasPos)) {
+        result = entry.value;
       }
     });
     return result;

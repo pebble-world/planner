@@ -10,6 +10,7 @@ enum DragType {
 }
 
 class PlannerEntry<T> {
+  UniqueKey key = UniqueKey();
   int column;
   int hour;
   int minutes;

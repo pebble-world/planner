@@ -30,13 +30,13 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
   void afterFirstLayout(BuildContext context) {
     //Calculate Calendar Position
     final RenderBox eventBox = _keyEventPainter.currentContext.findRenderObject();
-    Provider.of<ManagerProvider>(context, listen: false).eventsPainterOffset = eventBox.localToGlobal(Offset.zero);
+    manager.eventsPainterOffset = eventBox.localToGlobal(Offset.zero);
     //print('offset: ${manager.eventsPainterOffset}');
   }
 
   @override
   Widget build(BuildContext context) {
-    final manager = Provider.of<ManagerProvider>(context);
+    manager = Provider.of<ManagerProvider>(context);
     print("redraw calendar");
     return Column(
       children: [
