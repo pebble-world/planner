@@ -37,6 +37,7 @@ class PlannerEntry<T> {
       {@required this.column,
       @required this.hour,
       @required this.color,
+      this.key,
       this.title,
       this.content,
       this.entity,
