@@ -35,10 +35,10 @@ class PlannerEntry<T> {
   PlannerEntry(
       {@required this.column,
       @required this.hour,
+      @required this.color,
       this.title,
       this.content,
       this.entity,
-      @required this.color,
       this.minutes = 0,
       this.duration = 30});
 

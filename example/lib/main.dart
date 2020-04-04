@@ -58,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     config = Config();
     //Days
-    config.colums = {1: "Peter", 2: "Michael"};
+    config.colums = {1: "Peter", 2: "Michael", 3: "Esther"};
 
     entries = List<PlannerEntry>();
     entries.add(PlannerEntry(column: 0, hour: 12, title: 'entry 1', content: 'some content to show in this entry', color: Colors.blue));
@@ -86,14 +86,16 @@ class _MyHomePageState extends State<MyHomePage> {
         )));
   }
 
-  void onEntryChanged(PlannerEntry entry) {
+  void onEntryChanged(PlannerEntry entry, ManagerProvider manager) {
     print('entry changed');
+      
+
     // the argument is the changed entry
     // This method should be used if you need extra checks on the
     // new position and save them to a database
   }
 
-  void onEntryDoubleTap(PlannerEntry entry) {
+  void onEntryDoubleTap(PlannerEntry entry, ManagerProvider manager) {
     // this should probably provide a way to change the
     // event's content
     showDialog(
@@ -111,19 +113,22 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   // minutes will be rounded according to planner grid. Can be 0, 15, 30 or 45
-  void onPlannerDoubleTap(int day, int hour, int minute, ManagerProvider manager) {
-    print('day: $day hour: $hour minute: $minute');
-    PlannerEntry entry = PlannerEntry(
-      title: 'new planner entry',
-      content: 'some content explaining what this is about',
-      column: day,
-      hour: hour,
-      minutes: minute,
-      duration: 30, // minutes
-      color: Colors.red,
-    );
-    entry.createPainters(config);
-    manager.entries.add(entry);
-    manager.redraw();
+  void onPlannerDoubleTap(PlannerEntry entry, ManagerProvider manager) {
+    entry.title = 'DemoTitel';
+    entry.content = 'DemoContent';
+    manager.addEntry(entry);
+    onEntryChanged(entry, manager);
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(title: Text(entry.title), content: Text(entry.content), actions: [
+            FlatButton(
+              child: Text('Ok'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            )
+          ]);
+        });
   }
 }

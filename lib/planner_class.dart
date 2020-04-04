@@ -11,9 +11,9 @@ import 'package:provider/provider.dart';
 import 'date_container.dart';
 
 class Planner<T> extends StatefulWidget {
-  final Function(int day, int hour, int minute, ManagerProvider manger) onPlannerDoubleTap;
-  final Function(PlannerEntry<T>) onEntryDoubleTap;
-  final Function(PlannerEntry<T>) onEntryChanged;
+  final Function(PlannerEntry<T>, ManagerProvider manager) onPlannerDoubleTap;
+  final Function(PlannerEntry<T>, ManagerProvider manager)  onEntryDoubleTap;
+  final Function(PlannerEntry<T>, ManagerProvider manager) onEntryChanged;
 
   Planner({Key key, this.onEntryChanged, this.onEntryDoubleTap, this.onPlannerDoubleTap}) : super(key: key);
 
@@ -87,9 +87,15 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     var entry = manager.getPlannerEntry(position.global);
                     if (entry == null) {
                       PlannerDatePos pos = manager.getPlannerDatePos(position.global);
-                      if (widget.onPlannerDoubleTap != null) widget.onPlannerDoubleTap(pos.column, pos.hour, pos.minutes, manager);
+                      final entry = PlannerEntry(
+                        column: pos.column,
+                        hour: pos.hour,
+                        minutes: pos.minutes,
+                        color: Colors.red,
+                      );
+                      if (widget.onPlannerDoubleTap != null) widget.onPlannerDoubleTap(entry, manager);
                     } else {
-                      if (widget.onEntryDoubleTap != null) widget.onEntryDoubleTap(entry);
+                      if (widget.onEntryDoubleTap != null) widget.onEntryDoubleTap(entry, manager);
                     }
                   },
                   child: GestureDetector(

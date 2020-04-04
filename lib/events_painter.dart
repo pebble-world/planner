@@ -7,7 +7,7 @@ class EventsPainter extends CustomPainter {
   var _lines;
   final ManagerProvider manager;
   static PlannerEntry draggedEntry;
-  final Function(PlannerEntry) onEntryChanged;
+  final Function(PlannerEntry, ManagerProvider) onEntryChanged;
 
   EventsPainter({@required this.manager, @required this.onEntryChanged}) {
     _lines = Lines(manager: manager);
@@ -22,7 +22,7 @@ class EventsPainter extends CustomPainter {
     if (manager.touchPos == null && draggedEntry != null) {
       draggedEntry.endDrag(manager);
       if (onEntryChanged != null) {
-        onEntryChanged(draggedEntry);
+        onEntryChanged(draggedEntry, manager);
       }
       draggedEntry = null;
       debugPrint('drag removed');

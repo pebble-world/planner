@@ -6,16 +6,28 @@ import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 
 class ManagerProvider with ChangeNotifier {
-  ManagerProvider({@required this.entries, @required this.config}) {
+  ManagerProvider({@required List<PlannerEntry> entries, @required this.config}) {
     _canvasWidth = blockWidth * config.colums.length;
     _canvasHeight = blockHeight * (config.maxHour - config.minHour);
-    entries.forEach((entry) {
-      entry.createPainters(config);
-    });
+    updateEntries(entries);
   }
 
   Config config;
-  List<PlannerEntry> entries;
+  List<PlannerEntry> _entries;
+  List<PlannerEntry> get entries => _entries;
+
+  void updateEntries(List<PlannerEntry> entries){
+    this._entries = entries;
+    entries.forEach((entry) {
+      entry.createPainters(config);
+    });
+    notifyListeners();
+  }
+  void addEntry(PlannerEntry entry){
+    entry.createPainters(config);
+    _entries.add(entry);
+    notifyListeners();
+  }
 
   int blockWidth = 200;
   int blockHeight = 40;
@@ -43,7 +55,7 @@ class ManagerProvider with ChangeNotifier {
   PlannerEntry getPlannerEntry(Offset position) {
     Offset canvasPos = getCanvasPosition(position - eventsPainterOffset);
     PlannerEntry result;
-    entries.forEach((entry) {
+    _entries.forEach((entry) {
       if (entry.canvasRect.contains(canvasPos)) {
         result = entry;
       }
