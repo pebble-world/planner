@@ -6,18 +6,24 @@ import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 
 class ManagerProvider with ChangeNotifier {
-  ManagerProvider({@required List<PlannerEntry> entries, @required this.config}) {
+  ManagerProvider({@required List<PlannerEntry> entries, @required config}) {
     updateEntries(entries);
+    updateConfig(config);
   }
 
-  Config config;
+  Config _config;
+  Config get config => _config;
+  void updateConfig(Config config){
+    this._config = config;
+    _canvasWidth = blockWidth * config.colums.length;
+    _canvasHeight = blockHeight * (config.maxHour - config.minHour);
+  }
+
   Map<UniqueKey, PlannerEntry> _entries;
   List<PlannerEntry> get entries => _entries.entries.map((e) => e.value).toList();
 
   void updateEntries(List<PlannerEntry> entries) {
     this._entries =  Map.fromIterable(entries, key: (e) => e.key, value: (e) => e);
-    _canvasWidth = blockWidth * config.colums.length;
-    _canvasHeight = blockHeight * (config.maxHour - config.minHour);
     entries.forEach((entry) {
       entry.createPainters(config);
     });
@@ -31,8 +37,6 @@ class ManagerProvider with ChangeNotifier {
       (existingValue) => entry,
       ifAbsent: () => entry,
     );
-    _canvasWidth = blockWidth * config.colums.length;
-    _canvasHeight = blockHeight * (config.maxHour - config.minHour);
     entry.createPainters(config);
     notifyListeners();
   }
