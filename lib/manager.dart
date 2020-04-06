@@ -7,8 +7,8 @@ import 'package:planner/planner_entry.dart';
 
 class ManagerProvider with ChangeNotifier {
   ManagerProvider({@required List<PlannerEntry> entries, @required config}) {
-    updateEntries(entries);
     updateConfig(config);
+    updateEntries(entries);
   }
 
   Config _config;
@@ -24,7 +24,7 @@ class ManagerProvider with ChangeNotifier {
 
   void updateEntries(List<PlannerEntry> entries) {
     this._entries =  Map.fromIterable(entries, key: (e) => e.key, value: (e) => e);
-    entries.forEach((entry) {
+    _entries.values.forEach((entry) {
       entry.createPainters(config);
     });
     notifyListeners();
