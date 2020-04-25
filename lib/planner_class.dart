@@ -12,7 +12,7 @@ import 'date_container.dart';
 
 class Planner<T> extends StatefulWidget {
   final Function(PlannerEntry<T>, ManagerProvider manager) onPlannerDoubleTap;
-  final Function(PlannerEntry<T>, ManagerProvider manager)  onEntryDoubleTap;
+  final Function(PlannerEntry<T>, ManagerProvider manager) onEntryDoubleTap;
   final Function(PlannerEntry<T>, ManagerProvider manager) onEntryChanged;
 
   Planner({Key key, this.onEntryChanged, this.onEntryDoubleTap, this.onPlannerDoubleTap}) : super(key: key);
@@ -31,7 +31,6 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
     //Calculate Calendar Position
     final RenderBox eventBox = _keyEventPainter.currentContext.findRenderObject();
     manager.eventsPainterOffset = eventBox.localToGlobal(Offset.zero);
-    //print('offset: ${manager.eventsPainterOffset}');
   }
 
   @override

@@ -13,7 +13,7 @@ class ManagerProvider with ChangeNotifier {
 
   Config _config;
   Config get config => _config;
-  void updateConfig(Config config){
+  void updateConfig(Config config) {
     this._config = config;
     _canvasWidth = blockWidth * config.colums.length;
     _canvasHeight = blockHeight * (config.maxHour - config.minHour);
@@ -23,7 +23,7 @@ class ManagerProvider with ChangeNotifier {
   List<PlannerEntry> get entries => _entries.entries.map((e) => e.value).toList();
 
   void updateEntries(List<PlannerEntry> entries) {
-    this._entries =  Map.fromIterable(entries, key: (e) => e.key, value: (e) => e);
+    this._entries = Map.fromIterable(entries, key: (e) => e.key, value: (e) => e);
     _entries.values.forEach((entry) {
       entry.createPainters(config);
     });
@@ -81,7 +81,6 @@ class ManagerProvider with ChangeNotifier {
     result.column = (canvasPos.dx / blockWidth).floor();
     result.hour = config.minHour + (canvasPos.dy / blockHeight).floor();
     result.minutes = ((canvasPos.dy.toInt() % blockHeight) / 10).floor() * 15;
-    print("zoom $_zoom");
     return result;
   }
 
@@ -90,8 +89,6 @@ class ManagerProvider with ChangeNotifier {
     this._screenHeight = height;
     _scale = this._screenWidth / _canvasWidth;
     _zoom = _screenHeight / _canvasHeight / _scale;
-    debugPrint('scale to: ${_scale.toString()}');
-    debugPrint('_zoom to: ${_zoom.toString()}');
   }
 
   Offset getScreenPosition(Offset canvasPos) {

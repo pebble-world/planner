@@ -47,8 +47,6 @@ class PlannerEntry<T> {
   //// Recalculates the Entry Position
   void createPainters(Config config) {
     //Calculate Column
-    print("createPainters $title");
-
     color = color.withAlpha(150);
     Offset a = Offset(column * 200.0, (hour - config.minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
@@ -66,7 +64,6 @@ class PlannerEntry<T> {
   }
 
   void paint(ManagerProvider manager, Canvas canvas) {
-    print("paint $title");
     fillPaint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;

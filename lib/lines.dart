@@ -20,7 +20,6 @@ class Lines {
   List<Line> vlines = List<Line>();
 
   Lines({@required this.manager}) {
-    print("lines....");
     // vertical lines: drawn after each day
     Offset vstart = Offset(manager.blockWidth.toDouble(), 0);
     Offset vend = Offset(manager.blockWidth.toDouble(), manager.blockHeight.toDouble() * 24);
