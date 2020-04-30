@@ -58,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     config = Config();
     //Days
-    config.colums = {1: "Peter", 2: "Michael", 3: "Esther"};
+    config.colums = [PlanColumn(1, "Esther", false), PlanColumn(2, "Michael", true), PlanColumn(3, "Peter", false)];
 
     entries = List<PlannerEntry>();
     entries.add(PlannerEntry(column: 0, hour: 12, title: 'entry 1', content: 'some content to show in this entry', color: Colors.blue));
@@ -88,7 +88,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void onEntryChanged(PlannerEntry entry, ManagerProvider manager) {
     print('entry changed');
-      
 
     // the argument is the changed entry
     // This method should be used if you need extra checks on the
@@ -118,7 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
     entry.content = 'DemoContent';
     manager.addEntry(entry);
     onEntryChanged(entry, manager);
-      showDialog(
+    showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(title: Text(entry.title), content: Text(entry.content), actions: [

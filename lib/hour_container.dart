@@ -5,7 +5,7 @@ class HourContainer extends StatelessWidget {
   final ManagerProvider manager;
 
   HourContainer({@required this.manager});
-  static TextStyle listTitleDefaultTextStyle = TextStyle(color: Color(0xff297fca), fontWeight: FontWeight.w600, fontSize: 20.0);
+  static TextStyle listTitleDefaultTextStyle = TextStyle(color: Color(0xff297fca), fontWeight: FontWeight.w300, fontSize: 20.0);
 
   @override
   Widget build(BuildContext context) {
