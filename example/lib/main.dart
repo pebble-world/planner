@@ -63,12 +63,14 @@ class _MyHomePageState extends State<MyHomePage> {
     entries = List<PlannerEntry>();
     entries.add(PlannerEntry(column: 0, hour: 12, title: 'entry 1', content: 'some content to show in this entry', color: Colors.blue));
     entries.add(PlannerEntry(
+        key: UniqueKey(),
         column: 1,
         hour: 11,
         duration: 180,
         title: 'entry 2 is a bit longer and does not fit inside its box',
         content: 'This is the content of entry 2. It takes up a bit more space.',
-        color: Colors.green));
+        color: Colors.green,
+        status: Colors.blueAccent));
 
     return MultiProvider(
         providers: [
@@ -113,6 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // minutes will be rounded according to planner grid. Can be 0, 15, 30 or 45
   void onPlannerDoubleTap(PlannerEntry entry, ManagerProvider manager) {
+    entry.key = UniqueKey();
     entry.title = 'DemoTitel';
     entry.content = 'DemoContent';
     manager.addEntry(entry);

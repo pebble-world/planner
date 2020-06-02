@@ -11,12 +11,19 @@ enum DragType {
 
 class PlannerEntry<T> {
   UniqueKey key = UniqueKey();
+  //Calendar Column
   int column;
+  //Entry Start Position
   int hour;
   int minutes;
   int duration;
+  //Entriy Fill Color
   int resourceId;
   Color color;
+
+  //Status Line Color
+  int statusId;
+  Color status;
 
   String title;
   String content;
@@ -41,6 +48,7 @@ class PlannerEntry<T> {
       this.title,
       this.content,
       this.entity,
+      this.status,
       this.minutes = 0,
       this.duration = 30});
 
@@ -83,6 +91,7 @@ class PlannerEntry<T> {
 
     _paintHandle(manager, canvas, rect.topLeft.translate(0, 1));
     _paintHandle(manager, canvas, rect.bottomLeft.translate(0, -1));
+    _paintStatus(manager, canvas, rect);
 
     canvas.save();
     Offset cpos = rect.topLeft;
@@ -112,6 +121,17 @@ class PlannerEntry<T> {
     Offset left = topLeft.translate(80.0, 0.0);
     Offset right = left.translate(40.0, 0.0);
     canvas.drawLine(manager.getScreenPosition(left), manager.getScreenPosition(right), handlerPaint);
+  }
+
+  void _paintStatus(ManagerProvider manager, Canvas canvas, Rect rect) {
+    if (status != null) {
+      Paint handlerPaint = Paint()
+        ..color = status
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4;
+      canvas.drawLine(manager.getScreenPosition(rect.topLeft.translate(2, 0)), manager.getScreenPosition(rect.bottomLeft.translate(2, 0)),
+          handlerPaint);
+    }
   }
 
   void startDrag(Offset pos) {
