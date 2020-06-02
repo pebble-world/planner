@@ -22,7 +22,6 @@ class PlannerEntry<T> {
   Color color;
 
   //Status Line Color
-  int statusId;
   Color status;
 
   String title;
