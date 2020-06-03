@@ -1,14 +1,12 @@
-import 'Config.dart';
-import 'Configurator.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:planner/config.dart';
+import 'package:planner/manager.dart';
 import 'package:planner/planner.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft])
-    .then((_) {
-      runApp(new MyApp());
-    });
+  //debugPaintSizeEnabled=true;
+  runApp(new MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -54,121 +52,85 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Config config;
-
   List<PlannerEntry> entries;
-
-  @override void initState() {
-    super.initState();
-    config = Config();
-    config.setLabels(5);
-
-    entries = List<PlannerEntry>();
-    entries.add(PlannerEntry(
-      day: 0,
-      hour: 12,
-      title: 'entry 1',
-      content: 'some content to show in this entry',
-      color: Colors.blue
-    ));
-    entries.add(PlannerEntry(
-      day: 1,
-      hour: 11,
-      duration: 180,
-      title: 'entry 2 is a bit longer and does not fit inside its box',
-      content: 'This is the content of entry 2. It takes up a bit more space.',
-      color: Colors.green
-    ));
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Planner Demo'),
-        actions: [
-          FlatButton.icon(
-            icon: Icon(Icons.settings, color: Colors.white,),
-            label: Text('settings', style: TextStyle(color: Colors.white),),
-            onPressed: () => {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text('Planner Configuration'),
-                    content: Configurator(config: config),
-                    actions: [
-                      new FlatButton(
-                        child: new Text('Close'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          setState(() {
-                            
-                          });
-                        },
-                      )
-                    ] 
-                  );
-                }
-              )
-            },
-          )
+    config = Config();
+    //Days
+    config.colums = [PlanColumn(1, "Esther", false), PlanColumn(2, "Michael", true), PlanColumn(3, "Peter", false)];
+
+    entries = List<PlannerEntry>();
+    entries.add(PlannerEntry(column: 0, hour: 12, title: 'entry 1', content: 'some content to show in this entry', color: Colors.blue));
+    entries.add(PlannerEntry(
+        key: UniqueKey(),
+        column: 1,
+        hour: 11,
+        duration: 180,
+        title: 'entry 2 is a bit longer and does not fit inside its box',
+        content: 'This is the content of entry 2. It takes up a bit more space.',
+        color: Colors.green,
+        status: Colors.blueAccent));
+
+    return MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+              create: (context) => ManagerProvider(
+                    config: config,
+                    entries: entries,
+                  )),
         ],
-      ),
-      body: Planner(
-        labels: config.labels,
-        minHour: config.minHour,
-        maxHour: config.maxHour,
-        entries: entries,
-        onEntryDoubleTap: onEntryDoubleTap,
-        onPlannerDoubleTap: onPlannerDoubleTap,
-        onEntryChanged: onEntryChanged,
-      ),
-    );
+        child: Scaffold(
+            body: Planner(
+          onEntryDoubleTap: onEntryDoubleTap,
+          onPlannerDoubleTap: onPlannerDoubleTap,
+          onEntryChanged: onEntryChanged,
+        )));
   }
 
-  void onEntryChanged(PlannerEntry entry) {
-    print ('entry changed');
+  void onEntryChanged(PlannerEntry entry, ManagerProvider manager) {
+    print('entry changed');
+
     // the argument is the changed entry
     // This method should be used if you need extra checks on the
     // new position and save them to a database
   }
 
-  void onEntryDoubleTap(PlannerEntry entry) {
+  void onEntryDoubleTap(PlannerEntry entry, ManagerProvider manager) {
     // this should probably provide a way to change the
     // event's content
     showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(entry.title),
-          content: Text(entry.content),
-          actions: [
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(title: Text(entry.title), content: Text(entry.content), actions: [
             FlatButton(
               child: Text('Ok'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             )
-          ]    
-        );
-      }
-    );
+          ]);
+        });
   }
 
   // minutes will be rounded according to planner grid. Can be 0, 15, 30 or 45
-  void onPlannerDoubleTap(int day, int hour, int minute) {
-    print('day: $day hour: $hour minute: $minute');
-    PlannerEntry entry = PlannerEntry(
-      title: 'new planner entry',
-      content: 'some content explaining what this is about',
-      day: day,
-      hour: hour,
-      minutes: minute,
-      duration: 60, // minutes
-      color: Colors.red,
-    );
-    setState(() {
-     entries.add(entry); 
-    });
+  void onPlannerDoubleTap(PlannerEntry entry, ManagerProvider manager) {
+    entry.key = UniqueKey();
+    entry.title = 'DemoTitel';
+    entry.content = 'DemoContent';
+    manager.addEntry(entry);
+    onEntryChanged(entry, manager);
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(title: Text(entry.title), content: Text(entry.content), actions: [
+            FlatButton(
+              child: Text('Ok'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            )
+          ]);
+        });
   }
 }

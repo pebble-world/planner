@@ -1,5 +1,5 @@
 class PlannerDatePos {
-  int day;
+  int column;
   int hour;
   int minutes;
 }

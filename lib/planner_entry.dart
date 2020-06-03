@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:planner/config.dart';
 import 'package:planner/manager.dart';
 
 enum DragType {
@@ -8,80 +9,76 @@ enum DragType {
   none,
 }
 
-class PlannerEntry {
-  int day;
+class PlannerEntry<T> {
+  UniqueKey key = UniqueKey();
+  //Calendar Column
+  int column;
+  //Entry Start Position
   int hour;
   int minutes;
   int duration;
-  int minHour;
-
-  Paint fillPaint;
-  Paint strokePaint;
+  //Entriy Fill Color
+  int resourceId;
   Color color;
+
+  //Status Line Color
+  Color status;
 
   String title;
   String content;
 
+  T entity;
+
   Rect canvasRect;
   TextPainter titlePainter;
   TextPainter contentPainter;
+  Paint fillPaint;
+  Paint strokePaint;
 
   Offset dragStartPos;
   Offset dragOffset;
   DragType dragType = DragType.none;
 
-  static Paint linePaint = Paint()
-    ..color = Colors.white
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1;
-
   PlannerEntry(
-      {@required this.day,
+      {@required this.column,
       @required this.hour,
+      @required this.color,
+      this.key,
       this.title,
       this.content,
-      @required this.color,
+      this.entity,
+      this.status,
       this.minutes = 0,
-      this.duration = 60});
+      this.duration = 30});
 
-  void createPainters(int minHour) {
-    this.minHour = minHour;
-    Offset a = Offset(
-        day * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
+  //// Recalculates the Entry Position
+  void createPainters(Config config) {
+    //Calculate Column
+    color = color.withAlpha(150);
+    Offset a = Offset(column * 200.0, (hour - config.minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
     canvasRect = Rect.fromPoints(a, b);
 
     if (title != null) {
-      var span = TextSpan(
-          text: title,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10));
-      titlePainter = TextPainter(
-          text: span,
-          textAlign: TextAlign.left,
-          textDirection: TextDirection.ltr);
+      var span = TextSpan(text: title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.black));
+      titlePainter = TextPainter(text: span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
       titlePainter.maxLines = 1;
-      titlePainter.layout(maxWidth: 190);
     }
     if (content != null) {
-      var span = TextSpan(text: content, style: TextStyle(fontSize: 8));
-      contentPainter = TextPainter(
-          text: span,
-          textAlign: TextAlign.left,
-          textDirection: TextDirection.ltr);
-      contentPainter.maxLines = 4;
-      contentPainter.layout(maxWidth: 180);
+      var span = TextSpan(text: content, style: TextStyle(fontSize: 8, color: Colors.black));
+      contentPainter = TextPainter(text: span, textAlign: TextAlign.left, textDirection: TextDirection.ltr);
     }
+  }
 
+  void paint(ManagerProvider manager, Canvas canvas) {
     fillPaint = Paint()
-      ..color = color.withAlpha(100)
+      ..color = color
       ..style = PaintingStyle.fill;
     strokePaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-  }
 
-  void paint(Manager manager, Canvas canvas) {
     Rect rect = getCurrentRect();
     Rect screenRect = Rect.fromPoints(
       manager.getScreenPosition(rect.topLeft),
@@ -91,50 +88,49 @@ class PlannerEntry {
     canvas.drawRect(screenRect, fillPaint);
     canvas.drawRect(screenRect, strokePaint);
 
-    Offset hpos = rect.topLeft;
-    _paintHandle(manager, canvas, hpos);
-    hpos = rect.bottomLeft.translate(0.0, -6.0);
-    _paintHandle(manager, canvas, hpos);
-
-    Rect clipRect = Rect.fromPoints(
-        manager.getScreenPosition(rect.topLeft.translate(2, 7)),
-        manager.getScreenPosition(rect.bottomRight.translate(-2, -7)));
+    _paintHandle(manager, canvas, rect.topLeft.translate(0, 1));
+    _paintHandle(manager, canvas, rect.bottomLeft.translate(0, -1));
+    _paintStatus(manager, canvas, rect);
 
     canvas.save();
-    canvas.clipRect(clipRect);
     Offset cpos = rect.topLeft;
-    cpos = cpos.translate(5.0, 10.0);
+    cpos = cpos.translate(5.0, 2.0);
     cpos = manager.getScreenPosition(cpos);
     if (titlePainter != null) {
+      titlePainter.layout(maxWidth: 190 * manager.getScale());
       titlePainter.paint(canvas, cpos);
       cpos = cpos.translate(0.0, 15.0);
     }
-    if (contentPainter != null) {
+    if (contentPainter != null && duration > 15) {
+      //2 lines per 15 Minutes
+      contentPainter.maxLines = ((duration - 15) ~/ 7);
+      contentPainter.layout(maxWidth: 180 * manager.getScale());
       contentPainter.paint(canvas, cpos);
     }
     canvas.restore();
   }
 
-  void _paintHandle(Manager manager, Canvas canvas, Offset topLeft) {
-    Offset bottomRight = topLeft.translate(200.0, 6.0);
-    Rect r;
-
-    r = Rect.fromPoints(
-      manager.getScreenPosition(topLeft),
-      manager.getScreenPosition(bottomRight),
-    );
-    canvas.drawRect(r, strokePaint);
+  void _paintHandle(ManagerProvider manager, Canvas canvas, Offset topLeft) {
+    Paint handlerPaint = Paint()
+      ..color = color.withAlpha(255)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
 
     // draw lines
-    Offset left = topLeft.translate(80.0, 2.0);
+    Offset left = topLeft.translate(80.0, 0.0);
     Offset right = left.translate(40.0, 0.0);
-    canvas.drawLine(manager.getScreenPosition(left),
-        manager.getScreenPosition(right), linePaint);
+    canvas.drawLine(manager.getScreenPosition(left), manager.getScreenPosition(right), handlerPaint);
+  }
 
-    left = left.translate(0.0, 2.0);
-    right = right.translate(0.0, 2.0);
-    canvas.drawLine(manager.getScreenPosition(left),
-        manager.getScreenPosition(right), linePaint);
+  void _paintStatus(ManagerProvider manager, Canvas canvas, Rect rect) {
+    if (status != null) {
+      Paint handlerPaint = Paint()
+        ..color = status
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4;
+      canvas.drawLine(manager.getScreenPosition(rect.topLeft.translate(2, 0)), manager.getScreenPosition(rect.bottomLeft.translate(2, 0)),
+          handlerPaint);
+    }
   }
 
   void startDrag(Offset pos) {
@@ -145,6 +141,7 @@ class PlannerEntry {
     } else {
       dragType = DragType.body;
     }
+    color = color.withAlpha(50);
     dragStartPos = pos;
     dragOffset = Offset.zero;
   }
@@ -153,20 +150,16 @@ class PlannerEntry {
     dragOffset = pos - dragStartPos;
   }
 
-  void endDrag() {
+  void endDrag(ManagerProvider manager) {
     if (dragType == DragType.body) {
       int newDay = ((canvasRect.topLeft.dx + dragOffset.dx) / 200.0).round();
       // 10 pixels is 15 minutes
-      double newHour =
-          (((canvasRect.topLeft.dy + dragOffset.dy) / 10.0).round() / 4) +
-              minHour;
-      day = newDay;
+      double newHour = (((canvasRect.topLeft.dy + dragOffset.dy) / 10.0).round() / 4) + manager.config.minHour;
+      column = newDay;
       hour = newHour.floor();
       minutes = ((newHour - newHour.floor()) * 60).floor();
     } else if (dragType == DragType.topHandle) {
-      double newHour =
-          (((canvasRect.topLeft.dy + dragOffset.dy) / 10.0).round() / 4) +
-              minHour;
+      double newHour = (((canvasRect.topLeft.dy + dragOffset.dy) / 10.0).round() / 4) + manager.config.minHour;
       int newMinutes = ((newHour - newHour.floor()) * 60).floor();
       duration += ((hour - newHour.floor()) * 60) - (newMinutes - minutes);
       hour = newHour.floor();
@@ -174,9 +167,15 @@ class PlannerEntry {
     } else if (dragType == DragType.bottomHandle) {
       duration += (dragOffset.dy / 10.0).round() * 15;
     }
+    //Reset Color
+    color = color.withAlpha(150);
 
-    Offset a = Offset(
-        day * 200.0, (hour - minHour) * 40.0 + ((minutes / 15).round() * 10));
+    //Min duration is 15 Minutes
+    if (duration < 15) {
+      duration = 15;
+    }
+
+    Offset a = Offset(column * 200.0, (hour - manager.config.minHour) * 40.0 + ((minutes / 15).round() * 10));
     Offset b = a.translate(200.0, duration / 60 * 40.0);
     canvasRect = Rect.fromPoints(a, b);
 
@@ -203,8 +202,7 @@ class PlannerEntry {
       case DragType.topHandle:
         {
           result = Rect.fromPoints(
-            Offset(
-                canvasRect.topLeft.dx, canvasRect.topLeft.dy + dragOffset.dy),
+            Offset(canvasRect.topLeft.dx, canvasRect.topLeft.dy + dragOffset.dy),
             canvasRect.bottomRight,
           );
           break;
@@ -213,8 +211,7 @@ class PlannerEntry {
         {
           result = Rect.fromPoints(
             canvasRect.topLeft,
-            Offset(canvasRect.bottomRight.dx,
-                canvasRect.bottomRight.dy + dragOffset.dy),
+            Offset(canvasRect.bottomRight.dx, canvasRect.bottomRight.dy + dragOffset.dy),
           );
           break;
         }

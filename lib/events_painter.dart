@@ -2,22 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:planner/lines.dart';
 import 'package:planner/manager.dart';
 import 'package:planner/planner_entry.dart';
-import 'package:vibration/vibration.dart';
 
 class EventsPainter extends CustomPainter {
   var _lines;
-  final Manager manager;
+  final ManagerProvider manager;
   static PlannerEntry draggedEntry;
-  final Function(PlannerEntry) onEntryChanged;
-
-  Paint linePaint = Paint()
-    ..color = Colors.white
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1;
+  final Function(PlannerEntry, ManagerProvider) onEntryChanged;
 
   EventsPainter({@required this.manager, @required this.onEntryChanged}) {
     _lines = Lines(manager: manager);
-
     debugPrint('EventsPainter created');
   }
 
@@ -27,19 +20,17 @@ class EventsPainter extends CustomPainter {
     _lines.draw(canvas);
 
     if (manager.touchPos == null && draggedEntry != null) {
-      draggedEntry.endDrag();
+      draggedEntry.endDrag(manager);
       if (onEntryChanged != null) {
-        onEntryChanged(draggedEntry);
+        onEntryChanged(draggedEntry, manager);
       }
       draggedEntry = null;
       debugPrint('drag removed');
     }
 
     manager.entries.forEach((entry) {
-      if (manager.touchPos != null &&
-          draggedEntry == null &&
-          entry.canvasRect.contains(manager.touchPos)) {
-        Vibration.vibrate(duration: 50);
+      if (manager.touchPos != null && draggedEntry == null && entry.canvasRect.contains(manager.touchPos)) {
+        //Vibration.vibrate(duration: 50);
         draggedEntry = entry;
         draggedEntry.startDrag(manager.touchPos);
         debugPrint('drag started');
