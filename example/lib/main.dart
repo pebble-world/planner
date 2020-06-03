@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:planner/planner.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
   SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft])
     .then((_) {
       runApp(new MyApp());

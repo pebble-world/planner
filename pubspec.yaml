@@ -11,8 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  after_layout: ^1.0.7
-  vibration: ^1.0.2
+  after_layout: ^1.0.7+2
+  vibration: ^1.2.4
   positioned_tap_detector: ^1.0.2
 
 dev_dependencies:
