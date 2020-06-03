@@ -13,7 +13,10 @@ class HourLabel {
 
   HourLabel(
       {@required this.label, @required this.position, @required this.manager}) {
-    _span = TextSpan(text: label);
+    _span = TextSpan(
+      text: label, 
+      style: TextStyle(color: Colors.white)
+    );
     _tp = TextPainter(
         text: _span,
         textAlign: TextAlign.left,

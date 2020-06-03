@@ -1,9 +1,10 @@
-import 'Config.dart';
 import 'package:flutter/material.dart';
+import 'package:planner/planner.dart';
+
 //import 'package:flutter_range_slider/flutter_range_slider.dart';
 
 class Configurator extends StatefulWidget {
-  final Config config;
+  final PlannerConfig config;
 
   Configurator({this.config});
 
@@ -54,7 +55,7 @@ class _ConfiguratorState extends State<Configurator> {
               //lowerValue: widget.config.minHour.toDouble(),
               value: widget.config.maxHour.toDouble(),
               
-              onChangeEnd: (double value) {
+              onChanged: (double value) {
                 //widget.config.minHour = lower.toInt();
                 widget.config.maxHour = value.toInt();
               },

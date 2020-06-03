@@ -8,13 +8,13 @@ class DatePainter extends CustomPainter {
 
   DatePainter({@required this.manager}) {
     double xpos = 60;
-    manager.labels.forEach((label) {
+    manager.config.labels.forEach((label) {
       _dates.add(DateLabel(
         label: label,
         position: Offset(xpos, 17),
         manager: manager,
       ));
-      xpos += manager.blockWidth;
+      xpos += manager.config.blockWidth;
     });
   }
 

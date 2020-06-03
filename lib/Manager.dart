@@ -4,48 +4,34 @@ import 'package:flutter/material.dart';
 import 'package:planner/planner_date_pos.dart';
 import 'package:planner/planner_entry.dart';
 
+import 'planner.dart';
+
 class Manager {
   Manager(
-      {@required this.blockWidth,
-      @required this.blockHeight,
-      @required this.minHour,
-      @required this.maxHour,
-      @required this.labels,
+      {@required this.config,
       @required this.entries}) {
-    _canvasWidth = blockWidth * labels.length;
-    _canvasHeight = blockHeight * (maxHour - minHour);
+    _canvasWidth = config.blockWidth * config.labels.length;
+    _canvasHeight = config.blockHeight * (config.maxHour - config.minHour);
     entries.forEach((entry) {
-      entry.createPainters(minHour);
+      entry.createPainters(config.minHour);
     });
   }
 
   void update(
-      {@required int blockWidth,
-      @required int blockHeight,
-      @required int minHour,
-      @required int maxHour,
-      @required List<String> labels,
+      {@required PlannerConfig config,
       @required List<PlannerEntry> entries}) {
-    this.blockHeight = blockHeight;
-    this.blockWidth = blockWidth;
-    this.minHour = minHour;
-    this.maxHour = maxHour;
-    this.labels = labels;
+    this.config = config;
     this.entries = entries;
-    _canvasWidth = blockWidth * labels.length;
-    _canvasHeight = blockHeight * (maxHour - minHour);
+    _canvasWidth = config.blockWidth * config.labels.length;
+    _canvasHeight = config.blockHeight * (config.maxHour - config.minHour);
     entries.forEach((entry) {
-      entry.createPainters(minHour);
+      entry.createPainters(config.minHour);
     });
   }
 
-  List<String> labels;
-  int minHour;
-  int maxHour;
+  PlannerConfig config;
   List<PlannerEntry> entries;
 
-  int blockWidth;
-  int blockHeight;
   int _canvasWidth;
   int _canvasHeight;
 
@@ -113,13 +99,13 @@ class Manager {
   PlannerDatePos getPlannerDatePos(Offset position) {
     Offset canvasPos = getCanvasPosition(position - eventsPainterOffset);
     PlannerDatePos result = new PlannerDatePos();
-    result.day = (canvasPos.dx / blockWidth).floor();
-    result.hour = minHour + (canvasPos.dy / 40).floor();
+    result.day = (canvasPos.dx / config.blockWidth).floor();
+    result.hour = config.minHour + (canvasPos.dy / 40).floor();
     // 30 and 15 minute time slots are used when zoomed in
     if (zoom > 2.25) {
-      result.minutes = ((canvasPos.dy.toInt() % blockHeight) / 10).floor() * 15;
+      result.minutes = ((canvasPos.dy.toInt() % config.blockHeight) / 10).floor() * 15;
     } else if (zoom > 1.25) {
-      result.minutes = ((canvasPos.dy.toInt() % blockHeight) / 20).floor() * 30;
+      result.minutes = ((canvasPos.dy.toInt() % config.blockHeight) / 20).floor() * 30;
     } else {
       result.minutes = 0;
     }
@@ -166,7 +152,7 @@ class Manager {
 
   void _limitVScroll() {
     double limit =
-        -(_canvasHeight * _zoom - _screenHeight - blockHeight) * _scale;
+        -(_canvasHeight * _zoom - _screenHeight - config.blockHeight) * _scale;
     if (limit >= 0 || _vScroll > 0) {
       _vScroll = 0;
     } else if (_vScroll < limit) {

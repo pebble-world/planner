@@ -21,24 +21,24 @@ class Lines {
 
   Lines({@required this.manager}) {
     // vertical lines: drawn after each day
-    Offset vstart = Offset(manager.blockWidth.toDouble(), 0);
+    Offset vstart = Offset(manager.config.blockWidth.toDouble(), 0);
     Offset vend = Offset(
-        manager.blockWidth.toDouble(), manager.blockHeight.toDouble() * 24);
-    for (int i = 0; i < manager.labels.length; i++) {
+        manager.config.blockWidth.toDouble(), manager.config.blockHeight.toDouble() * 24);
+    for (int i = 0; i < manager.config.labels.length; i++) {
       vlines.add(Line(start: vstart, end: vend, manager: manager));
-      vstart = vstart.translate(manager.blockWidth.toDouble(), 0);
-      vend = vend.translate(manager.blockWidth.toDouble(), 0);
+      vstart = vstart.translate(manager.config.blockWidth.toDouble(), 0);
+      vend = vend.translate(manager.config.blockWidth.toDouble(), 0);
     }
 
     // horizontal lines: for every 15 minutes, but only drawn if zoomed out
-    double step = manager.blockHeight.toDouble() /
+    double step = manager.config.blockHeight.toDouble() /
         4; // vSize stands for one hour, so this step is 15 minutes
 
     // this is the position for the first line
     Offset hstart = Offset(0, step);
     Offset hend =
-        Offset((manager.blockWidth.toDouble() * (manager.labels.length)), step);
-    int lines = (manager.maxHour - manager.minHour) * 4;
+        Offset((manager.config.blockWidth.toDouble() * (manager.config.labels.length)), step);
+    int lines = (manager.config.maxHour - manager.config.minHour) * 4;
 
     for (int i = 0; i < lines; i++) {
       hlines.add(Line(start: hstart, end: hend, manager: manager));

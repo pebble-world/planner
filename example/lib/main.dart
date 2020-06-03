@@ -1,16 +1,9 @@
-import 'Config.dart';
 import 'Configurator.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:planner/planner.dart';
 
 void main() {
-  //WidgetsFlutterBinding.ensureInitialized();
-
-  //SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft])
-    //.then((_) {
-      runApp(new MyApp());
-    //});
+  runApp(new MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -55,14 +48,17 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  Config config;
+  PlannerConfig config;
 
   List<PlannerEntry> entries;
 
   @override void initState() {
     super.initState();
-    config = Config();
+    config = PlannerConfig();
     config.setLabels(5);
+    config.onEntryChanged = onEntryChanged;
+    config.onEntryDoubleTap = onEntryDoubleTap;
+    config.onPlannerDoubleTap = onPlannerDoubleTap;
 
     entries = List<PlannerEntry>();
     entries.add(PlannerEntry(
@@ -117,13 +113,8 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       body: Planner(
-        labels: config.labels,
-        minHour: config.minHour,
-        maxHour: config.maxHour,
+        config: config,
         entries: entries,
-        onEntryDoubleTap: onEntryDoubleTap,
-        onPlannerDoubleTap: onPlannerDoubleTap,
-        onEntryChanged: onEntryChanged,
       ),
     );
   }

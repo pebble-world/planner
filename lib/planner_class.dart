@@ -8,29 +8,18 @@ import 'package:planner/planner_entry.dart';
 import 'package:after_layout/after_layout.dart';
 import 'package:positioned_tap_detector/positioned_tap_detector.dart';
 
-class Planner extends StatefulWidget {
-  final List<String> labels;
-  final int minHour;
-  final int maxHour;
-  final List<PlannerEntry> entries;
-  final blockWidth;
-  final blockHeight;
+import 'planner_config.dart';
 
-  final Function(int day, int hour, int minute) onPlannerDoubleTap;
-  final Function(PlannerEntry) onEntryDoubleTap;
-  final Function(PlannerEntry) onEntryChanged;
+class Planner extends StatefulWidget {
+  final List<PlannerEntry> entries;
+  final PlannerConfig config;
+  
 
   Planner(
       {Key key,
-      @required this.labels,
-      @required this.minHour,
-      @required this.maxHour,
+      @required this.config,
       @required this.entries,
-      this.blockHeight = 40,
-      this.blockWidth = 200,
-      this.onEntryChanged,
-      this.onEntryDoubleTap,
-      this.onPlannerDoubleTap})
+      })
       : super(key: key);
 
   @override
@@ -52,11 +41,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
   void initState() {
     super.initState();
     manager = Manager(
-      blockWidth: widget.blockWidth,
-      blockHeight: widget.blockHeight,
-      labels: widget.labels,
-      minHour: widget.minHour,
-      maxHour: widget.maxHour,
+      config: widget.config,
       entries: widget.entries,
     );
   }
@@ -72,11 +57,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
   @override
   Widget build(BuildContext context) {
     manager.update(
-      blockWidth: 200,
-      blockHeight: 40,
-      labels: widget.labels,
-      minHour: widget.minHour,
-      maxHour: widget.maxHour,
+      config: widget.config,
       entries: widget.entries,
     );
 
@@ -144,12 +125,12 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     if (entry == null) {
                       PlannerDatePos pos =
                           manager.getPlannerDatePos(position.global);
-                      if (widget.onPlannerDoubleTap != null)
-                        widget.onPlannerDoubleTap(
+                      if (widget.config.onPlannerDoubleTap != null)
+                        widget.config.onPlannerDoubleTap(
                             pos.day, pos.hour, pos.minutes);
                     } else {
-                      if (widget.onEntryDoubleTap != null)
-                        widget.onEntryDoubleTap(entry);
+                      if (widget.config.onEntryDoubleTap != null)
+                        widget.config.onEntryDoubleTap(entry);
                     }
                   },
                   child: GestureDetector(
@@ -182,7 +163,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                         child: CustomPaint(
                           painter: EventsPainter(
                               manager: manager,
-                              onEntryChanged: widget.onEntryChanged),
+                              onEntryChanged: widget.config.onEntryChanged),
                           child: Container(),
                         ),
                       ),

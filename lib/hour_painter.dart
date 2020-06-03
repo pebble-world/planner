@@ -8,10 +8,10 @@ class HourPainter extends CustomPainter {
 
   HourPainter({@required this.manager}) {
     double ypos = 0;
-    for (int i = manager.minHour; i < manager.maxHour; i++) {
+    for (int i = manager.config.minHour; i < manager.config.maxHour; i++) {
       _hours.add(HourLabel(
           label: i.toString(), position: Offset(10, ypos), manager: manager));
-      ypos += manager.blockHeight;
+      ypos += manager.config.blockHeight;
     }
   }
 
