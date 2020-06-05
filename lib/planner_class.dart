@@ -134,7 +134,17 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     }
                   },
                   child: GestureDetector(
-
+                    onVerticalDragStart: (detail) {
+                      _vDragStart = detail.globalPosition.dy;
+                      _vDrag = manager.vScroll;
+                    },
+                    onVerticalDragUpdate: (detail) {
+                      setState(() {
+                        _vDrag += detail.globalPosition.dy - _vDragStart;
+                        _vDragStart = detail.globalPosition.dy;
+                        manager.vScroll = _vDrag;
+                      });
+                    },
                     onScaleStart: (detail) => _previousZoom = manager.zoom,
                     onScaleUpdate: (detail) {
                       setState(() {
