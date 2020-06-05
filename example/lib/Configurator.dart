@@ -23,23 +23,23 @@ class _ConfiguratorState extends State<Configurator> {
               width: 50,
               child: Text('Days'),
             ),
-            Slider(
-              min: 2,
-              max: 10,
-              label: '${widget.config.days.round()}',
-              divisions: 8,
-              value: widget.config.days.toDouble(),
-              onChanged: (newValue) {
-                setState(() {
-                  widget.config.days = newValue;
-                });
-              },
-              onChangeEnd: (newValue) {
-                setState(() {
-                  widget.config.setLabels(newValue.toInt());
-                });
-              },
-            ),
+            // Slider(
+            //   min: 2,
+            //   max: 10,
+            //   label: '${widget.config.days.round()}',
+            //   divisions: 8,
+            //   value: widget.config.days.toDouble(),
+            //   onChanged: (newValue) {
+            //     setState(() {
+            //       // widget.config.days = newValue;
+            //     });
+            //   },
+            //   onChangeEnd: (newValue) {
+            //     setState(() {
+            //       // widget.config.setLabels(newValue.toInt());
+            //     });
+            //   },
+            // ),
           ],
         ),
         Row(

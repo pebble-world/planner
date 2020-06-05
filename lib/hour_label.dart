@@ -3,22 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:planner/manager.dart';
 
 class HourLabel {
-  Offset position;
-  String label;
-
-  TextSpan _span;
-  TextPainter _tp;
-
+  final Offset position;
+  final String label;
   final Manager manager;
+
+  TextPainter _tp;
 
   HourLabel(
       {@required this.label, @required this.position, @required this.manager}) {
-    _span = TextSpan(
-      text: label, 
-      style: TextStyle(color: Colors.white)
-    );
     _tp = TextPainter(
-        text: _span,
+        text: TextSpan(
+          text: label, 
+          style: manager.config.hourLabelStyle,
+        ),
         textAlign: TextAlign.left,
         textDirection: TextDirection.ltr);
     _tp.layout();

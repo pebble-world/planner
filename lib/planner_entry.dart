@@ -19,6 +19,9 @@ class PlannerEntry {
   Paint strokePaint;
   Color color;
 
+    TextStyle titleStyle =  TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.white);
+  TextStyle textStyle = TextStyle(fontSize: 8, color: Colors.white);
+
   String title;
   String content;
 
@@ -36,13 +39,21 @@ class PlannerEntry {
     ..strokeWidth = 1;
 
   PlannerEntry(
-      {@required this.day,
-      @required this.hour,
-      this.title,
-      this.content,
-      @required this.color,
-      this.minutes = 0,
-      this.duration = 60});
+      {
+        @required this.day,
+        @required this.hour,
+        this.title,
+        this.content,
+        @required this.color,
+        this.minutes = 0,
+        this.duration = 60,
+        TextStyle titleStyle,
+        TextStyle textStyle,
+      }
+  ) {
+    if (titleStyle != null) this.titleStyle = titleStyle;
+    if (textStyle != null) this.textStyle = textStyle;
+  }
 
   void createPainters(int minHour) {
     this.minHour = minHour;
@@ -54,7 +65,7 @@ class PlannerEntry {
     if (title != null) {
       var span = TextSpan(
           text: title,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10));
+          style: titleStyle);
       titlePainter = TextPainter(
           text: span,
           textAlign: TextAlign.left,
@@ -63,7 +74,7 @@ class PlannerEntry {
       titlePainter.layout(maxWidth: 190);
     }
     if (content != null) {
-      var span = TextSpan(text: content, style: TextStyle(fontSize: 8));
+      var span = TextSpan(text: content, style: textStyle);
       contentPainter = TextPainter(
           text: span,
           textAlign: TextAlign.left,

@@ -79,7 +79,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
             child: Container(
               constraints: BoxConstraints(
                   minWidth: double.infinity, maxWidth: double.infinity),
-              color: Colors.black,
+              color: manager.config.dateBackground,
               height: 50.0,
               child: CustomPaint(
                 painter: DatePainter(
@@ -109,7 +109,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                   child: Container(
                       width: 50.0,
                       //constraints: BoxConstraints.expand(),
-                      color: Colors.black,
+                      color: manager.config.hourBackground,
                       child: CustomPaint(
                         painter: HourPainter(
                           manager: manager,
@@ -134,6 +134,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     }
                   },
                   child: GestureDetector(
+
                     onScaleStart: (detail) => _previousZoom = manager.zoom,
                     onScaleUpdate: (detail) {
                       setState(() {
@@ -159,7 +160,7 @@ class _PlannerState extends State<Planner> with AfterLayoutMixin<Planner> {
                     child: ClipRect(
                       child: Container(
                         key: _keyEventPainter,
-                        color: Colors.grey[900],
+                        color: manager.config.plannerBackground,
                         child: CustomPaint(
                           painter: EventsPainter(
                               manager: manager,

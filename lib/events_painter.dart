@@ -18,7 +18,7 @@ class EventsPainter extends CustomPainter {
   EventsPainter({@required this.manager, @required this.onEntryChanged}) {
     _lines = Lines(manager: manager);
 
-    debugPrint('EventsPainter created');
+    // debugPrint('EventsPainter created');
   }
 
   @override

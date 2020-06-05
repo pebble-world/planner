@@ -55,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override void initState() {
     super.initState();
     config = PlannerConfig();
-    config.setLabels(5);
+    config.labels = ["day 1", "day 2", "day 3", "day 4", "day 5"];
     config.onEntryChanged = onEntryChanged;
     config.onEntryDoubleTap = onEntryDoubleTap;
     config.onPlannerDoubleTap = onPlannerDoubleTap;

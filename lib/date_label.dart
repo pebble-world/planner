@@ -6,16 +6,17 @@ class DateLabel {
   Offset position;
   String label;
 
-  TextSpan _span;
   TextPainter _tp;
 
   final Manager manager;
 
   DateLabel(
       {@required this.label, @required this.position, @required this.manager}) {
-    _span = TextSpan(text: label);
     _tp = TextPainter(
-      text: _span,
+      text: TextSpan(
+      text: label,
+      style: manager.config.dateLabelStyle,
+    ),
       textAlign: TextAlign.left,
       textDirection: TextDirection.ltr,
     );

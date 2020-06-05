@@ -5,16 +5,10 @@ class Lines {
   final Manager manager;
 
   // paint for main horizontal lines
-  Paint hpaint = Paint()
-    ..color = Color.fromARGB(100, 255, 255, 255)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1;
+  Paint hpaint;
 
   // paint for all vertical lines
-  Paint vpaint = Paint()
-    ..color = Color.fromARGB(50, 255, 255, 255)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1;
+  Paint vpaint;
 
   List<Line> hlines = List<Line>();
   List<Line> vlines = List<Line>();
@@ -46,6 +40,16 @@ class Lines {
       hstart = hstart.translate(0, step);
       hend = hend.translate(0, step);
     }
+
+    hpaint = Paint()
+    ..color = manager.config.horizontalLineColor
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
+
+    vpaint  = Paint()
+    ..color = manager.config.verticalLineColor
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
   }
 
   void draw(Canvas canvas) {
