@@ -1,17 +1,19 @@
-import 'Configurator.dart';
 import 'package:flutter/material.dart';
 import 'package:planner/planner.dart';
+import 'package:planner/planner_time.dart';
 
 void main() {
-  runApp(new MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Planner Demo',
+      title: 'Flutter Demo',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -24,13 +26,13 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Planner Demo'),
+      home: const MyHomePage(title: 'Planner Demo'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  const MyHomePage({Key? key, required this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -44,124 +46,71 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  PlannerConfig config;
-
-  List<PlannerEntry> entries;
-
-  @override void initState() {
-    super.initState();
-    config = PlannerConfig();
-    config.labels = ["day 1", "day 2", "day 3", "day 4", "day 5"];
-    config.onEntryChanged = onEntryChanged;
-    config.onEntryDoubleTap = onEntryDoubleTap;
-    config.onPlannerDoubleTap = onPlannerDoubleTap;
-
-    entries = List<PlannerEntry>();
-    entries.add(PlannerEntry(
-      day: 0,
-      hour: 12,
+  List<PlannerEntry> entries = [
+    PlannerEntry(
+      id: "0",
+      time: PlannerTime(day: 0, hour: 12),
       title: 'entry 1',
       content: 'some content to show in this entry',
-      color: Colors.blue
-    ));
-    entries.add(PlannerEntry(
-      day: 1,
-      hour: 11,
-      duration: 180,
+      color: Colors.blue,
+    ),
+    PlannerEntry(
+      id: "1",
+      time: PlannerTime(day: 1, hour: 11, duration: 180),
       title: 'entry 2 is a bit longer and does not fit inside its box',
       content: 'This is the content of entry 2. It takes up a bit more space.',
-      color: Colors.green
-    ));
-  }
+      color: Colors.green,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    // This method is rerun every time setState is called, for instance as done
+    // by the _incrementCounter method above.
+    //
+    // The Flutter framework has been optimized to make rerunning build methods
+    // fast, so that you can just rebuild anything that needs updating rather
+    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Planner Demo'),
-        actions: [
-          FlatButton.icon(
-            icon: Icon(Icons.settings, color: Colors.white,),
-            label: Text('settings', style: TextStyle(color: Colors.white),),
-            onPressed: () => {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text('Planner Configuration'),
-                    content: Configurator(config: config),
-                    actions: [
-                      new FlatButton(
-                        child: new Text('Close'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          setState(() {
-                            
-                          });
-                        },
-                      )
-                    ] 
-                  );
-                }
-              )
+        appBar: AppBar(
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Text(widget.title),
+        ),
+        body: Planner(
+          config: PlannerConfig(
+            minHour: 3,
+            maxHour: 23,
+            labels: [
+              "day 1",
+              "day 2",
+              "day 3",
+              "day 4",
+              "day 5",
+              "day 6",
+              "day 7",
+              "day 8",
+              "day 9",
+              "day 10"
+            ],
+            //dateBackground: Colors.red,
+            //hourBackground: Colors.deepOrange,
+            onEntryChanged: (entry) {},
+            onEntryDoubleTap: (entry) {
+              print('entry: ' + entry.title);
             },
-          )
-        ],
-      ),
-      body: Planner(
-        config: config,
-        entries: entries,
-      ),
-    );
-  }
-
-  void onEntryChanged(PlannerEntry entry) {
-    print ('entry changed');
-    // the argument is the changed entry
-    // This method should be used if you need extra checks on the
-    // new position and save them to a database
-  }
-
-  void onEntryDoubleTap(PlannerEntry entry) {
-    // this should probably provide a way to change the
-    // event's content
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(entry.title),
-          content: Text(entry.content),
-          actions: [
-            FlatButton(
-              child: Text('Ok'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            )
-          ]    
+            onPlannerDoubleTap: (time) {
+              print(
+                  'day: ${time.day} hour: ${time.hour} minutes: ${time.minutes}');
+            },
+          ),
+          entries: entries,
+        )
+        // This trailing comma makes auto-formatting nicer for build methods.
         );
-      }
-    );
-  }
-
-  // minutes will be rounded according to planner grid. Can be 0, 15, 30 or 45
-  void onPlannerDoubleTap(int day, int hour, int minute) {
-    print('day: $day hour: $hour minute: $minute');
-    PlannerEntry entry = PlannerEntry(
-      title: 'new planner entry',
-      content: 'some content explaining what this is about',
-      day: day,
-      hour: hour,
-      minutes: minute,
-      duration: 60, // minutes
-      color: Colors.red,
-    );
-    setState(() {
-     entries.add(entry); 
-    });
   }
 }
