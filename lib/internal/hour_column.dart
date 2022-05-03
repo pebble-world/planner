@@ -10,7 +10,7 @@ class HourColumn extends CustomPainter {
   HourColumn({required this.manager, required Listenable repaint})
       : super(repaint: repaint) {
     int _pos = 15;
-    for (int i = manager.config.minHour; i < manager.config.maxHour; i++) {
+    for (int i = manager.config.minHour; i <= manager.config.maxHour; i++) {
       _labels.add(HourLabel(
         label: i.toString(),
         position: _pos,

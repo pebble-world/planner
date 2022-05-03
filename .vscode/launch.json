@@ -1,0 +1,39 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "planner (server)",
+            "request": "launch",
+            "type": "dart",
+            "args": ["-d", "web-server","--web-port", "8000"],
+        },
+        {
+            "name": "planner (chrome)",
+            "request": "launch",
+            "type": "dart",
+            "args": ["-d", "chrome","--web-port", "8000"],
+        },
+        {
+            "name": "planner (edge)",
+            "request": "launch",
+            "type": "dart",
+            "args": ["-d", "edge","--web-port", "8000"],
+        },
+        {
+            "name": "planner (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "planner (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        
+    ]
+}

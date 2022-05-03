@@ -16,7 +16,7 @@ class Grid {
     Offset vend = Offset(
         manager.config.blockWidth.toDouble(),
         manager.config.blockHeight.toDouble() *
-            (manager.config.maxHour - manager.config.minHour));
+            (manager.config.maxHour - manager.config.minHour + 1));
     for (int i = 0; i < manager.config.labels.length; i++) {
       vLines
           .add(Line(start: vstart, end: vend, controller: manager.controller));
@@ -33,7 +33,7 @@ class Grid {
     Offset hend = Offset(
         (manager.config.blockWidth.toDouble() * (manager.config.labels.length)),
         step);
-    int lines = (manager.config.maxHour - manager.config.minHour) * 4;
+    int lines = (manager.config.maxHour - manager.config.minHour + 1) * 4;
 
     for (int i = 0; i < lines; i++) {
       hLines

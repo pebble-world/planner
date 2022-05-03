@@ -83,7 +83,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         body: Planner(
           config: PlannerConfig(
-            minHour: 3,
+            minHour: 0,
             maxHour: 23,
             labels: [
               "day 1",

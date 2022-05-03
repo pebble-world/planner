@@ -15,6 +15,7 @@ class WidgetSize extends StatefulWidget {
 class _WidgetSizeState extends State<WidgetSize> {
   @override
   Widget build(BuildContext context) {
+    //print(context.size);
     SchedulerBinding.instance?.addPostFrameCallback(postFrameCallback);
     return Container(
       key: widgetKey,
@@ -29,7 +30,10 @@ class _WidgetSizeState extends State<WidgetSize> {
     var context = widgetKey.currentContext;
     if (context == null) return;
 
-    var newSize = context.size;
+    final RenderBox box = context.findRenderObject() as RenderBox;
+
+    var newSize = box.size;
+    print(newSize);
     if (oldSize == newSize) return;
 
     oldSize = newSize;

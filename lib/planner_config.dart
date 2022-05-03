@@ -12,6 +12,9 @@ class PlannerConfig {
   int blockWidth;
   int blockHeight;
 
+  double dateRowHeight;
+  double hourColumnWidth;
+
   TextStyle hourLabelStyle;
   TextStyle dateLabelStyle;
 
@@ -41,5 +44,7 @@ class PlannerConfig {
     this.onEntryChanged,
     this.onEntryDoubleTap,
     this.onPlannerDoubleTap,
+    this.dateRowHeight = 50,
+    this.hourColumnWidth = 50,
   });
 }

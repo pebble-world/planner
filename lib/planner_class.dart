@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:planner/internal/events_painter.dart';
 import 'package:planner/internal/hour_column.dart';
+import 'package:planner/internal/scroll_detector.dart';
 import 'package:planner/internal/widget_size.dart';
 import 'package:positioned_tap_detector_2/positioned_tap_detector_2.dart';
 import 'internal/date_row.dart';
@@ -28,51 +28,15 @@ class Planner extends StatefulWidget {
 class _PlannerState extends State<Planner> {
   @override
   Widget build(BuildContext context) {
-    return WidgetSize(
-      onChange: widget.data.controller.setSize,
-      child: Column(
+    return LayoutBuilder(builder: (context, constraints) {
+      widget.data.controller.setSize(constraints.biggest);
+      return Column(
         children: [
-          GestureDetector(
-            onHorizontalDragStart: (detail) => widget.data.controller
-                .startHorizontalDrag(detail.globalPosition.dx),
-            onHorizontalDragUpdate: (detail) => widget.data.controller
-                .updateHorizontalDrag(detail.globalPosition.dx),
-            child: ClipRect(
-              child: Container(
-                height: 50.0,
-                color: widget.data.config.dateBackground,
-                child: CustomPaint(
-                  painter: DateRow(
-                    manager: widget.data,
-                    repaint: widget.data.controller.triggerUpdate,
-                  ),
-                  child: Container(),
-                ),
-              ),
-            ),
-          ),
+          paintDates(),
           Expanded(
             child: Row(
               children: [
-                GestureDetector(
-                  onVerticalDragStart: ((details) => widget.data.controller
-                      .startVerticalDrag(details.globalPosition.dy)),
-                  onVerticalDragUpdate: ((details) => widget.data.controller
-                      .updateVerticalDrag(details.globalPosition.dy)),
-                  child: ClipRect(
-                    child: Container(
-                      width: 50,
-                      color: widget.data.config.hourBackground,
-                      child: CustomPaint(
-                        painter: HourColumn(
-                          manager: widget.data,
-                          repaint: widget.data.controller.triggerUpdate,
-                        ),
-                        child: Container(),
-                      ),
-                    ),
-                  ),
-                ),
+                paintHours(),
                 Expanded(
                   child: Stack(
                     children: [
@@ -93,89 +57,9 @@ class _PlannerState extends State<Planner> {
                             widget.data.config.onPlannerDoubleTap!(time);
                           }
                         },
-                        child: GestureDetector(
-                          onHorizontalDragStart: (detail) => widget
-                              .data.controller
-                              .startHorizontalDrag(detail.globalPosition.dx),
-                          onHorizontalDragUpdate: (detail) => widget
-                              .data.controller
-                              .updateHorizontalDrag(detail.globalPosition.dx),
-                          onScaleStart: ((details) =>
-                              widget.data.controller.startZoom()),
-                          onScaleUpdate: (details) => widget.data.controller
-                              .updateZoom(details.verticalScale),
-                          onLongPressStart: (details) {
-                            widget.data.controller.touchPos =
-                                details.localPosition;
-                          },
-                          onLongPressMoveUpdate: (details) {
-                            widget.data.controller.touchPos =
-                                details.localPosition;
-                          },
-                          onLongPressEnd: (details) {
-                            widget.data.controller.touchPos = null;
-                          },
-                          child: ClipRect(
-                              child: Container(
-                                  color: widget.data.config.plannerBackground,
-                                  child: CustomPaint(
-                                    painter: EventsPainter(
-                                      manager: widget.data,
-                                      repaint:
-                                          widget.data.controller.triggerUpdate,
-                                    ),
-                                    child: Container(),
-                                  ))),
-                        ),
+                        child: paintEvents(),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: RawMaterialButton(
-                              onPressed: () {
-                                widget.data.controller.startZoom();
-                                widget.data.controller.updateZoom(0.9);
-                              },
-                              elevation: 2.0,
-                              constraints: const BoxConstraints(
-                                  minWidth: 36, minHeight: 36),
-                              fillColor:
-                                  Theme.of(context).colorScheme.secondary,
-                              child: const Icon(
-                                Icons.zoom_out,
-                                size: 22.0,
-                                color: Colors.white,
-                              ),
-                              padding: const EdgeInsets.all(4.0),
-                              shape: const CircleBorder(),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: RawMaterialButton(
-                              onPressed: () {
-                                widget.data.controller.startZoom();
-                                widget.data.controller.updateZoom(1.1);
-                              },
-                              elevation: 2.0,
-                              constraints: const BoxConstraints(
-                                  minWidth: 36, minHeight: 36),
-                              fillColor:
-                                  Theme.of(context).colorScheme.secondary,
-                              child: const Icon(
-                                Icons.zoom_in,
-                                size: 22.0,
-                                color: Colors.white,
-                              ),
-                              padding: const EdgeInsets.all(4.0),
-                              shape: const CircleBorder(),
-                            ),
-                          ),
-                        ],
-                      )
+                      paintZoomButtons(context)
                     ],
                   ),
                 ),
@@ -183,6 +67,151 @@ class _PlannerState extends State<Planner> {
             ),
           )
         ],
+      );
+    });
+  }
+
+  GestureDetector paintDates() {
+    return GestureDetector(
+      onHorizontalDragStart: (detail) =>
+          widget.data.controller.startHorizontalDrag(detail.globalPosition.dx),
+      onHorizontalDragUpdate: (detail) =>
+          widget.data.controller.updateHorizontalDrag(detail.globalPosition.dx),
+      child: ClipRect(
+        child: ScrollDetector(
+          onPointerScroll: (event) {
+            print(event);
+          },
+          child: Container(
+            height: widget.data.config.dateRowHeight,
+            color: widget.data.config.dateBackground,
+            child: CustomPaint(
+              painter: DateRow(
+                manager: widget.data,
+                repaint: widget.data.controller.triggerUpdate,
+              ),
+              child: Container(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Row paintZoomButtons(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: RawMaterialButton(
+            onPressed: () {
+              widget.data.controller.startZoom();
+              widget.data.controller.updateZoom(0.9);
+            },
+            elevation: 2.0,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            fillColor: Theme.of(context).colorScheme.secondary,
+            child: const Icon(
+              Icons.zoom_out,
+              size: 22.0,
+              color: Colors.white,
+            ),
+            padding: const EdgeInsets.all(4.0),
+            shape: const CircleBorder(),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: RawMaterialButton(
+            onPressed: () {
+              widget.data.controller.startZoom();
+              widget.data.controller.updateZoom(1.1);
+            },
+            elevation: 2.0,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            fillColor: Theme.of(context).colorScheme.secondary,
+            child: const Icon(
+              Icons.zoom_in,
+              size: 22.0,
+              color: Colors.white,
+            ),
+            padding: const EdgeInsets.all(4.0),
+            shape: const CircleBorder(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  GestureDetector paintEvents() {
+    return GestureDetector(
+      onHorizontalDragStart: (detail) =>
+          widget.data.controller.startHorizontalDrag(detail.globalPosition.dx),
+      onHorizontalDragUpdate: (detail) =>
+          widget.data.controller.updateHorizontalDrag(detail.globalPosition.dx),
+      onScaleStart: ((details) => widget.data.controller.startZoom()),
+      onScaleUpdate: (details) =>
+          widget.data.controller.updateZoom(details.verticalScale),
+      onLongPressStart: (details) {
+        widget.data.controller.touchPos = details.localPosition;
+      },
+      onLongPressMoveUpdate: (details) {
+        widget.data.controller.touchPos = details.localPosition;
+      },
+      onLongPressEnd: (details) {
+        widget.data.controller.touchPos = null;
+      },
+      child: ClipRect(
+          child: ScrollDetector(
+        onPointerScroll: (event) {
+          if (event.scrollDelta.dy > 0) {
+            widget.data.controller.verticalScroll(true);
+          } else {
+            widget.data.controller.verticalScroll(false);
+          }
+        },
+        child: Container(
+            color: widget.data.config.plannerBackground,
+            child: CustomPaint(
+              painter: EventsPainter(
+                manager: widget.data,
+                repaint: widget.data.controller.triggerUpdate,
+              ),
+              child: Container(),
+            )),
+      )),
+    );
+  }
+
+  GestureDetector paintHours() {
+    return GestureDetector(
+      onVerticalDragStart: ((details) =>
+          widget.data.controller.startVerticalDrag(details.globalPosition.dy)),
+      onVerticalDragUpdate: ((details) =>
+          widget.data.controller.updateVerticalDrag(details.globalPosition.dy)),
+      child: ClipRect(
+        child: ScrollDetector(
+          onPointerScroll: (event) {
+            if (event.scrollDelta.dy > 0) {
+              widget.data.controller.verticalScroll(true);
+            } else {
+              widget.data.controller.verticalScroll(false);
+            }
+          },
+          child: Container(
+            width: widget.data.config.hourColumnWidth,
+            color: widget.data.config.hourBackground,
+            child: CustomPaint(
+              painter: HourColumn(
+                manager: widget.data,
+                repaint: widget.data.controller.triggerUpdate,
+              ),
+              child: Container(),
+            ),
+          ),
+        ),
       ),
     );
   }

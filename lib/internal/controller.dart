@@ -25,7 +25,6 @@ class Controller {
   set touchPos(Offset? value) {
     _touchPos = value;
     triggerUpdate.value++;
-    print('touchpos update');
   }
 
   Offset get offset => Offset(x, y);
@@ -56,6 +55,7 @@ class Controller {
     if (size != null) {
       _canvasWidth = size.width > 0 ? size.width : _canvasWidth;
       _canvasHeight = size.height > 0 ? size.height : _canvasHeight;
+
       _calculateOffsets();
     }
   }
@@ -67,13 +67,10 @@ class Controller {
     _minYOffset = 0;
     _maxYOffset = 0 -
         (((config.blockHeight * zoom) * (config.maxHour - config.minHour + 1) -
-                _canvasHeight) -
-            20);
+            (_canvasHeight - config.dateRowHeight)));
     if (_maxYOffset > 0) {
       _maxYOffset = 0;
     }
-    print(
-        'maxyoffset: $_maxYOffset | zoom: $zoom  | canvasheight: $_canvasHeight');
   }
 
   void startHorizontalDrag(double xValue) {
@@ -100,7 +97,6 @@ class Controller {
   void updateVerticalDrag(double yValue) {
     _vDrag += yValue - _vDragStart;
     _vDragStart = yValue;
-    print('vdrag : $_vDrag');
 
     if (_vDrag > _minYOffset) {
       _vDrag = _minYOffset;
@@ -108,6 +104,15 @@ class Controller {
       _vDrag = _maxYOffset;
     }
     y = _vDrag;
+  }
+
+  void verticalScroll(bool up) {
+    y += up ? -20 : 20;
+    if (y > _minYOffset) {
+      y = _minYOffset;
+    } else if (y < (_maxYOffset)) {
+      y = _maxYOffset;
+    }
   }
 
   void startZoom() {
