@@ -12,7 +12,6 @@ dependencies:
     sdk: flutter
   after_layout: ^1.1.0
   positioned_tap_detector_2: ^1.0.4
-  context_menus: ^0.1.0+6
 
 dev_dependencies:
   flutter_test:
