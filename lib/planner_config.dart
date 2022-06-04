@@ -17,16 +17,20 @@ class PlannerConfig {
 
   TextStyle hourLabelStyle;
   TextStyle dateLabelStyle;
+  TextStyle contextMenuTextStyle;
+  TextStyle contextMenuDeleteTextStyle;
 
   Color hourBackground;
   Color dateBackground;
   Color plannerBackground = const Color.fromARGB(255, 50, 50, 50);
   Color horizontalLineColor = const Color.fromARGB(255, 100, 100, 100);
   Color verticalLineColor = const Color.fromARGB(255, 150, 150, 150);
+  Color contextMenuBackground;
 
-  Function(PlannerTime time)? onPlannerDoubleTap;
-  Function(PlannerEntry)? onEntryDoubleTap;
-  Function(PlannerEntry)? onEntryChanged;
+  Function(PlannerTime time)? onEntryCreate;
+  Function(PlannerEntry)? onEntryEdit;
+  Function(PlannerEntry)? onEntryDelete;
+  Function(PlannerEntry)? onEntryMove;
 
   PlannerConfig({
     required this.labels,
@@ -36,14 +40,18 @@ class PlannerConfig {
     this.blockHeight = 40,
     this.hourLabelStyle = const TextStyle(color: Colors.black),
     this.dateLabelStyle = const TextStyle(color: Colors.black),
+    this.contextMenuTextStyle = const TextStyle(color: Colors.blue),
+    this.contextMenuDeleteTextStyle = const TextStyle(color: Colors.red),
     this.hourBackground = Colors.white,
     this.dateBackground = Colors.white,
+    this.contextMenuBackground = Colors.white,
     this.plannerBackground = const Color.fromARGB(255, 50, 50, 50),
     this.horizontalLineColor = const Color.fromARGB(255, 100, 100, 100),
     this.verticalLineColor = const Color.fromARGB(255, 150, 150, 150),
-    this.onEntryChanged,
-    this.onEntryDoubleTap,
-    this.onPlannerDoubleTap,
+    this.onEntryCreate,
+    this.onEntryDelete,
+    this.onEntryEdit,
+    this.onEntryMove,
     this.dateRowHeight = 50,
     this.hourColumnWidth = 50,
   });

@@ -2,18 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:planner/planner.dart';
 
 import '../planner_config.dart';
+import '../planner_time.dart';
+import 'event.dart';
+
+enum MenuType {
+  planner,
+  entry,
+  none,
+}
 
 class Controller {
   final triggerUpdate = ValueNotifier<int>(0);
 
-  double _x = 0;
+  static double _x = 0;
   double get x => _x;
   set x(double value) {
     _x = value;
     triggerUpdate.value++;
   }
 
-  double _y = 0;
+  static double _y = 0;
   double get y => _y;
   set y(double value) {
     _y = value;
@@ -29,12 +37,12 @@ class Controller {
 
   Offset get offset => Offset(x, y);
 
-  double _previousZoom = 1;
-  double _zoom = 1;
+  static double _previousZoom = 1;
+  static double _zoom = 1;
   double get zoom => _zoom;
 
-  double _hDragStart = 0;
-  double _hDrag = 0;
+  static double _hDragStart = 0;
+  static double _hDrag = 0;
 
   double _vDragStart = 0;
   double _vDrag = 0;
@@ -44,6 +52,12 @@ class Controller {
 
   double _canvasWidth = 0;
   double _canvasHeight = 0;
+
+  MenuType menuType = MenuType.none;
+  Offset? menuPos;
+  Event? menuEvent;
+  PlannerTime? menuTime;
+  Function? _onCloseMenu;
 
   final PlannerConfig config;
 
@@ -123,5 +137,29 @@ class Controller {
     _zoom = _previousZoom * scale;
     _calculateOffsets();
     triggerUpdate.value++;
+  }
+
+  void showEventMenu(Offset pos, Event? event, Function onClose) {
+    menuPos = pos;
+    menuType = MenuType.entry;
+    menuEvent = event;
+    menuTime = null;
+    _onCloseMenu = onClose;
+  }
+
+  void showPlannerMenu(Offset pos, PlannerTime time, Function onClose) {
+    menuPos = pos;
+    menuType = MenuType.planner;
+    menuEvent = null;
+    menuTime = time;
+  }
+
+  void hideMenu() {
+    menuType = MenuType.none;
+    menuEvent = null;
+    menuTime = null;
+    if (_onCloseMenu != null) {
+      _onCloseMenu!();
+    }
   }
 }

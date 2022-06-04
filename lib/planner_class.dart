@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:planner/internal/contex_menu.dart';
+import 'package:planner/internal/controller.dart';
 import 'package:planner/internal/events_painter.dart';
 import 'package:planner/internal/hour_column.dart';
 import 'package:planner/internal/scroll_detector.dart';
@@ -48,18 +50,19 @@ class _PlannerState extends State<Planner> {
                           var event =
                               widget.data.getEventAtPos(position.relative!);
                           if (event != null &&
-                              widget.data.config.onEntryDoubleTap != null) {
-                            widget.data.config.onEntryDoubleTap!(event.entry);
+                              widget.data.config.onEntryEdit != null) {
+                            widget.data.config.onEntryEdit!(event.entry);
                           } else if (event == null &&
-                              widget.data.config.onPlannerDoubleTap != null) {
+                              widget.data.config.onEntryCreate != null) {
                             var time =
                                 widget.data.getTimeAtPos(position.relative!);
-                            widget.data.config.onPlannerDoubleTap!(time);
+                            widget.data.config.onEntryCreate!(time);
                           }
                         },
                         child: paintEvents(),
                       ),
-                      paintZoomButtons(context)
+                      paintZoomButtons(context),
+                      ...paintMenu(),
                     ],
                   ),
                 ),
@@ -71,6 +74,33 @@ class _PlannerState extends State<Planner> {
     });
   }
 
+  List<Widget> paintMenu() {
+    List<Widget> result = [];
+    if (widget.data.controller.menuType != MenuType.none) {
+      result.add(
+        Positioned.fill(child: Container(color: Colors.transparent)),
+      );
+
+      result.add(
+        GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onPanStart: (_) => widget.data.controller.hideMenu(),
+          onTap: () => widget.data.controller.hideMenu(),
+          onSecondaryTapDown: (_) => widget.data.controller.hideMenu(),
+          child: Container(),
+        ),
+      );
+
+      result.add(
+        Transform.translate(
+          offset: widget.data.controller.menuPos!,
+          child: ContextMenu(manager: widget.data),
+        ),
+      );
+    }
+    return result;
+  }
+
   GestureDetector paintDates() {
     return GestureDetector(
       onHorizontalDragStart: (detail) =>
@@ -78,20 +108,15 @@ class _PlannerState extends State<Planner> {
       onHorizontalDragUpdate: (detail) =>
           widget.data.controller.updateHorizontalDrag(detail.globalPosition.dx),
       child: ClipRect(
-        child: ScrollDetector(
-          onPointerScroll: (event) {
-            print(event);
-          },
-          child: Container(
-            height: widget.data.config.dateRowHeight,
-            color: widget.data.config.dateBackground,
-            child: CustomPaint(
-              painter: DateRow(
-                manager: widget.data,
-                repaint: widget.data.controller.triggerUpdate,
-              ),
-              child: Container(),
+        child: Container(
+          height: widget.data.config.dateRowHeight,
+          color: widget.data.config.dateBackground,
+          child: CustomPaint(
+            painter: DateRow(
+              manager: widget.data,
+              repaint: widget.data.controller.triggerUpdate,
             ),
+            child: Container(),
           ),
         ),
       ),
@@ -163,6 +188,12 @@ class _PlannerState extends State<Planner> {
       onLongPressEnd: (details) {
         widget.data.controller.touchPos = null;
       },
+      onTap: () {
+        widget.data.controller.hideMenu();
+      },
+      onSecondaryTapDown: (details) {
+        showMenu(details);
+      },
       child: ClipRect(
           child: ScrollDetector(
         onPointerScroll: (event) {
@@ -214,5 +245,23 @@ class _PlannerState extends State<Planner> {
         ),
       ),
     );
+  }
+
+  void hideMenu() {
+    setState(() {});
+  }
+
+  void showMenu(TapDownDetails details) {
+    var event = widget.data.getEventAtPos(details.localPosition);
+    if (event != null) {
+      widget.data.controller
+          .showEventMenu(details.localPosition, event, hideMenu);
+    } else {
+      var time = widget.data.getTimeAtPos(details.localPosition);
+      widget.data.controller
+          .showPlannerMenu(details.localPosition, time, hideMenu);
+    }
+
+    setState(() {});
   }
 }

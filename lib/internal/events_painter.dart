@@ -21,8 +21,8 @@ class EventsPainter extends CustomPainter {
 
     if (manager.controller.touchPos == null && draggedEvent != null) {
       draggedEvent!.endDrag();
-      if (manager.config.onEntryChanged != null) {
-        manager.config.onEntryChanged!(draggedEvent!.entry);
+      if (manager.config.onEntryMove != null) {
+        manager.config.onEntryMove!(draggedEvent!.entry);
       }
       draggedEvent = null;
     }

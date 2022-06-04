@@ -16,7 +16,7 @@ class _WidgetSizeState extends State<WidgetSize> {
   @override
   Widget build(BuildContext context) {
     //print(context.size);
-    SchedulerBinding.instance?.addPostFrameCallback(postFrameCallback);
+    SchedulerBinding.instance.addPostFrameCallback(postFrameCallback);
     return Container(
       key: widgetKey,
       child: widget.child,

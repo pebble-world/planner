@@ -83,31 +83,33 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         body: Planner(
           config: PlannerConfig(
-            minHour: 0,
-            maxHour: 23,
-            labels: [
-              "day 1",
-              "day 2",
-              "day 3",
-              "day 4",
-              "day 5",
-              "day 6",
-              "day 7",
-              "day 8",
-              "day 9",
-              "day 10"
-            ],
-            //dateBackground: Colors.red,
-            //hourBackground: Colors.deepOrange,
-            onEntryChanged: (entry) {},
-            onEntryDoubleTap: (entry) {
-              print('entry: ' + entry.title);
-            },
-            onPlannerDoubleTap: (time) {
-              print(
-                  'day: ${time.day} hour: ${time.hour} minutes: ${time.minutes}');
-            },
-          ),
+              minHour: 0,
+              maxHour: 23,
+              labels: [
+                "day 1",
+                "day 2",
+                "day 3",
+                "day 4",
+                "day 5",
+                "day 6",
+                "day 7",
+                "day 8",
+                "day 9",
+                "day 10"
+              ],
+              //dateBackground: Colors.red,
+              //hourBackground: Colors.deepOrange,
+              onEntryMove: (entry) {},
+              onEntryEdit: (entry) {
+                print('entry: ' + entry.title);
+              },
+              onEntryCreate: (time) {
+                print(
+                    'day: ${time.day} hour: ${time.hour} minutes: ${time.minutes}');
+              },
+              onEntryDelete: (entry) {
+                print('deleting entry: ' + entry.title);
+              }),
           entries: entries,
         )
         // This trailing comma makes auto-formatting nicer for build methods.
