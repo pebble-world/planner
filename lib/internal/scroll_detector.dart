@@ -15,7 +15,6 @@ class ScrollDetector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Listener(
       onPointerSignal: (pointerSignal) {
-        print(pointerSignal);
         if (pointerSignal is PointerScrollEvent) onPointerScroll(pointerSignal);
       },
       child: child,

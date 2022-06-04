@@ -33,7 +33,6 @@ class _WidgetSizeState extends State<WidgetSize> {
     final RenderBox box = context.findRenderObject() as RenderBox;
 
     var newSize = box.size;
-    print(newSize);
     if (oldSize == newSize) return;
 
     oldSize = newSize;
