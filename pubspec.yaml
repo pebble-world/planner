@@ -12,9 +12,6 @@ dependencies:
   flutter:
     sdk: flutter
   after_layout: ^1.2.0
-  positioned_tap_detector_2:
-    git:
-      url: https://github.com/AndreiMisiukevich/flutter-positioned-tap-detector.git
 
 dev_dependencies:
   flutter_test:

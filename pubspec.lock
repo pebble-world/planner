@@ -139,15 +139,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.0"
-  positioned_tap_detector_2:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "0d08ad9e5a5a2c6dace568f60329991962e83c58"
-      url: "https://github.com/AndreiMisiukevich/flutter-positioned-tap-detector.git"
-    source: git
-    version: "1.0.4"
   sky_engine:
     dependency: transitive
     description: flutter
