@@ -1,3 +1,4 @@
+import 'package:example/data.dart';
 import 'package:flutter/material.dart';
 import 'package:planner/planner.dart';
 import 'package:planner/planner_time.dart';
@@ -50,31 +51,29 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<PlannerEntry> entries = [
-    PlannerEntry(
-      id: "0",
-      time: PlannerTime(day: 0, hour: 12),
-      title: 'entry 1',
-      content: 'some content to show in this entry',
-      color: Colors.blue,
-    ),
-    PlannerEntry(
-      id: "1",
-      time: PlannerTime(day: 1, hour: 11, duration: 180),
-      title: 'entry 2 is a bit longer and does not fit inside its box',
-      content: 'This is the content of entry 2. It takes up a bit more space.',
-      color: Colors.green,
-    ),
-  ];
+  var dataEntries = DataEntry.CreateSampleData();
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    // create planner entries from the data set
+    List<PlannerEntry> entries = [];
+    dataEntries.forEach((element) {
+      entries.add(PlannerEntry(
+          id: element.id.toString(),
+          time: PlannerTime(
+              day: element.day,
+              hour: element.hour,
+              minutes: element.minutes,
+              duration: element.durationInMinutes),
+          title: element.hour.toString() +
+              ':' +
+              element.minutes.toString() +
+              ' ' +
+              element.title,
+          content: element.content,
+          color: element.type == DataType.A ? Colors.green : Colors.blue));
+    });
+
     return Scaffold(
         appBar: AppBar(
           // Here we take the value from the MyHomePage object that was created by
@@ -99,7 +98,16 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
               //dateBackground: Colors.red,
               //hourBackground: Colors.deepOrange,
-              onEntryMove: (entry) {},
+              onEntryMove: (entry) {
+                for (int i = 0; i < entries.length; i++) {
+                  if (dataEntries[i].id.toString() == entry.id) {
+                    dataEntries[i].day = entry.time.day;
+                    dataEntries[i].hour = entry.time.hour;
+                    dataEntries[i].minutes = entry.time.minutes;
+                    continue;
+                  }
+                }
+              },
               onEntryEdit: (entry) {
                 print('entry: ' + entry.title);
               },
