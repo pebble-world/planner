@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:planner/internal/manager.dart';
-import 'package:planner/planner.dart';
 
 import 'event.dart';
 import 'grid.dart';

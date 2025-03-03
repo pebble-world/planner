@@ -27,11 +27,6 @@ class Event {
     _createPainters();
   }
 
-  static Paint _linePaint = Paint()
-    ..color = Colors.white
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1;
-
   void _createPainters() {
     _calculateCanvasRect();
 

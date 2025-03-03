@@ -1,6 +1,6 @@
 name: planner
 description: A calendar widget for events.
-version: 0.0.3
+version: 0.0.4
 homepage:
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
