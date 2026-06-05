@@ -51,13 +51,13 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  var dataEntries = DataEntry.CreateSampleData();
+  var dataEntries = DataEntry.createSampleData();
 
   @override
   Widget build(BuildContext context) {
     // create planner entries from the data set
     List<PlannerEntry> entries = [];
-    dataEntries.forEach((element) {
+    for (final element in dataEntries) {
       entries.add(PlannerEntry(
           id: element.id.toString(),
           time: PlannerTime(
@@ -72,7 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
               element.title,
           content: element.content,
           color: element.type == DataType.A ? Colors.green : Colors.blue));
-    });
+    }
 
     return Scaffold(
         appBar: AppBar(
@@ -109,14 +109,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 }
               },
               onEntryEdit: (entry) {
-                print('entry: ' + entry.title);
+                debugPrint('entry: ' + entry.title);
               },
               onEntryCreate: (time) {
-                print(
+                debugPrint(
                     'day: ${time.day} hour: ${time.hour} minutes: ${time.minutes}');
               },
               onEntryDelete: (entry) {
-                print('deleting entry: ' + entry.title);
+                debugPrint('deleting entry: ' + entry.title);
               }),
           entries: entries,
         )

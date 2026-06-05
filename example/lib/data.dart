@@ -25,7 +25,7 @@ class DataEntry {
       required this.content,
       required this.type});
 
-  static List<DataEntry> CreateSampleData() {
+  static List<DataEntry> createSampleData() {
     List<DataEntry> entries = [
       DataEntry(
           id: 0,
