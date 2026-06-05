@@ -6,16 +6,34 @@ import '../planner_time.dart';
 import 'controller.dart';
 
 class Manager {
-  final PlannerConfig config;
-  final List<PlannerEntry> entries;
-  late Controller controller;
+  PlannerConfig config;
+  List<PlannerEntry> entries;
+  final Controller controller;
   final List<Event> events = [];
 
   Manager({
     required this.config,
     required this.entries,
+  }) : controller = Controller(config) {
+    _buildEvents();
+  }
+
+  /// Refreshes the planner data in place when the host `Planner` widget is
+  /// rebuilt with new [config] or [entries]. The [controller] is preserved, so
+  /// the current scroll/zoom position survives the rebuild instead of being
+  /// reset — which is what the previous `static` controller state hacked around.
+  void update({
+    required PlannerConfig config,
+    required List<PlannerEntry> entries,
   }) {
-    controller = Controller(config);
+    this.config = config;
+    this.entries = entries;
+    controller.updateConfig(config);
+    _buildEvents();
+  }
+
+  void _buildEvents() {
+    events.clear();
     for (PlannerEntry entry in entries) {
       events.add(Event(entry: entry, manager: this));
     }
