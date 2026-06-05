@@ -90,7 +90,8 @@ void main() {
       expect(controller.zoom, 1.0);
     });
 
-    test('repeated zoom-out (as the button does) never drops below minZoom', () {
+    test('repeated zoom-out (as the button does) never drops below minZoom',
+        () {
       final controller = Controller(makeConfig());
       // The zoom-out button runs startZoom();updateZoom(0.9) on each press.
       for (var i = 0; i < 50; i++) {

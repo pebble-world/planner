@@ -80,8 +80,8 @@ void main() {
     return tester.getRect(find.byKey(key));
   }
 
-  Future<void> tapButton(WidgetTester tester, Key key, IconData icon,
-      int times) async {
+  Future<void> tapButton(
+      WidgetTester tester, Key key, IconData icon, int times) async {
     final button =
         find.descendant(of: find.byKey(key), matching: find.byIcon(icon));
     for (var i = 0; i < times; i++) {
@@ -327,7 +327,8 @@ void main() {
 
     expect(created, isNotNull);
     expect(created!.hour, 2,
-        reason: 'zoom is capped at maxZoom (4.0); unbounded it would be hour 0');
+        reason:
+            'zoom is capped at maxZoom (4.0); unbounded it would be hour 0');
   });
 
   // Regression for D9 (#12): the real zoom-out button could shrink zoom toward 0,
@@ -347,6 +348,7 @@ void main() {
 
     expect(created, isNotNull);
     expect(created!.hour, 2,
-        reason: 'zoom is floored at minZoom (0.5); unbounded it would hit maxHour');
+        reason:
+            'zoom is floored at minZoom (0.5); unbounded it would hit maxHour');
   });
 }

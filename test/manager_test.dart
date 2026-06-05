@@ -122,7 +122,8 @@ void main() {
       expect(time.hour, 8, reason: 'clamped up to minHour');
     });
 
-    test('a tap past the last column/hour clamps to the last day / maxHour', () {
+    test('a tap past the last column/hour clamps to the last day / maxHour',
+        () {
       // Raw: day floor(5000/200) = 25, hour 8 + floor(5000/40) = 133.
       final time = makeManager().getTimeAtPos(const Offset(5000, 5000));
       expect(time.day, 2, reason: 'clamped to labels.length - 1');

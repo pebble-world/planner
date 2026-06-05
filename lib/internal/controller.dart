@@ -135,8 +135,9 @@ class Controller {
   }
 
   void updateZoom(double scale) {
-    _zoom =
-        (_previousZoom * scale).clamp(config.minZoom, config.maxZoom).toDouble();
+    _zoom = (_previousZoom * scale)
+        .clamp(config.minZoom, config.maxZoom)
+        .toDouble();
     _calculateOffsets();
     triggerUpdate.value++;
   }
