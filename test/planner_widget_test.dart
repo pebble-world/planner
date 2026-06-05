@@ -232,4 +232,89 @@ void main() {
     expect(moved, hasLength(1), reason: 'the drag committed exactly one move');
     expect(entry.time.hour, 10, reason: 'a one-block drag advances one hour');
   });
+
+  // Regression for D9 (#12): getTimeAtPos returned an overshoot day/hour for a
+  // real tap past the last column/hour — reachable whenever the grid is smaller
+  // than the viewport (few days/hours), leaving empty space the tap lands in.
+  // Driven end-to-end through the real right-click "Create Event" flow.
+  testWidgets('tapping past the grid clamps the created day/hour (D9)',
+      (tester) async {
+    const key = ValueKey('planner');
+    PlannerTime? created;
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          key: key,
+          // 2 columns (days 0..1) and hours 0..5: a 400x240px grid, far smaller
+          // than the 800x600 viewport, so a low/right tap lands in empty space
+          // past the grid rather than on a cell.
+          config: PlannerConfig(
+            labels: const ['c1', 'c2'],
+            minHour: 0,
+            maxHour: 5,
+            onEntryCreate: (t) => created = t,
+          ),
+          entries: const [],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Right of the last column AND below the last hour row: events-local
+    // (450, 300) -> raw day floor(450/200)=2, raw hour floor(300/40)=7. (Kept
+    // clear of the right edge so the context menu still fits on screen.)
+    final at = tester.getRect(find.byKey(key)).topLeft +
+        const Offset(50 + 450, 50 + 300);
+    await createViaMenu(tester, key, at);
+
+    expect(created, isNotNull);
+    expect(created!.day, 1,
+        reason: 'clamped to the last column (labels.length - 1)');
+    expect(created!.hour, 5, reason: 'clamped to maxHour');
+  });
+
+  // Regression for D9 (#12): the zoom-out button multiplied zoom unbounded
+  // toward 0, which blows up getTimeAtPos's divide-by-zoom (raw hour into the
+  // hundreds). After clamping zoom to minZoom, mashing the real button still
+  // yields a created event at a valid in-range hour.
+  testWidgets('extreme zoom-out via the button keeps created times in range (D9)',
+      (tester) async {
+    const key = ValueKey('planner');
+    PlannerTime? created;
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          key: key,
+          config: PlannerConfig(
+            labels: const ['c1', 'c2', 'c3'],
+            minHour: 0,
+            maxHour: 5,
+            onEntryCreate: (t) => created = t,
+          ),
+          entries: const [],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Mash the real zoom-out control well past minZoom.
+    final zoomOut = find.descendant(
+      of: find.byKey(key),
+      matching: find.byIcon(Icons.zoom_out),
+    );
+    for (var i = 0; i < 40; i++) {
+      await tester.tap(zoomOut);
+      await tester.pump();
+    }
+
+    // A normal mid-grid tap. Unbounded, zoom would be ~0.9^40 and the raw hour
+    // would land in the hundreds; clamped, it stays within [minHour, maxHour].
+    await createViaMenu(tester, key, gridPointFor(tester.getRect(find.byKey(key))));
+
+    expect(created, isNotNull);
+    expect(created!.hour, inInclusiveRange(0, 5),
+        reason: 'the zoom + hour clamps keep the created hour valid');
+  });
 }
