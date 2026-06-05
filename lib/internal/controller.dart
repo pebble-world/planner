@@ -28,13 +28,6 @@ class Controller {
     triggerUpdate.value++;
   }
 
-  Offset? _touchPos;
-  Offset? get touchPos => _touchPos;
-  set touchPos(Offset? value) {
-    _touchPos = value;
-    triggerUpdate.value++;
-  }
-
   Offset get offset => Offset(x, y);
 
   double _previousZoom = 1;
