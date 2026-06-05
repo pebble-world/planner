@@ -35,6 +35,10 @@ jobs:
   integration-windows:
     name: integration (windows)
     runs-on: windows-latest
+    # Windows desktop runners are expensive, and the suite is run locally before
+    # every PR. Gate it to the develop -> main release PR only (skipped on pushes
+    # and on PRs into develop).
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
