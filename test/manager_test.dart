@@ -51,4 +51,50 @@ void main() {
     expect(manager.controller.zoom, 1.5, reason: 'zoom is preserved');
     expect(manager.events.length, 2, reason: 'events reflect the new entries');
   });
+
+  // Regression for D5 (#11): drag detection, the Event drag mutations, and the
+  // onEntryMove callback used to live inside EventsPainter.paint(). They now live
+  // on the Manager and are driven by the widget's gesture handlers, so the
+  // lifecycle is exercisable directly and the painter stays pure.
+  group('drag lifecycle', () {
+    // Default config: blockWidth 200, blockHeight 40, minHour 0. An entry at
+    // day 0 / hour 9 occupies grid rect (0,360)-(200,400); its centre (100,380)
+    // is a body-drag (clear of the 8px top/bottom handle zones). With no scroll
+    // or zoom, planner-local coordinates equal grid coordinates.
+    Manager makeManager(void Function(PlannerEntry)? onMove) => Manager(
+          config: PlannerConfig(labels: const ['A', 'B'], onEntryMove: onMove),
+          entries: [makeEntry('1', 0)],
+        );
+
+    test('start/update/end moves the entry and fires onEntryMove once', () {
+      final moved = <PlannerEntry>[];
+      final manager = makeManager(moved.add);
+      final entry = manager.events.first.entry;
+      expect(entry.time.hour, 9);
+
+      manager.startDrag(const Offset(100, 380));
+      expect(manager.draggedEvent, isNotNull);
+
+      manager.updateDrag(const Offset(100, 420)); // drag down one block (1h)
+      expect(moved, isEmpty, reason: 'no callback fires mid-drag');
+
+      manager.endDrag();
+      expect(manager.draggedEvent, isNull);
+      expect(entry.time.hour, 10, reason: 'a one-block drag advances one hour');
+      expect(moved, hasLength(1), reason: 'onEntryMove fires exactly once, on end');
+      expect(identical(moved.single, entry), isTrue);
+    });
+
+    test('startDrag on empty space is a no-op and never fires onEntryMove', () {
+      var moves = 0;
+      final manager = makeManager((_) => moves++);
+
+      manager.startDrag(const Offset(100, 50)); // above the event (grid y<360)
+      expect(manager.draggedEvent, isNull);
+
+      manager.updateDrag(const Offset(100, 90)); // nothing is being dragged
+      manager.endDrag();
+      expect(moves, 0, reason: 'no event was picked up, so nothing moved');
+    });
+  });
 }

@@ -85,3 +85,16 @@ Future<void> wheelScroll(WidgetTester tester, Offset at, int notches) async {
     await tester.pump();
   }
 }
+
+/// Drags an event the way a user does: press and hold at [from] until the
+/// long-press recognizer wins the gesture arena (over pan/scale), then move by
+/// [delta] and release.
+Future<void> longPressDrag(
+    WidgetTester tester, Offset from, Offset delta) async {
+  final gesture = await tester.startGesture(from);
+  await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+  await gesture.moveBy(delta);
+  await tester.pump();
+  await gesture.up();
+  await tester.pump();
+}
