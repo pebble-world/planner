@@ -1,0 +1,21 @@
+name: Chore
+description: Maintenance work — refactor, tooling, dependencies, build, infrastructure.
+title: "[Chore]: "
+labels: ["chore"]
+body:
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What needs to be done?
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why now?
+      description: What's prompting this? Any deadline or dependency?
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context

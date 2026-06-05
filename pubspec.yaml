@@ -1,8 +1,18 @@
 name: planner
-description: A calendar widget for events.
+description: >-
+  A scrollable, zoomable day-grid widget for showing and editing events across
+  labelled columns, with drag-to-move, drag-to-resize, and context-menu actions.
 version: 0.0.4
-homepage:
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+homepage: https://github.com/pebble-world/planner
+repository: https://github.com/pebble-world/planner
+issue_tracker: https://github.com/pebble-world/planner/issues
+
+topics:
+  - calendar
+  - planner
+  - scheduler
+  - events
+  - widget
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -11,7 +21,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  after_layout: ^1.2.0
 
 dev_dependencies:
   flutter_test:
