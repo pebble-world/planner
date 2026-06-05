@@ -12,6 +12,12 @@ class PlannerConfig {
   int blockWidth;
   int blockHeight;
 
+  /// Lower/upper bounds applied to the pinch/zoom factor in
+  /// [Controller.updateZoom]. Without these the zoom could shrink toward 0
+  /// (blocks collapse, hit-testing explodes) or grow without limit.
+  double minZoom;
+  double maxZoom;
+
   double dateRowHeight;
   double hourColumnWidth;
 
@@ -38,6 +44,8 @@ class PlannerConfig {
     this.maxHour = 24,
     this.blockWidth = 200,
     this.blockHeight = 40,
+    this.minZoom = 0.5,
+    this.maxZoom = 4.0,
     this.hourLabelStyle = const TextStyle(color: Colors.black),
     this.dateLabelStyle = const TextStyle(color: Colors.black),
     this.contextMenuTextStyle = const TextStyle(color: Colors.blue),

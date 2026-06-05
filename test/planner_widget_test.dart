@@ -54,6 +54,42 @@ void main() {
     await tester.pump();
   }
 
+  // Pumps a single full-screen Planner (3 columns, hours 0..23) for the zoom
+  // tests and returns its on-screen rect. These read the *effective* zoom back
+  // out through getTimeAtPos: with no scroll, a fixed screen point at events-
+  // local y maps to hour floor(y / (zoom * blockHeight)). Tapping high enough
+  // that the mapped hour stays in [minHour, maxHour] keeps the hour clamp out of
+  // it, so the resulting hour is determined solely by the (clamped) zoom.
+  Future<Rect> pumpZoomPlanner(
+      WidgetTester tester, Key key, void Function(PlannerTime) onCreate) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          key: key,
+          config: PlannerConfig(
+            labels: const ['c1', 'c2', 'c3'],
+            minHour: 0,
+            maxHour: 23,
+            onEntryCreate: onCreate,
+          ),
+          entries: const [],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    return tester.getRect(find.byKey(key));
+  }
+
+  Future<void> tapButton(
+      WidgetTester tester, Key key, IconData icon, int times) async {
+    final button =
+        find.descendant(of: find.byKey(key), matching: find.byIcon(icon));
+    for (var i = 0; i < times; i++) {
+      await tester.tap(button);
+      await tester.pump();
+    }
+  }
+
   testWidgets('two planners keep independent scroll state (D1)',
       (tester) async {
     const keyA = ValueKey('plannerA');
@@ -231,5 +267,88 @@ void main() {
         reason: 'onEntryMove must not fire during paint');
     expect(moved, hasLength(1), reason: 'the drag committed exactly one move');
     expect(entry.time.hour, 10, reason: 'a one-block drag advances one hour');
+  });
+
+  // Regression for D9 (#12): getTimeAtPos returned an overshoot day/hour for a
+  // real tap past the last column/hour — reachable whenever the grid is smaller
+  // than the viewport (few days/hours), leaving empty space the tap lands in.
+  // Driven end-to-end through the real right-click "Create Event" flow.
+  testWidgets('tapping past the grid clamps the created day/hour (D9)',
+      (tester) async {
+    const key = ValueKey('planner');
+    PlannerTime? created;
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          key: key,
+          // 2 columns (days 0..1) and hours 0..5: a 400x240px grid, far smaller
+          // than the 800x600 viewport, so a low/right tap lands in empty space
+          // past the grid rather than on a cell.
+          config: PlannerConfig(
+            labels: const ['c1', 'c2'],
+            minHour: 0,
+            maxHour: 5,
+            onEntryCreate: (t) => created = t,
+          ),
+          entries: const [],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Right of the last column AND below the last hour row: events-local
+    // (450, 300) -> raw day floor(450/200)=2, raw hour floor(300/40)=7. (Kept
+    // clear of the right edge so the context menu still fits on screen.)
+    final at = tester.getRect(find.byKey(key)).topLeft +
+        const Offset(50 + 450, 50 + 300);
+    await createViaMenu(tester, key, at);
+
+    expect(created, isNotNull);
+    expect(created!.day, 1,
+        reason: 'clamped to the last column (labels.length - 1)');
+    expect(created!.hour, 5, reason: 'clamped to maxHour');
+  });
+
+  // Regression for D9 (#12): updateZoom multiplied without bounds, so the real
+  // zoom-in button could grow zoom indefinitely. After zooming in well past
+  // maxZoom (4.0), a fixed screen point still maps through the *capped* zoom: at
+  // events-local y=350, floor(350 / (4.0 * 40)) = hour 2. Unbounded (~1.1^30 =
+  // 17x) the same point would collapse to hour 0 — so this fails without the cap
+  // and the hour clamp never masks it (2 and 0 are both in range).
+  testWidgets('zooming in past maxZoom stays bounded (D9)', (tester) async {
+    const key = ValueKey('planner');
+    PlannerTime? created;
+    final rect = await pumpZoomPlanner(tester, key, (t) => created = t);
+
+    await tapButton(tester, key, Icons.zoom_in, 30);
+    await createViaMenu(
+        tester, key, rect.topLeft + const Offset(50 + 100, 50 + 350));
+
+    expect(created, isNotNull);
+    expect(created!.hour, 2,
+        reason:
+            'zoom is capped at maxZoom (4.0); unbounded it would be hour 0');
+  });
+
+  // Regression for D9 (#12): the real zoom-out button could shrink zoom toward 0,
+  // blowing up getTimeAtPos's divide-by-zoom. After zooming out well past minZoom
+  // (0.5), a fixed screen point maps through the *floored* zoom: at events-local
+  // y=50, floor(50 / (0.5 * 40)) = hour 2. Unbounded (~0.9^40 = 0.015) the divide
+  // would send the raw hour to ~84 (clamped away to maxHour 23) — so asserting an
+  // exact in-range hour 2 isolates the minZoom floor from the hour clamp.
+  testWidgets('zooming out past minZoom stays bounded (D9)', (tester) async {
+    const key = ValueKey('planner');
+    PlannerTime? created;
+    final rect = await pumpZoomPlanner(tester, key, (t) => created = t);
+
+    await tapButton(tester, key, Icons.zoom_out, 40);
+    await createViaMenu(
+        tester, key, rect.topLeft + const Offset(50 + 100, 50 + 50));
+
+    expect(created, isNotNull);
+    expect(created!.hour, 2,
+        reason:
+            'zoom is floored at minZoom (0.5); unbounded it would hit maxHour');
   });
 }

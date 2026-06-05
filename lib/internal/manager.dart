@@ -95,8 +95,14 @@ class Manager {
   PlannerTime getTimeAtPos(Offset pos) {
     Offset realPos = _toGridPos(pos);
 
-    int day = (realPos.dx / config.blockWidth).floor();
-    int hour = config.minHour + (realPos.dy / config.blockHeight).floor();
+    // Clamp to valid ranges so taps above/left of the grid (negative) or past
+    // the last column/hour (grid smaller than the viewport) can't produce an
+    // out-of-range day/hour.
+    int day = (realPos.dx / config.blockWidth)
+        .floor()
+        .clamp(0, config.labels.length - 1);
+    int hour = (config.minHour + (realPos.dy / config.blockHeight).floor())
+        .clamp(config.minHour, config.maxHour);
     int minutes = 0;
     if (controller.zoom > 2.25) {
       minutes = ((realPos.dy.toInt() % config.blockHeight) / 10).floor() * 15;

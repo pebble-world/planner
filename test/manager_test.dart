@@ -98,4 +98,43 @@ void main() {
       expect(moves, 0, reason: 'no event was picked up, so nothing moved');
     });
   });
+
+  // Regression for D9 (#12): getTimeAtPos used to return a negative day/hour for
+  // taps above/left of the grid, and an overshoot day/hour for taps past the
+  // last column/hour (reachable whenever the grid is smaller than the viewport).
+  // It now clamps both to valid ranges.
+  group('getTimeAtPos clamps to the grid (D9, #12)', () {
+    // 3 day columns (0..2) and hours 8..17. No scroll/zoom, so planner-local
+    // coordinates equal grid coordinates (blockWidth 200, blockHeight 40).
+    Manager makeManager() => Manager(
+          config: PlannerConfig(
+            labels: const ['A', 'B', 'C'],
+            minHour: 8,
+            maxHour: 17,
+          ),
+          entries: const [],
+        );
+
+    test('a tap above/left of the grid clamps to day 0 / minHour', () {
+      // Raw: day floor(-10/200) = -1, hour 8 + floor(-10/40) = 7.
+      final time = makeManager().getTimeAtPos(const Offset(-10, -10));
+      expect(time.day, 0, reason: 'clamped up to the first column');
+      expect(time.hour, 8, reason: 'clamped up to minHour');
+    });
+
+    test('a tap past the last column/hour clamps to the last day / maxHour',
+        () {
+      // Raw: day floor(5000/200) = 25, hour 8 + floor(5000/40) = 133.
+      final time = makeManager().getTimeAtPos(const Offset(5000, 5000));
+      expect(time.day, 2, reason: 'clamped to labels.length - 1');
+      expect(time.hour, 17, reason: 'clamped down to maxHour');
+    });
+
+    test('a tap inside the grid is unaffected by the clamp', () {
+      // Raw: day floor(250/200) = 1, hour 8 + floor(120/40) = 11.
+      final time = makeManager().getTimeAtPos(const Offset(250, 120));
+      expect(time.day, 1);
+      expect(time.hour, 11);
+    });
+  });
 }
