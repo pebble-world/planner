@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Fixed an off-by-one in the hour column: `maxHour` now defaults to `23`
+  (inclusive last hour), so the default planner no longer paints a spurious 25th
+  row labelled "24", and a tap below the grid clamps to hour 23.
+- Added an optional `PlannerConfig.hourLabelFormatter` to control how each hour
+  renders in the left column (e.g. zero-padding, AM/PM, or `intl`).
+
 ## 0.0.4 - 2025-03-03
 
 - Updated dependencies and raised the minimum Dart SDK to 3.0.

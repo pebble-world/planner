@@ -102,7 +102,7 @@ A complete, runnable demo lives in [`example/`](example/lib/main.dart).
 | Type | Purpose |
 |------|---------|
 | `Planner` | The widget. Takes a `config` and a list of `entries`. |
-| `PlannerConfig` | Sizing (`blockWidth`, `blockHeight`, `minHour`, `maxHour`, …), colors, text styles, and the `onEntry*` callbacks. `labels` is required. |
+| `PlannerConfig` | Sizing (`blockWidth`, `blockHeight`, `minHour`, `maxHour` — the inclusive last hour, default `23`, …), colors, text styles, an optional `hourLabelFormatter`, and the `onEntry*` callbacks. `labels` is required. |
 | `PlannerEntry` | One event: `id`, `time`, `title`, `content`, `color`, and optional text styles. |
 | `PlannerTime` | `day` (index into `labels`), `hour`, `minutes`, and `duration` (in minutes). |
 
