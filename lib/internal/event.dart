@@ -65,13 +65,13 @@ class Event {
   }
 
   void _calculateCanvasRect() {
+    final blockHeight = manager.config.blockHeight;
     Offset a = Offset(
         (entry.time.day * manager.config.blockWidth).toDouble(),
-        (entry.time.hour - manager.config.minHour) *
-                manager.config.blockHeight +
-            ((entry.time.minutes / 15).round() * 10.0));
-    Offset b = a.translate(
-        manager.config.blockWidth.toDouble(), entry.time.duration / 60 * 40.0);
+        (entry.time.hour - manager.config.minHour) * blockHeight +
+            entry.time.minutes / 60 * blockHeight);
+    Offset b = a.translate(manager.config.blockWidth.toDouble(),
+        entry.time.duration / 60 * blockHeight);
     canvasRect = Rect.fromPoints(a, b);
   }
 

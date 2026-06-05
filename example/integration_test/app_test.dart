@@ -1,6 +1,7 @@
 import 'package:integration_test/integration_test.dart';
 
 import 'app_smoke_scenarios.dart';
+import 'event_geometry_scenarios.dart';
 import 'multi_planner_scenarios.dart';
 
 /// Single entry point for the integration suite.
@@ -14,5 +15,6 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   appSmokeScenarios();
+  eventGeometryScenarios();
   multiPlannerScenarios();
 }
