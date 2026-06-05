@@ -81,7 +81,8 @@ void main() {
       manager.endDrag();
       expect(manager.draggedEvent, isNull);
       expect(entry.time.hour, 10, reason: 'a one-block drag advances one hour');
-      expect(moved, hasLength(1), reason: 'onEntryMove fires exactly once, on end');
+      expect(moved, hasLength(1),
+          reason: 'onEntryMove fires exactly once, on end');
       expect(identical(moved.single, entry), isTrue);
     });
 
