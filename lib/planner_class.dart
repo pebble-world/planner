@@ -13,24 +13,43 @@ import 'planner_config.dart';
 class Planner extends StatefulWidget {
   final List<PlannerEntry> entries;
   final PlannerConfig config;
-  final Manager data;
 
-  Planner({
+  const Planner({
     Key? key,
     required this.config,
     required this.entries,
-  })  : data = Manager(config: config, entries: entries),
-        super(key: key);
+  }) : super(key: key);
 
   @override
   _PlannerState createState() => _PlannerState();
 }
 
 class _PlannerState extends State<Planner> {
+  // Owned by the State so it survives parent rebuilds: building it in the widget
+  // constructor recreated the Manager (every Event, every TextPainter, the whole
+  // Grid) on every parent build and forced the Controller's scroll/zoom to be
+  // static to survive that churn.
+  late Manager _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _data = Manager(config: widget.config, entries: widget.entries);
+  }
+
+  @override
+  void didUpdateWidget(covariant Planner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.config, widget.config) ||
+        !identical(oldWidget.entries, widget.entries)) {
+      _data.update(config: widget.config, entries: widget.entries);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      widget.data.controller.setSize(constraints.biggest);
+      _data.controller.setSize(constraints.biggest);
       return Column(
         children: [
           paintDates(),
@@ -46,16 +65,14 @@ class _PlannerState extends State<Planner> {
                           if (position.relative == null) {
                             return;
                           }
-                          var event =
-                              widget.data.getEventAtPos(position.relative!);
+                          var event = _data.getEventAtPos(position.relative!);
                           if (event != null &&
-                              widget.data.config.onEntryEdit != null) {
-                            widget.data.config.onEntryEdit!(event.entry);
+                              _data.config.onEntryEdit != null) {
+                            _data.config.onEntryEdit!(event.entry);
                           } else if (event == null &&
-                              widget.data.config.onEntryCreate != null) {
-                            var time =
-                                widget.data.getTimeAtPos(position.relative!);
-                            widget.data.config.onEntryCreate!(time);
+                              _data.config.onEntryCreate != null) {
+                            var time = _data.getTimeAtPos(position.relative!);
+                            _data.config.onEntryCreate!(time);
                           }
                         },
                         child: paintEvents(),
@@ -75,7 +92,7 @@ class _PlannerState extends State<Planner> {
 
   List<Widget> paintMenu() {
     List<Widget> result = [];
-    if (widget.data.controller.menuType != MenuType.none) {
+    if (_data.controller.menuType != MenuType.none) {
       result.add(
         Positioned.fill(child: Container(color: Colors.transparent)),
       );
@@ -83,17 +100,17 @@ class _PlannerState extends State<Planner> {
       result.add(
         GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onPanStart: (_) => widget.data.controller.hideMenu(),
-          onTap: () => widget.data.controller.hideMenu(),
-          onSecondaryTapDown: (_) => widget.data.controller.hideMenu(),
+          onPanStart: (_) => _data.controller.hideMenu(),
+          onTap: () => _data.controller.hideMenu(),
+          onSecondaryTapDown: (_) => _data.controller.hideMenu(),
           child: Container(),
         ),
       );
 
       result.add(
         Transform.translate(
-          offset: widget.data.controller.menuPos!,
-          child: ContextMenu(manager: widget.data),
+          offset: _data.controller.menuPos!,
+          child: ContextMenu(manager: _data),
         ),
       );
     }
@@ -103,17 +120,17 @@ class _PlannerState extends State<Planner> {
   GestureDetector paintDates() {
     return GestureDetector(
       onHorizontalDragStart: (detail) =>
-          widget.data.controller.startHorizontalDrag(detail.globalPosition.dx),
+          _data.controller.startHorizontalDrag(detail.globalPosition.dx),
       onHorizontalDragUpdate: (detail) =>
-          widget.data.controller.updateHorizontalDrag(detail.globalPosition.dx),
+          _data.controller.updateHorizontalDrag(detail.globalPosition.dx),
       child: ClipRect(
         child: Container(
-          height: widget.data.config.dateRowHeight,
-          color: widget.data.config.dateBackground,
+          height: _data.config.dateRowHeight,
+          color: _data.config.dateBackground,
           child: CustomPaint(
             painter: DateRow(
-              manager: widget.data,
-              repaint: widget.data.controller.triggerUpdate,
+              manager: _data,
+              repaint: _data.controller.triggerUpdate,
             ),
             child: Container(),
           ),
@@ -131,8 +148,8 @@ class _PlannerState extends State<Planner> {
           padding: const EdgeInsets.only(top: 8.0),
           child: RawMaterialButton(
             onPressed: () {
-              widget.data.controller.startZoom();
-              widget.data.controller.updateZoom(0.9);
+              _data.controller.startZoom();
+              _data.controller.updateZoom(0.9);
             },
             elevation: 2.0,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -150,8 +167,8 @@ class _PlannerState extends State<Planner> {
           padding: const EdgeInsets.only(top: 8.0),
           child: RawMaterialButton(
             onPressed: () {
-              widget.data.controller.startZoom();
-              widget.data.controller.updateZoom(1.1);
+              _data.controller.startZoom();
+              _data.controller.updateZoom(1.1);
             },
             elevation: 2.0,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -172,23 +189,23 @@ class _PlannerState extends State<Planner> {
   GestureDetector paintEvents() {
     return GestureDetector(
       onHorizontalDragStart: (detail) =>
-          widget.data.controller.startHorizontalDrag(detail.globalPosition.dx),
+          _data.controller.startHorizontalDrag(detail.globalPosition.dx),
       onHorizontalDragUpdate: (detail) =>
-          widget.data.controller.updateHorizontalDrag(detail.globalPosition.dx),
-      onScaleStart: ((details) => widget.data.controller.startZoom()),
+          _data.controller.updateHorizontalDrag(detail.globalPosition.dx),
+      onScaleStart: ((details) => _data.controller.startZoom()),
       onScaleUpdate: (details) =>
-          widget.data.controller.updateZoom(details.verticalScale),
+          _data.controller.updateZoom(details.verticalScale),
       onLongPressStart: (details) {
-        widget.data.controller.touchPos = details.localPosition;
+        _data.controller.touchPos = details.localPosition;
       },
       onLongPressMoveUpdate: (details) {
-        widget.data.controller.touchPos = details.localPosition;
+        _data.controller.touchPos = details.localPosition;
       },
       onLongPressEnd: (details) {
-        widget.data.controller.touchPos = null;
+        _data.controller.touchPos = null;
       },
       onTap: () {
-        widget.data.controller.hideMenu();
+        _data.controller.hideMenu();
       },
       onSecondaryTapDown: (details) {
         showMenu(details);
@@ -197,17 +214,17 @@ class _PlannerState extends State<Planner> {
           child: ScrollDetector(
         onPointerScroll: (event) {
           if (event.scrollDelta.dy > 0) {
-            widget.data.controller.verticalScroll(true);
+            _data.controller.verticalScroll(true);
           } else {
-            widget.data.controller.verticalScroll(false);
+            _data.controller.verticalScroll(false);
           }
         },
         child: Container(
-            color: widget.data.config.plannerBackground,
+            color: _data.config.plannerBackground,
             child: CustomPaint(
               painter: EventsPainter(
-                manager: widget.data,
-                repaint: widget.data.controller.triggerUpdate,
+                manager: _data,
+                repaint: _data.controller.triggerUpdate,
               ),
               child: Container(),
             )),
@@ -218,25 +235,25 @@ class _PlannerState extends State<Planner> {
   GestureDetector paintHours() {
     return GestureDetector(
       onVerticalDragStart: ((details) =>
-          widget.data.controller.startVerticalDrag(details.globalPosition.dy)),
+          _data.controller.startVerticalDrag(details.globalPosition.dy)),
       onVerticalDragUpdate: ((details) =>
-          widget.data.controller.updateVerticalDrag(details.globalPosition.dy)),
+          _data.controller.updateVerticalDrag(details.globalPosition.dy)),
       child: ClipRect(
         child: ScrollDetector(
           onPointerScroll: (event) {
             if (event.scrollDelta.dy > 0) {
-              widget.data.controller.verticalScroll(true);
+              _data.controller.verticalScroll(true);
             } else {
-              widget.data.controller.verticalScroll(false);
+              _data.controller.verticalScroll(false);
             }
           },
           child: Container(
-            width: widget.data.config.hourColumnWidth,
-            color: widget.data.config.hourBackground,
+            width: _data.config.hourColumnWidth,
+            color: _data.config.hourBackground,
             child: CustomPaint(
               painter: HourColumn(
-                manager: widget.data,
-                repaint: widget.data.controller.triggerUpdate,
+                manager: _data,
+                repaint: _data.controller.triggerUpdate,
               ),
               child: Container(),
             ),
@@ -251,14 +268,12 @@ class _PlannerState extends State<Planner> {
   }
 
   void showMenu(TapDownDetails details) {
-    var event = widget.data.getEventAtPos(details.localPosition);
+    var event = _data.getEventAtPos(details.localPosition);
     if (event != null) {
-      widget.data.controller
-          .showEventMenu(details.localPosition, event, hideMenu);
+      _data.controller.showEventMenu(details.localPosition, event, hideMenu);
     } else {
-      var time = widget.data.getTimeAtPos(details.localPosition);
-      widget.data.controller
-          .showPlannerMenu(details.localPosition, time, hideMenu);
+      var time = _data.getTimeAtPos(details.localPosition);
+      _data.controller.showPlannerMenu(details.localPosition, time, hideMenu);
     }
 
     setState(() {});
