@@ -1,0 +1,26 @@
+name: Enhancement
+description: An improvement to existing functionality.
+title: "[Enhancement]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed improvement
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: Why is this worth doing?
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
