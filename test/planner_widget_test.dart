@@ -310,6 +310,44 @@ void main() {
     expect(created!.hour, 5, reason: 'clamped to maxHour');
   });
 
+  // Regression for D10 (#13): maxHour defaulted to 24, so the *default* planner
+  // painted a spurious 25th hour row and a below-grid tap could create an event
+  // at the invalid hour 24. The default is now 23. Driven end-to-end through the
+  // real right-click "Create Event" flow with maxHour LEFT AT ITS DEFAULT (the
+  // value under test). minHour 20 keeps the grid (4 rows, 160px) well inside the
+  // viewport so a low tap lands in empty space past the last hour row.
+  testWidgets(
+      'default maxHour clamps a below-grid tap to hour 23, not 24 (D10)',
+      (tester) async {
+    const key = ValueKey('planner');
+    PlannerTime? created;
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          key: key,
+          config: PlannerConfig(
+            labels: const ['c1', 'c2', 'c3'],
+            minHour: 20, // maxHour intentionally omitted -> default (23)
+            onEntryCreate: (t) => created = t,
+          ),
+          entries: const [],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // events-local (100, 300): column 0, and y=300 is below the 160px grid, so
+    // the raw hour 20 + floor(300/40) = 27 clamps to maxHour.
+    final at = tester.getRect(find.byKey(key)).topLeft +
+        const Offset(50 + 100, 50 + 300);
+    await createViaMenu(tester, key, at);
+
+    expect(created, isNotNull);
+    expect(created!.hour, 23,
+        reason: 'default maxHour is 23; the old default (24) produced hour 24');
+  });
+
   // Regression for D9 (#12): updateZoom multiplied without bounds, so the real
   // zoom-in button could grow zoom indefinitely. After zooming in well past
   // maxZoom (4.0), a fixed screen point still maps through the *capped* zoom: at

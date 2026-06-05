@@ -47,7 +47,7 @@ void main() {
       final config = PlannerConfig(labels: const ['Mon', 'Tue']);
       expect(config.labels, ['Mon', 'Tue']);
       expect(config.minHour, 0);
-      expect(config.maxHour, 24);
+      expect(config.maxHour, 23);
       expect(config.blockWidth, 200);
       expect(config.blockHeight, 40);
     });

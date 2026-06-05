@@ -9,6 +9,14 @@ class PlannerConfig {
   int minHour;
   int maxHour;
 
+  /// Formats the integer hour shown in the left-hand hour column. Receives the
+  /// hour-of-day (`minHour`..`maxHour`) and returns the label text. When `null`
+  /// the hour is rendered as the bare integer (e.g. `9`, `17`).
+  ///
+  /// Use it for zero-padding, AM/PM, or `intl` formatting, e.g.
+  /// `hourLabelFormatter: (h) => h.toString().padLeft(2, '0')` → `09`, `17`.
+  String Function(int hour)? hourLabelFormatter;
+
   int blockWidth;
   int blockHeight;
 
@@ -41,7 +49,8 @@ class PlannerConfig {
   PlannerConfig({
     required this.labels,
     this.minHour = 0,
-    this.maxHour = 24,
+    this.maxHour = 23,
+    this.hourLabelFormatter,
     this.blockWidth = 200,
     this.blockHeight = 40,
     this.minZoom = 0.5,

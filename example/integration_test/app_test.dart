@@ -3,6 +3,7 @@ import 'package:integration_test/integration_test.dart';
 import 'app_smoke_scenarios.dart';
 import 'drag_scenarios.dart';
 import 'event_geometry_scenarios.dart';
+import 'hour_label_scenarios.dart';
 import 'multi_planner_scenarios.dart';
 
 /// Single entry point for the integration suite.
@@ -18,5 +19,6 @@ void main() {
   appSmokeScenarios();
   dragScenarios();
   eventGeometryScenarios();
+  hourLabelScenarios();
   multiPlannerScenarios();
 }
