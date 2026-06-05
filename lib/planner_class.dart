@@ -196,13 +196,13 @@ class _PlannerState extends State<Planner> {
       onScaleUpdate: (details) =>
           _data.controller.updateZoom(details.verticalScale),
       onLongPressStart: (details) {
-        _data.controller.touchPos = details.localPosition;
+        _data.startDrag(details.localPosition);
       },
       onLongPressMoveUpdate: (details) {
-        _data.controller.touchPos = details.localPosition;
+        _data.updateDrag(details.localPosition);
       },
       onLongPressEnd: (details) {
-        _data.controller.touchPos = null;
+        _data.endDrag();
       },
       onTap: () {
         _data.controller.hideMenu();

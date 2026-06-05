@@ -8,8 +8,10 @@ surface) can miss rendering/geometry bugs.
 |------|----------------|
 | [`app_test.dart`](app_test.dart) | The single entry point. Registers every scenario so the whole suite runs in **one** app launch (desktop can only launch one app per `flutter test` invocation). |
 | [`app_smoke_scenarios.dart`](app_smoke_scenarios.dart) | Boots the real example app; asserts a `Planner` renders and the real secondary-tap menu opens. |
+| [`drag_scenarios.dart`](drag_scenarios.dart) | Long-press-dragging an event moves it and fires `onEntryMove` with no paint-phase side effects (device-level counterpart of the #11 / D5 regression). |
+| [`event_geometry_scenarios.dart`](event_geometry_scenarios.dart) | An event's hit-area derives from `config.blockHeight` with proportional minutes (#10 / D3 + D4). |
 | [`multi_planner_scenarios.dart`](multi_planner_scenarios.dart) | Two planners on one screen keep independent scroll state (device-level counterpart of the #9 / D1 regression). |
-| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`). |
+| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `longPressDrag`). |
 
 ## Running
 

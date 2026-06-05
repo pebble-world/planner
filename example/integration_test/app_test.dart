@@ -1,6 +1,7 @@
 import 'package:integration_test/integration_test.dart';
 
 import 'app_smoke_scenarios.dart';
+import 'drag_scenarios.dart';
 import 'event_geometry_scenarios.dart';
 import 'multi_planner_scenarios.dart';
 
@@ -15,6 +16,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   appSmokeScenarios();
+  dragScenarios();
   eventGeometryScenarios();
   multiPlannerScenarios();
 }

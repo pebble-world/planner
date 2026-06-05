@@ -41,6 +41,19 @@ void main() {
     }
   }
 
+  // Press and hold past the long-press timeout (so the long-press recognizer
+  // wins the gesture arena over pan/scale, exactly as a real user dragging an
+  // event), then move and release.
+  Future<void> longPressDrag(
+      WidgetTester tester, Offset from, Offset delta) async {
+    final gesture = await tester.startGesture(from);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await gesture.moveBy(delta);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+  }
+
   testWidgets('two planners keep independent scroll state (D1)',
       (tester) async {
     const keyA = ValueKey('plannerA');
@@ -162,5 +175,61 @@ void main() {
     await createViaMenu(tester, key, point);
     expect(created!.hour, scrolledHour,
         reason: 'scroll position must survive a parent rebuild');
+  });
+
+  // Regression for D5 (#11): drag detection and the onEntryMove callback used to
+  // run *inside* EventsPainter.paint(). A host's onEntryMove almost always
+  // updates app state (setState), and calling setState during paint throws
+  // "setState() called during build". Driving a real long-press drag whose
+  // handler rebuilds therefore crashes on the old paint-side-effect code and
+  // succeeds now that drag lives in the gesture layer.
+  testWidgets('long-press drag moves an event without painting side effects',
+      (tester) async {
+    const key = ValueKey('planner');
+    final moved = <PlannerEntry>[];
+
+    // The event sits at day 0 / hour 9 -> grid rect (0,360)-(200,400) with the
+    // default 200x40 blocks. On screen it is offset by the hour column (50) and
+    // date row (50); its centre is therefore at planner-local (150, 430).
+    final entry = PlannerEntry(
+      id: 'evt',
+      time: PlannerTime(day: 0, hour: 9),
+      title: 'Drag me',
+      content: '',
+      color: const Color(0xFF2244AA),
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: StatefulBuilder(
+          builder: (context, setState) {
+            return Planner(
+              key: key,
+              config: PlannerConfig(
+                labels: const ['c1', 'c2', 'c3'],
+                minHour: 0,
+                maxHour: 23,
+                // A real host handler: record the move and rebuild. Under the old
+                // code this setState ran during paint and threw.
+                onEntryMove: (e) => setState(() => moved.add(e)),
+              ),
+              entries: [entry],
+            );
+          },
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final center =
+        tester.getRect(find.byKey(key)).topLeft + const Offset(150, 430);
+
+    // Drag down exactly one block (40px == 1 hour).
+    await longPressDrag(tester, center, const Offset(0, 40));
+
+    expect(tester.takeException(), isNull,
+        reason: 'onEntryMove must not fire during paint');
+    expect(moved, hasLength(1), reason: 'the drag committed exactly one move');
+    expect(entry.time.hour, 10, reason: 'a one-block drag advances one hour');
   });
 }
