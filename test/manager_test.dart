@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:planner/internal/event.dart';
 import 'package:planner/internal/manager.dart';
 import 'package:planner/planner.dart';
 
@@ -140,6 +141,55 @@ void main() {
       final time = makeManager().getTimeAtPos(const Offset(250, 120));
       expect(time.day, 1);
       expect(time.hour, 11);
+    });
+  });
+
+  // The drag a press would begin, used for the desktop hover cursor (#65) and
+  // shared with Event.startDrag: within 8px of the top/bottom edge resizes,
+  // anywhere else inside the event moves the body, and empty space (or a
+  // read-only spanning event, #47) reports none.
+  group('dragTypeAt classifies the press point', () {
+    // Default blockWidth 200, blockHeight 40, minHour 0; an entry at day 0 /
+    // hour 9 occupies grid rect (0,360)-(200,400). No scroll/zoom, so
+    // planner-local coordinates equal grid coordinates.
+    Manager makeManager() => Manager(
+          config: PlannerConfig(labels: const ['A', 'B']),
+          entries: [makeEntry('1', 0)],
+        );
+
+    test('the body reports DragType.body', () {
+      expect(makeManager().dragTypeAt(const Offset(100, 380)), DragType.body);
+    });
+
+    test('within 8px of the top edge reports topHandle', () {
+      expect(
+          makeManager().dragTypeAt(const Offset(100, 362)), DragType.topHandle);
+    });
+
+    test('within 8px of the bottom edge reports bottomHandle', () {
+      expect(makeManager().dragTypeAt(const Offset(100, 398)),
+          DragType.bottomHandle);
+    });
+
+    test('empty space reports none', () {
+      expect(makeManager().dragTypeAt(const Offset(100, 100)), DragType.none);
+    });
+
+    test('a spanning event is read-only and reports none (#47)', () {
+      final manager = Manager(
+        config: PlannerConfig(labels: const ['A', 'B', 'C']),
+        entries: [
+          PlannerEntry(
+            id: 'span',
+            time: PlannerTime(day: 0, endDay: 1, hour: 9),
+            title: 'span',
+            content: '',
+            color: const Color(0xFF112233),
+          ),
+        ],
+      );
+      // Centre of the span's body in column 0 (grid rect top 360..400).
+      expect(manager.dragTypeAt(const Offset(100, 380)), DragType.none);
     });
   });
 }

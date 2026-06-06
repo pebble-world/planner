@@ -343,14 +343,23 @@ class Event {
     return result;
   }
 
-  void startDrag(Offset pos) {
-    if ((pos.dy - canvasRect.top).abs() < 8) {
-      _dragType = DragType.topHandle;
-    } else if ((pos.dy - canvasRect.bottom).abs() < 8) {
-      _dragType = DragType.bottomHandle;
-    } else {
-      _dragType = DragType.body;
+  /// The drag a press at [gridPos] (grid space) would begin: within 8px of the
+  /// top edge resizes from the top, within 8px of the bottom resizes from the
+  /// bottom, anywhere else moves the body. Shared by [startDrag] and the
+  /// hover-cursor hit test (`Manager.dragTypeAt`) so the cursor shown over an
+  /// event matches the drag a press there would actually start.
+  DragType dragTypeForGridPoint(Offset gridPos) {
+    if ((gridPos.dy - canvasRect.top).abs() < 8) {
+      return DragType.topHandle;
     }
+    if ((gridPos.dy - canvasRect.bottom).abs() < 8) {
+      return DragType.bottomHandle;
+    }
+    return DragType.body;
+  }
+
+  void startDrag(Offset pos) {
+    _dragType = dragTypeForGridPoint(pos);
     _dragStartPos = pos;
     _dragOffset = Offset.zero;
   }

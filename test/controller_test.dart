@@ -178,4 +178,54 @@ void main() {
       expect(hoursPerNotch(4.0), closeTo(hoursPerNotch(1.0), 1e-9));
     });
   });
+
+  // Shift+wheel horizontal scroll (#65). Columns are a fixed blockWidth, so —
+  // unlike verticalScroll — the step does NOT scale with zoom, and it clamps to
+  // the same bounds as a horizontal drag.
+  group('horizontalScroll (Shift+wheel, #65)', () {
+    test('a forward notch scrolls the day axis (x decreases by scrollStep)',
+        () {
+      final controller = Controller(makeConfig()); // default scrollStep 20
+      controller.horizontalScroll(true);
+      expect(controller.x, -20);
+    });
+
+    test('a backward notch reverses it', () {
+      final controller = Controller(makeConfig());
+      controller.horizontalScroll(true); // x -> -20
+      controller.horizontalScroll(false); // x -> 0
+      expect(controller.x, 0);
+    });
+
+    test('cannot scroll right past x = 0', () {
+      final controller = Controller(makeConfig());
+      controller.horizontalScroll(false);
+      expect(controller.x, 0, reason: 'clamped to _minXOffset');
+    });
+
+    test('honours a custom scrollStep from the config', () {
+      final controller = Controller(
+          PlannerConfig(labels: const ['A', 'B', 'C'], scrollStep: 50));
+      controller.horizontalScroll(true);
+      expect(controller.x, -50);
+    });
+
+    test('does not scale with zoom (columns are a fixed width)', () {
+      final controller = Controller(makeConfig());
+      controller.startZoom();
+      controller.updateZoom(2.0);
+      controller.horizontalScroll(true);
+      expect(controller.x, -20, reason: 'the day-axis step ignores zoom');
+    });
+
+    test('is a no-op when the grid is narrower than the viewport (#64 clamp)',
+        () {
+      // 3 labels × blockWidth 200 = 600 px of grid; canvas 1600 px wide.
+      final controller =
+          Controller(PlannerConfig(labels: const ['A', 'B', 'C']));
+      controller.setSize(const Size(1600, 900));
+      controller.horizontalScroll(true);
+      expect(controller.x, 0, reason: 'grid fully visible — nothing to scroll');
+    });
+  });
 }

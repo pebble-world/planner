@@ -261,6 +261,18 @@ class Manager {
     config.onEntryMove?.call(event.entry);
   }
 
+  /// The drag a press at [localPos] (planner-local coordinates) would begin, or
+  /// [DragType.none] when it lands on no draggable event. Drives the desktop
+  /// hover cursor (move over an event body, resize over its top/bottom edge) and
+  /// shares [Event.dragTypeForGridPoint] with [startDrag], so the cursor matches
+  /// the drag a press there would start. Spanning events are read-only (#47), so
+  /// they report [DragType.none] (no move/resize affordance).
+  DragType dragTypeAt(Offset localPos) {
+    final event = getEventAtPos(localPos);
+    if (event == null || event.entry.time.spansColumns) return DragType.none;
+    return event.dragTypeForGridPoint(_toGridPos(localPos));
+  }
+
   Event? getEventAtPos(Offset pos) {
     final Offset realPos = _toGridPos(pos);
 
