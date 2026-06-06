@@ -8,6 +8,12 @@
 /// enters the model (ADR 0001). [endDay] of `null` (or any value `<= day`) is a
 /// single-column event, the default.
 ///
+/// An event may instead be **all-day** (#48): when [allDay] is `true` the event
+/// is not positioned by [hour]/[minutes]/[duration] at all — those are ignored —
+/// and instead renders as a chip in the all-day band above the time grid, under
+/// its column ([day], or across `day..endDay` for a multi-day all-day event).
+/// Still index-based; no `DateTime` (ADR 0001).
+///
 /// Immutable (#27): every field is `final`, so a drag/resize or accessibility
 /// nudge produces a *new* instance via [copyWith] rather than mutating in place,
 /// which keeps diffing predictable and lets value [==] decide when anything
@@ -25,12 +31,20 @@ class PlannerTime {
   final int minutes;
   final int duration;
 
+  /// Whether this is an all-day event (#48). When `true` the event renders in
+  /// the all-day band above the time grid rather than at an hour position, so
+  /// [hour]/[minutes]/[duration] are ignored for layout; only [day] (and
+  /// [endDay] for a multi-day all-day event) decide which column(s) it covers.
+  /// Defaults to `false` — an ordinary hour-positioned event.
+  final bool allDay;
+
   PlannerTime(
       {this.day = 0,
       this.endDay,
       this.hour = 0,
       this.minutes = 0,
-      this.duration = 60});
+      this.duration = 60,
+      this.allDay = false});
 
   /// The last column the event covers, inclusive and never before [day]: the
   /// raw [endDay] when it lies after [day], otherwise [day] itself. Geometry and
@@ -45,13 +59,19 @@ class PlannerTime {
 
   /// Returns a copy with the given fields replaced; omitted fields are kept.
   PlannerTime copyWith(
-          {int? day, int? endDay, int? hour, int? minutes, int? duration}) =>
+          {int? day,
+          int? endDay,
+          int? hour,
+          int? minutes,
+          int? duration,
+          bool? allDay}) =>
       PlannerTime(
         day: day ?? this.day,
         endDay: endDay ?? this.endDay,
         hour: hour ?? this.hour,
         minutes: minutes ?? this.minutes,
         duration: duration ?? this.duration,
+        allDay: allDay ?? this.allDay,
       );
 
   @override
@@ -62,12 +82,13 @@ class PlannerTime {
           other.endDay == endDay &&
           other.hour == hour &&
           other.minutes == minutes &&
-          other.duration == duration;
+          other.duration == duration &&
+          other.allDay == allDay;
 
   @override
-  int get hashCode => Object.hash(day, endDay, hour, minutes, duration);
+  int get hashCode => Object.hash(day, endDay, hour, minutes, duration, allDay);
 
   @override
   String toString() =>
-      'PlannerTime(day: $day, endDay: $endDay, hour: $hour, minutes: $minutes, duration: $duration)';
+      'PlannerTime(day: $day, endDay: $endDay, hour: $hour, minutes: $minutes, duration: $duration, allDay: $allDay)';
 }

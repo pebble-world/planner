@@ -44,6 +44,12 @@ class Controller {
   double _canvasWidth = 0;
   double _canvasHeight = 0;
 
+  // Vertical chrome reserved above the time grid besides the date row — the
+  // all-day band's height (#48), or 0 when no band is shown. Subtracted from the
+  // grid viewport when computing the time-axis scroll clamp so the grid can't
+  // over-scroll by the band's height.
+  double _reservedHeight = 0;
+
   MenuType menuType = MenuType.none;
   Offset? menuPos;
   Event? menuEvent;
@@ -73,6 +79,15 @@ class Controller {
     }
   }
 
+  /// Records the height of the chrome reserved above the time grid besides the
+  /// date row — the all-day band (#48). Recomputes the scroll clamp so the grid
+  /// viewport excludes the band. A no-op when the height is unchanged.
+  void setReservedHeight(double height) {
+    if (height == _reservedHeight) return;
+    _reservedHeight = height;
+    _calculateOffsets();
+  }
+
   void _calculateOffsets() {
     _minXOffset = 0;
     _maxXOffset =
@@ -80,7 +95,7 @@ class Controller {
     _minYOffset = 0;
     _maxYOffset = 0 -
         (((config.blockHeight * zoom) * (config.maxHour - config.minHour + 1) -
-            (_canvasHeight - config.dateRowHeight)));
+            (_canvasHeight - config.dateRowHeight - _reservedHeight)));
     if (_maxXOffset > 0) {
       _maxXOffset = 0;
     }

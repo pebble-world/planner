@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../planner.dart';
+import 'all_day_event.dart';
 import 'controller.dart';
 import 'event.dart';
 
@@ -9,6 +10,16 @@ class Manager {
   List<PlannerEntry> entries;
   final Controller controller;
   final List<Event> events = [];
+
+  /// The all-day events (#48), packed into stacked lanes for the all-day band.
+  /// Built from entries whose [PlannerTime.allDay] is set; those are kept out of
+  /// [events] (the hour-positioned grid) entirely. Empty when none are all-day,
+  /// in which case the band is omitted and [allDayBandHeight] is zero.
+  final List<AllDayEvent> allDayEvents = [];
+
+  /// How many stacked lanes the all-day band needs — the height of the busiest
+  /// overlap of all-day events. Zero when there are no all-day events.
+  int allDayLaneCount = 0;
 
   // Bumped every time the event set is rebuilt (construct / update). Painters
   // snapshot it and compare it in shouldRepaint, so the canvas repaints — and
@@ -48,13 +59,69 @@ class Manager {
 
   void _buildEvents() {
     events.clear();
+    final allDayInputs = <PlannerEntry>[];
     for (PlannerEntry entry in entries) {
-      events.add(Event(entry: entry, manager: this));
+      // All-day entries render in the band, not the hour grid, so they're kept
+      // out of `events` (and thus out of overlap layout, hit-testing and drag).
+      if (entry.time.allDay) {
+        allDayInputs.add(entry);
+      } else {
+        events.add(Event(entry: entry, manager: this));
+      }
     }
     _layoutOverlaps();
+    _layoutAllDay(allDayInputs);
     _rebuildDayIndex();
+    // The band reserves vertical space above the grid, so the time-axis scroll
+    // clamp must account for it (else the grid can over-scroll by the band's
+    // height). Re-applied whenever the all-day layout can have changed.
+    controller.setReservedHeight(allDayBandHeight);
     _revision++;
   }
+
+  /// Packs the all-day events (#48) into stacked lanes for the band. Each event
+  /// covers columns `day..lastDay` (a multi-day all-day event spans columns the
+  /// same index-based way #47 does), and concurrent ones — those sharing any
+  /// column — must not share a lane. First-fit on the column axis (sorted by
+  /// start column, then end) gives the standard side-by-side stacking with the
+  /// fewest lanes, mirroring the per-column time packing in [_layoutDayColumn].
+  void _layoutAllDay(List<PlannerEntry> allDayInputs) {
+    allDayEvents.clear();
+
+    final sorted = [...allDayInputs]..sort((a, b) {
+        final byStart = a.time.day.compareTo(b.time.day);
+        return byStart != 0
+            ? byStart
+            : a.time.lastDay.compareTo(b.time.lastDay);
+      });
+
+    // The last column (inclusive) used by each open lane. A lane is free for an
+    // event starting at `day` once its previous occupant ended before `day`.
+    final laneLastColumn = <int>[];
+    for (final entry in sorted) {
+      final start = entry.time.day;
+      final end = entry.time.lastDay;
+      var lane = laneLastColumn.indexWhere((last) => last < start);
+      if (lane == -1) {
+        lane = laneLastColumn.length;
+        laneLastColumn.add(end);
+      } else {
+        laneLastColumn[lane] = end;
+      }
+      allDayEvents.add(AllDayEvent(entry: entry, manager: this, lane: lane));
+    }
+
+    allDayLaneCount = laneLastColumn.length;
+  }
+
+  /// The height the all-day band occupies above the time grid: enough for every
+  /// stacked lane plus the band's top/bottom padding, or `0` when there are no
+  /// all-day events (the band is then omitted entirely). Drives both the band
+  /// widget's height and the controller's scroll-clamp reservation.
+  double get allDayBandHeight => allDayLaneCount == 0
+      ? 0
+      : allDayLaneCount * config.allDayBandLaneHeight +
+          2 * allDayBandVerticalPadding;
 
   /// Rebuilds the [_eventsByDay] hit-test buckets from the current [events].
   /// One linear pass, called only when the event set or an event's day can have
