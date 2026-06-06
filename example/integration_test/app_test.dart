@@ -6,6 +6,7 @@ import 'drag_scenarios.dart';
 import 'event_geometry_scenarios.dart';
 import 'hour_label_scenarios.dart';
 import 'multi_planner_scenarios.dart';
+import 'overlap_scenarios.dart';
 import 'snapping_scenarios.dart';
 
 /// Single entry point for the integration suite.
@@ -24,5 +25,6 @@ void main() {
   eventGeometryScenarios();
   hourLabelScenarios();
   multiPlannerScenarios();
+  overlapScenarios();
   snappingScenarios();
 }
