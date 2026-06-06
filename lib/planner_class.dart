@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'internal/context_menu.dart';
@@ -10,6 +11,12 @@ import 'internal/date_row.dart';
 import 'internal/manager.dart';
 import 'planner_entry.dart';
 import 'planner_config.dart';
+
+/// What a single in-progress events-canvas gesture is doing. Decided when the
+/// unified [ScaleGestureRecognizer] starts and refined to [zoom] as soon as a
+/// second pointer joins, so pan and zoom no longer fight in the gesture arena
+/// (the old layout combined a horizontal-drag recognizer with scale).
+enum _GestureMode { idle, pan, zoom }
 
 class Planner extends StatefulWidget {
   final List<PlannerEntry> entries;
@@ -38,6 +45,12 @@ class _PlannerState extends State<Planner> {
   // never fed and onEntryEdit/onEntryCreate never fired (#40). Feeding the
   // detector through its controller keeps one detector in the arena.
   final PositionedTapController _tapController = PositionedTapController();
+
+  // What the current events-canvas drag is doing. Set when the unified scale
+  // recognizer starts (single pointer => pan) and switched to zoom the moment a
+  // second pointer joins, so a one-finger pan and a pinch-zoom can't both apply
+  // to the same gesture (the old detector ran horizontal-drag and scale at once).
+  _GestureMode _mode = _GestureMode.idle;
 
   @override
   void initState() {
@@ -210,37 +223,90 @@ class _PlannerState extends State<Planner> {
     );
   }
 
-  GestureDetector paintEvents() {
-    return GestureDetector(
-      onHorizontalDragStart: (detail) =>
-          _data.controller.startHorizontalDrag(detail.globalPosition.dx),
-      onHorizontalDragUpdate: (detail) =>
-          _data.controller.updateHorizontalDrag(detail.globalPosition.dx),
-      onScaleStart: ((details) => _data.controller.startZoom()),
-      onScaleUpdate: (details) =>
-          _data.controller.updateZoom(details.verticalScale),
-      onLongPressStart: (details) {
-        _data.startDrag(details.localPosition);
-      },
-      onLongPressMoveUpdate: (details) {
-        _data.updateDrag(details.localPosition);
-      },
-      onLongPressEnd: (details) {
-        _data.endDrag();
-      },
-      // Feed taps to the double-tap detector via its controller (see
-      // _tapController): onTapDown records the pending tap, onTap confirms it.
-      // hideMenu stays on the immediate tap so dismissing the menu isn't held
-      // back by the double-tap window.
-      onTapDown: (details) {
-        _tapController.onTapDown(details);
-      },
-      onTap: () {
-        _data.controller.hideMenu();
-        _tapController.onTap();
-      },
-      onSecondaryTapDown: (details) {
-        showMenu(details);
+  // --- Events-canvas gesture handlers ---------------------------------------
+  // One ScaleGestureRecognizer drives both pan and zoom (a one-finger drag pans;
+  // a multi-finger pinch zooms), replacing the old horizontal-drag + scale combo
+  // that fought in the gesture arena. Move/resize stays on the long-press
+  // recognizer for now (unchanged behaviour); the desktop immediate-drag path
+  // arrives in a later commit.
+
+  void _onScaleStart(ScaleStartDetails details) {
+    // Single pointer => pan; switched to zoom in _onScaleUpdate once a second
+    // pointer joins. Pan is horizontal-only here, matching the previous
+    // horizontal-drag recognizer; startZoom captures the pre-gesture zoom so a
+    // pinch that begins mid-gesture stays continuous.
+    _mode = _GestureMode.pan;
+    _data.controller.startHorizontalDrag(details.focalPoint.dx);
+    _data.controller.startZoom();
+  }
+
+  void _onScaleUpdate(ScaleUpdateDetails details) {
+    if (details.pointerCount >= 2) {
+      _mode = _GestureMode.zoom;
+      _data.controller.updateZoom(details.verticalScale);
+    } else if (_mode == _GestureMode.pan) {
+      _data.controller.updateHorizontalDrag(details.focalPoint.dx);
+    }
+  }
+
+  void _onScaleEnd(ScaleEndDetails details) {
+    _mode = _GestureMode.idle;
+  }
+
+  Widget paintEvents() {
+    return RawGestureDetector(
+      gestures: <Type, GestureRecognizerFactory>{
+        // Pan (one finger) + zoom (pinch) in a single recognizer.
+        ScaleGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<ScaleGestureRecognizer>(
+          () => ScaleGestureRecognizer(),
+          (ScaleGestureRecognizer instance) {
+            instance
+              ..onStart = _onScaleStart
+              ..onUpdate = _onScaleUpdate
+              ..onEnd = _onScaleEnd;
+          },
+        ),
+        // Long-press move/resize: press an event and drag to move, or drag its
+        // top/bottom handle to resize. Drag intent (body vs edge) is decided in
+        // Event.startDrag via Manager.startDrag.
+        LongPressGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+          () => LongPressGestureRecognizer(),
+          (LongPressGestureRecognizer instance) {
+            instance
+              ..onLongPressStart = (d) {
+                _data.startDrag(d.localPosition);
+              }
+              ..onLongPressMoveUpdate = (d) {
+                _data.updateDrag(d.localPosition);
+              }
+              ..onLongPressEnd = (d) {
+                _data.endDrag();
+              };
+          },
+        ),
+        // Tap / double-tap / right-click. Taps are fed to the double-tap
+        // detector via its controller (see _tapController): onTapDown records
+        // the pending tap, onTap confirms it. hideMenu stays on the immediate
+        // tap so dismissing the menu isn't held back by the double-tap window.
+        TapGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+          () => TapGestureRecognizer(),
+          (TapGestureRecognizer instance) {
+            instance
+              ..onTapDown = (d) {
+                _tapController.onTapDown(d);
+              }
+              ..onTap = () {
+                _data.controller.hideMenu();
+                _tapController.onTap();
+              }
+              ..onSecondaryTapDown = (d) {
+                showMenu(d);
+              };
+          },
+        ),
       },
       child: ClipRect(
           child: ScrollDetector(
