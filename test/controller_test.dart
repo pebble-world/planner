@@ -102,4 +102,50 @@ void main() {
       expect(controller.zoom, 0.5, reason: 'bottoms out exactly at minZoom');
     });
   });
+
+  // Regression for D12 (#28): verticalScroll used a fixed 20px step, so one wheel
+  // notch moved progressively less *time* the further you zoomed in (each hour
+  // row is `blockHeight * zoom` px tall). The step now scales with zoom.
+  group('verticalScroll step scales with zoom (D12, #28)', () {
+    test('at zoom 1 one notch moves by the base scrollStep (default 20)', () {
+      final controller = Controller(makeConfig());
+      controller.verticalScroll(true); // wheel "up" scrolls the grid downward
+      expect(controller.y, -20);
+    });
+
+    test('at higher zoom one notch moves a proportionally larger pixel step',
+        () {
+      final controller = Controller(makeConfig());
+      controller.startZoom();
+      controller.updateZoom(2.0);
+      controller.verticalScroll(true);
+      expect(controller.y, -40, reason: 'step is scrollStep * zoom (20 * 2)');
+    });
+
+    test('honours a custom scrollStep from the config', () {
+      final controller =
+          Controller(PlannerConfig(labels: const ['A'], scrollStep: 50));
+      controller.verticalScroll(true);
+      expect(controller.y, -50);
+    });
+
+    test('one notch moves a constant amount of TIME at any zoom', () {
+      // time-per-notch = step / rowHeightOnScreen
+      //               = (scrollStep * zoom) / (blockHeight * zoom)
+      //               = scrollStep / blockHeight, independent of zoom.
+      double hoursPerNotch(double zoom) {
+        final controller = Controller(makeConfig());
+        if (zoom != 1.0) {
+          controller.startZoom();
+          controller.updateZoom(zoom);
+        }
+        controller.verticalScroll(true);
+        return controller.y.abs() / (controller.config.blockHeight * zoom);
+      }
+
+      expect(hoursPerNotch(1.0), closeTo(0.5, 1e-9)); // 20 / 40
+      expect(hoursPerNotch(2.0), closeTo(hoursPerNotch(1.0), 1e-9));
+      expect(hoursPerNotch(4.0), closeTo(hoursPerNotch(1.0), 1e-9));
+    });
+  });
 }

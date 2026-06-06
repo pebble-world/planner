@@ -31,7 +31,11 @@ class HourColumn extends CustomPainter {
   HourColumn({required this.manager, required Listenable repaint})
       : _revision = manager.revision,
         super(repaint: repaint) {
-    int pos = 15;
+    // Grid-space top of each hour-row: the first row starts at 0 (the grid top),
+    // each subsequent one a `blockHeight` below. HourLabel maps this through the
+    // current scroll/zoom and centers the text in the row — the old code baked a
+    // hardcoded `15` offset into the start instead (#28).
+    double pos = 0;
     for (final text in buildHourLabels(manager.config)) {
       _labels.add(HourLabel(
         label: text,
