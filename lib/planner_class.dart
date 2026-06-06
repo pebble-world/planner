@@ -16,13 +16,13 @@ class Planner extends StatefulWidget {
   final PlannerConfig config;
 
   const Planner({
-    Key? key,
+    super.key,
     required this.config,
     required this.entries,
-  }) : super(key: key);
+  });
 
   @override
-  _PlannerState createState() => _PlannerState();
+  State<Planner> createState() => _PlannerState();
 }
 
 class _PlannerState extends State<Planner> {
@@ -155,13 +155,13 @@ class _PlannerState extends State<Planner> {
             elevation: 2.0,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             fillColor: Theme.of(context).colorScheme.secondary,
+            padding: const EdgeInsets.all(4.0),
+            shape: const CircleBorder(),
             child: const Icon(
               Icons.zoom_out,
               size: 22.0,
               color: Colors.white,
             ),
-            padding: const EdgeInsets.all(4.0),
-            shape: const CircleBorder(),
           ),
         ),
         Padding(
@@ -174,13 +174,13 @@ class _PlannerState extends State<Planner> {
             elevation: 2.0,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             fillColor: Theme.of(context).colorScheme.secondary,
+            padding: const EdgeInsets.all(4.0),
+            shape: const CircleBorder(),
             child: const Icon(
               Icons.zoom_in,
               size: 22.0,
               color: Colors.white,
             ),
-            padding: const EdgeInsets.all(4.0),
-            shape: const CircleBorder(),
           ),
         ),
       ],

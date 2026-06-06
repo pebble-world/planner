@@ -6,10 +6,10 @@ class ScrollDetector extends StatelessWidget {
   final Widget child;
 
   const ScrollDetector({
-    Key? key,
+    super.key,
     required this.onPointerScroll,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

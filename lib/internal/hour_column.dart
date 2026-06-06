@@ -25,14 +25,14 @@ class HourColumn extends CustomPainter {
 
   HourColumn({required this.manager, required Listenable repaint})
       : super(repaint: repaint) {
-    int _pos = 15;
+    int pos = 15;
     for (final text in buildHourLabels(manager.config)) {
       _labels.add(HourLabel(
         label: text,
-        position: _pos,
+        position: pos,
         manager: manager,
       ));
-      _pos += manager.config.blockHeight;
+      pos += manager.config.blockHeight;
     }
   }
 
