@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added optional, **non-core** calendar helpers in `package:planner/calendar.dart`
+  (a separate import — *not* part of the main `planner.dart` barrel) so building an
+  ordinary date-based week calendar on top of the date-agnostic widget is a few
+  lines, without `DateTime` entering the widget API (ADR 0001 / #49). A
+  `CalendarWindow` owns the `date ↔ column-index` mapping for a window of N days:
+  build it directly or week-align it with `CalendarWindow.week(anchor: …)`, map
+  dates to columns (`indexOf` / `dateAt` / `contains`), step weeks (`next` /
+  `previous`), derive `PlannerConfig.labels` (`labels()`, defaulting to a localized
+  `EEE d` via `intl`) and the `highlightedColumn` "today" index (`todayColumn`), and
+  convert your own dated events into `PlannerEntry`/`PlannerTime` for the current
+  window (`timeFor` / `entriesFor`, with column-spanning support via an `end` date).
+  Adds `intl` as a dependency (used only by these helpers for the default label
+  format).
 - Fixed event accessibility semantics not updating when the canvas is scrolled
   or zoomed. A screen reader now reaches *every* event — not just those that were
   on screen the last time the data changed or the canvas was laid out — and each

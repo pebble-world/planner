@@ -75,9 +75,10 @@ non-breaking follow-up issues:
 - **All-day band** ([#48](https://github.com/pebble-world/planner/issues/48)) — a
   row above the time grid for all-day / full-column entries.
 - **Optional consumer-side date helpers**
-  ([#49](https://github.com/pebble-world/planner/issues/49)) — a small
-  `date ↔ index` utility / week-builder (non-core) so the common calendar case is
-  easy without changing the core model.
+  ([#49](https://github.com/pebble-world/planner/issues/49)) — ✅ done: a small
+  `date ↔ index` utility / week-builder (`CalendarWindow` in the non-core
+  `package:planner/calendar.dart`, not in the main barrel) so the common calendar
+  case is easy without changing the core model.
 
 These are tracked as follow-up issues spun out of #19.
 
