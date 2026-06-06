@@ -21,6 +21,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Used only by the optional, non-core calendar helpers (lib/calendar.dart) for
+  # the default date-label formatting; a wide range so it co-resolves with apps
+  # that pin intl via flutter_localizations.
+  intl: ">=0.18.0 <0.21.0"
 
 dev_dependencies:
   flutter_test:

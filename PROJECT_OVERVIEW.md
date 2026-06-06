@@ -185,8 +185,9 @@ Severity: 🔴 blocker/bug · 🟠 important · 🟡 polish.
 - Add the genuine widget-level primitives as additive, non-breaking follow-ups:
   ✅ highlight-column ("today" style, #46 — `PlannerConfig.highlightedColumn`),
   ✅ event column-span (multi-day, #47 — `PlannerTime.endDay` +
-  `PlannerConfig.spanOverlap`), all-day band (#48), optional
-  `date ↔ index` consumer helpers (#49).
+  `PlannerConfig.spanOverlap`), all-day band (#48), ✅ optional
+  `date ↔ index` consumer helpers (#49 — `CalendarWindow` in the non-core
+  `lib/calendar.dart`).
 - **D11** overlap/column layout. Accessibility (`Semantics`), localization of menu strings.
 
 ### P3 — Polish & tooling
