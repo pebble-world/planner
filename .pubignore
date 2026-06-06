@@ -1,4 +1,33 @@
-# Files kept in the repository but excluded from the published pub.dev archive.
+# A `.pubignore` overrides the `.gitignore` in the SAME directory for `pub
+# publish` (dart.dev/go/pubignore). So this file must mirror the root
+# `.gitignore` patterns, otherwise build output, IDE files, etc. leak into the
+# published archive. Keep it in sync with `.gitignore`.
 
-# Internal quality-audit / orientation doc — useful for contributors, not for consumers.
+# --- mirror of .gitignore ---
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Flutter/Dart/Pub related
+/pubspec.lock
+**/doc/api/
+.dart_tool/
+.packages
+build/
+
+# --- package-specific exclusions ---
+# Internal quality-audit / orientation doc — kept in the repo, not shipped.
 PROJECT_OVERVIEW.md
