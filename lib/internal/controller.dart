@@ -81,6 +81,9 @@ class Controller {
     _maxYOffset = 0 -
         (((config.blockHeight * zoom) * (config.maxHour - config.minHour + 1) -
             (_canvasHeight - config.dateRowHeight)));
+    if (_maxXOffset > 0) {
+      _maxXOffset = 0;
+    }
     if (_maxYOffset > 0) {
       _maxYOffset = 0;
     }
