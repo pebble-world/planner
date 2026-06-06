@@ -111,7 +111,7 @@ Severity: 🔴 blocker/bug · 🟠 important · 🟡 polish.
 |---|-----|-------|---------------|
 | B1 | 🟠 | `after_layout: ^1.2.0` is declared but **never imported** anywhere. Dead weight that lowers the pub score. | Remove from `pubspec.yaml`. ✅ (this pass) |
 | B2 | 🟡 | `flutter_lints: ^1.0.0` is several major versions behind (current ~5.x); modern lints are missed. | Bump to latest, fix any new findings. (deferred — may surface lints) |
-| B3 | 🟠 | [`positioned_tap_detector_2.dart`](lib/internal/positioned_tap_detector_2.dart) is a **verbatim vendored copy** of a pub package — no attribution, no upstream fixes, possible license violation. | Either depend on the pub package, or keep the copy *with* its original license header + NOTICE. |
+| B3 | 🟠 | [`positioned_tap_detector_2.dart`](lib/internal/positioned_tap_detector_2.dart) is a **verbatim vendored copy** of a pub package — no attribution, no upstream fixes, possible license violation. | Kept the copy with its MIT license header + [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), removed the analysis exclude. ✅ (#24) |
 | B4 | 🟠 | `pubspec.lock` is **committed** despite being in `.gitignore` (libraries must not pin it). | `git rm --cached pubspec.lock example/pubspec.lock`. ✅ (this pass) |
 
 ### C. Project structure / hygiene

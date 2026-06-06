@@ -144,3 +144,6 @@ PlannerConfig(
 ## License
 
 [MIT](LICENSE) © yvan vander sanden
+
+This package vendors third-party source code under its own license; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
