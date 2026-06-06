@@ -4,6 +4,7 @@ import 'accessibility_scenarios.dart';
 import 'app_smoke_scenarios.dart';
 import 'context_menu_labels_scenarios.dart';
 import 'context_menu_scenarios.dart';
+import 'direct_manipulation_scenarios.dart';
 import 'double_tap_scenarios.dart';
 import 'drag_scenarios.dart';
 import 'event_geometry_scenarios.dart';
@@ -29,6 +30,7 @@ void main() {
   appSmokeScenarios();
   contextMenuLabelsScenarios();
   contextMenuScenarios();
+  directManipulationScenarios();
   doubleTapScenarios();
   dragScenarios();
   eventGeometryScenarios();

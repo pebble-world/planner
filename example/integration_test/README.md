@@ -8,13 +8,14 @@ surface) can miss rendering/geometry bugs.
 |------|----------------|
 | [`app_test.dart`](app_test.dart) | The single entry point. Registers every scenario so the whole suite runs in **one** app launch (desktop can only launch one app per `flutter test` invocation). |
 | [`app_smoke_scenarios.dart`](app_smoke_scenarios.dart) | Boots the real example app; asserts a `Planner` renders and the real secondary-tap menu opens. |
-| [`drag_scenarios.dart`](drag_scenarios.dart) | Long-press-dragging an event moves it and fires `onEntryMove` with no paint-phase side effects (device-level counterpart of the #11 / D5 regression). |
+| [`drag_scenarios.dart`](drag_scenarios.dart) | Mouse-dragging an event body moves it, and dragging its top edge resizes it; both fire `onEntryMove` with no paint-phase side effects (device-level counterpart of the #11 / D5 regression). |
+| [`direct_manipulation_scenarios.dart`](direct_manipulation_scenarios.dart) | Outlook-style direct manipulation (#65): desktop hover cursors (move over a body, resize over an edge, basic over empty), and a one-finger touch drag pans rather than moving the event. |
 | [`event_geometry_scenarios.dart`](event_geometry_scenarios.dart) | An event's hit-area derives from `config.blockHeight` with proportional minutes (#10 / D3 + D4). |
 | [`hour_label_scenarios.dart`](hour_label_scenarios.dart) | The default `maxHour` (23) clamps a below-grid tap to hour 23, not the invalid 24 (#13 / D10). |
 | [`snapping_scenarios.dart`](snapping_scenarios.dart) | Create and drag snap event times to the single configurable `snapMinutes` interval, and agree (#14 / D8). |
-| [`span_scenarios.dart`](span_scenarios.dart) | A column-spanning event (`PlannerTime.endDay`) paints one box across its columns, hit-tests from any column it covers, and is read-only — a long-press drag doesn't move it (#47). |
+| [`span_scenarios.dart`](span_scenarios.dart) | A column-spanning event (`PlannerTime.endDay`) paints one box across its columns, hit-tests from any column it covers, and is read-only — dragging it doesn't move it (#47). |
 | [`multi_planner_scenarios.dart`](multi_planner_scenarios.dart) | Two planners on one screen keep independent scroll state (device-level counterpart of the #9 / D1 regression). |
-| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `longPressDrag`). |
+| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `mouseDrag`). |
 
 ## Running
 

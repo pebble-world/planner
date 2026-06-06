@@ -41,13 +41,14 @@ void main() {
     }
   }
 
-  // Press and hold past the long-press timeout (so the long-press recognizer
-  // wins the gesture arena over pan/scale, exactly as a real user dragging an
-  // event), then move and release.
-  Future<void> longPressDrag(
-      WidgetTester tester, Offset from, Offset delta) async {
-    final gesture = await tester.startGesture(from);
-    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+  // Press an event with a mouse and drag immediately (the Outlook-style desktop
+  // gesture: a precise pointer moves/resizes an event as soon as it drags, no
+  // long-press). The pointer-down position anchors the drag, so the committed
+  // move equals [delta].
+  Future<void> mouseDrag(WidgetTester tester, Offset from, Offset delta) async {
+    final gesture =
+        await tester.startGesture(from, kind: PointerDeviceKind.mouse);
+    await tester.pump();
     await gesture.moveBy(delta);
     await tester.pump();
     await gesture.up();
@@ -276,10 +277,10 @@ void main() {
   // Regression for D5 (#11): drag detection and the onEntryMove callback used to
   // run *inside* EventsPainter.paint(). A host's onEntryMove almost always
   // updates app state (setState), and calling setState during paint throws
-  // "setState() called during build". Driving a real long-press drag whose
-  // handler rebuilds therefore crashes on the old paint-side-effect code and
-  // succeeds now that drag lives in the gesture layer.
-  testWidgets('long-press drag moves an event without painting side effects',
+  // "setState() called during build". Driving a real drag whose handler
+  // rebuilds therefore crashes on the old paint-side-effect code and succeeds
+  // now that drag lives in the gesture layer.
+  testWidgets('dragging an event moves it without painting side effects',
       (tester) async {
     const key = ValueKey('planner');
     final moved = <PlannerEntry>[];
@@ -321,7 +322,7 @@ void main() {
         tester.getRect(find.byKey(key)).topLeft + const Offset(150, 430);
 
     // Drag down exactly one block (40px == 1 hour).
-    await longPressDrag(tester, center, const Offset(0, 40));
+    await mouseDrag(tester, center, const Offset(0, 40));
 
     expect(tester.takeException(), isNull,
         reason: 'onEntryMove must not fire during paint');

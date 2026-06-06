@@ -12,14 +12,14 @@ import 'planner_harness.dart';
 /// gesture handlers, so the same flow is safe.
 ///
 /// This drives the *real* composed widget (real layout, real fonts, real
-/// long-press recognition over the competing pan/scale recognizers) and uses a
-/// stateful host whose `onEntryMove` rebuilds — exactly the pattern that crashed
-/// on the old paint-side-effect code.
+/// mouse drag-move/resize over the competing pan/zoom/tap recognizers) and uses
+/// a stateful host whose `onEntryMove` rebuilds — exactly the pattern that
+/// crashed on the old paint-side-effect code.
 ///
 /// Registered from [app_test.dart]; not a standalone entry point (desktop can
 /// only launch one app per `flutter test` invocation).
 void dragScenarios() {
-  testWidgets('long-press dragging an event moves it and fires onEntryMove',
+  testWidgets('dragging an event body moves it and fires onEntryMove',
       (tester) async {
     final moved = <PlannerEntry>[];
 
@@ -34,7 +34,7 @@ void dragScenarios() {
         tester.getRect(find.byType(Planner)).topLeft + const Offset(150, 230);
 
     // Drag down exactly one block (40px == 1 hour): hour 4 -> hour 5.
-    await longPressDrag(tester, center, const Offset(0, 40));
+    await mouseDrag(tester, center, const Offset(0, 40));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull,
@@ -44,6 +44,35 @@ void dragScenarios() {
     expect(moved.single.time.day, 0);
     expect(moved.single.time.hour, 5,
         reason: 'a one-block drag advances the event one hour');
+  });
+
+  testWidgets('dragging an event top edge resizes it and fires onEntryMove',
+      (tester) async {
+    final moved = <PlannerEntry>[];
+
+    await tester.pumpWidget(_DragHostApp(onMoved: moved.add));
+    await tester.pumpAndSettle();
+
+    // Same event: grid rect (0,160)-(200,200), so its top edge is at screen
+    // planner-local y 50 (date row) + 160 = 210, x in column 0. Press 2px inside
+    // the top (y 212), within the 8px top-handle zone, and drag the top up one
+    // block: 04:00 -> 03:00, with the bottom (05:00) fixed, so the duration grows
+    // from 60 to 120 minutes. (The committed start derives from canvasRect.top +
+    // the drag offset, so the exact press point within the handle doesn't matter.)
+    final topEdge =
+        tester.getRect(find.byType(Planner)).topLeft + const Offset(150, 212);
+
+    await mouseDrag(tester, topEdge, const Offset(0, -40));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(moved, hasLength(1),
+        reason: 'the resize committed exactly one move');
+    expect(moved.single.time.hour, 3,
+        reason: 'dragging the top edge up one block moves the start to 03:00');
+    expect(moved.single.time.duration, 120,
+        reason:
+            'the bottom edge stays put, so the duration grows to two hours');
   });
 }
 

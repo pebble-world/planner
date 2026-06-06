@@ -10,7 +10,7 @@ import 'planner_harness.dart';
 /// [PlannerTime.endDay] is set after [PlannerTime.day] renders across the whole
 /// `day..endDay` column range, is reachable by a pointer from *any* column it
 /// covers (not just the start column), and is read-only in this first cut —
-/// a long-press drag must not move it.
+/// a drag on it must not move it.
 ///
 /// The span is drawn on the `CustomPaint` canvas and hit-tested by
 /// `getEventAtPos`, neither of which an isolated widget test exercises with real
@@ -87,7 +87,7 @@ void spanScenarios() {
             'the span must hit-test from a column it covers, not just its start');
   });
 
-  testWidgets('a span is read-only: a long-press drag does not move it',
+  testWidgets('a span is read-only: dragging it does not move it',
       (tester) async {
     final moved = <String>[];
 
@@ -98,10 +98,11 @@ void spanScenarios() {
 
     final planner = tester.getRect(find.byKey(PlannerHarness.keyFor(0)));
     // Press on the span (column 0 centre) and try to drag it a full column
-    // right. A draggable event would fire onEntryMove on release; the span must
-    // not (#47 — read-only first cut).
+    // right with a mouse. A draggable event would fire onEntryMove on release;
+    // the span isn't grabbed, so the drag pans the canvas instead and onEntryMove
+    // must not fire (#47 — read-only first cut).
     final onSpan = planner.topLeft + const Offset(50 + 100, 50 + 100);
-    await longPressDrag(tester, onSpan, const Offset(200, 0));
+    await mouseDrag(tester, onSpan, const Offset(200, 0));
 
     expect(moved, isEmpty,
         reason: 'spanning events cannot be dragged/resized (#47)');

@@ -86,13 +86,16 @@ Future<void> wheelScroll(WidgetTester tester, Offset at, int notches) async {
   }
 }
 
-/// Drags an event the way a user does: press and hold at [from] until the
-/// long-press recognizer wins the gesture arena (over pan/scale), then move by
-/// [delta] and release.
-Future<void> longPressDrag(
-    WidgetTester tester, Offset from, Offset delta) async {
-  final gesture = await tester.startGesture(from);
-  await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+/// Drags an event the desktop way: press at [from] with a mouse and drag by
+/// [delta] immediately — a precise pointer on an event body moves it (or resizes
+/// from a top/bottom edge) as soon as it moves, no long-press. The pointer-down
+/// position anchors the drag, so the committed move equals [delta] (the scale
+/// recognizer's start fires only past the pan slop, but the anchor is the press
+/// point, so no slop distance is dropped).
+Future<void> mouseDrag(WidgetTester tester, Offset from, Offset delta) async {
+  final gesture =
+      await tester.startGesture(from, kind: PointerDeviceKind.mouse);
+  await tester.pump();
   await gesture.moveBy(delta);
   await tester.pump();
   await gesture.up();
