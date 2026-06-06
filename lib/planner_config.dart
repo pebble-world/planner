@@ -52,6 +52,21 @@ class PlannerConfig {
   TextStyle contextMenuTextStyle;
   TextStyle contextMenuDeleteTextStyle;
 
+  /// Label for the "create event" item shown when the context menu is opened on
+  /// an empty grid cell. Override to translate or customize it; defaults to the
+  /// English `'Create Event'`.
+  String contextMenuCreateLabel;
+
+  /// Label for the "edit event" item shown when the context menu is opened on an
+  /// existing event. Override to translate or customize it; defaults to the
+  /// English `'Edit Event'`.
+  String contextMenuEditLabel;
+
+  /// Label for the "delete event" item shown when the context menu is opened on
+  /// an existing event. Override to translate or customize it; defaults to the
+  /// English `'Delete Event'`.
+  String contextMenuDeleteLabel;
+
   Color hourBackground;
   Color dateBackground;
   Color plannerBackground = const Color.fromARGB(255, 50, 50, 50);
@@ -79,6 +94,9 @@ class PlannerConfig {
     this.dateLabelStyle = const TextStyle(color: Colors.black),
     this.contextMenuTextStyle = const TextStyle(color: Colors.blue),
     this.contextMenuDeleteTextStyle = const TextStyle(color: Colors.red),
+    this.contextMenuCreateLabel = 'Create Event',
+    this.contextMenuEditLabel = 'Edit Event',
+    this.contextMenuDeleteLabel = 'Delete Event',
     this.hourBackground = Colors.white,
     this.dateBackground = Colors.white,
     this.contextMenuBackground = Colors.white,

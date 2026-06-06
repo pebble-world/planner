@@ -33,7 +33,7 @@ class _ContextMenuState extends State<ContextMenu> {
         Expanded(
           child: TextButton(
               child: Text(
-                'Create Event',
+                widget.manager.config.contextMenuCreateLabel,
                 style: widget.manager.config.contextMenuTextStyle,
               ),
               onPressed: () {
@@ -51,7 +51,7 @@ class _ContextMenuState extends State<ContextMenu> {
         Expanded(
           child: TextButton(
             child: Text(
-              'Edit Event',
+              widget.manager.config.contextMenuEditLabel,
               style: widget.manager.config.contextMenuTextStyle,
             ),
             onPressed: () {
@@ -69,7 +69,7 @@ class _ContextMenuState extends State<ContextMenu> {
       result.add(
         Expanded(
           child: TextButton(
-            child: Text('Delete Event',
+            child: Text(widget.manager.config.contextMenuDeleteLabel,
                 style: widget.manager.config.contextMenuDeleteTextStyle),
             onPressed: () {
               if (widget.manager.config.onEntryDelete != null) {

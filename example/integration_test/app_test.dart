@@ -2,6 +2,7 @@ import 'package:integration_test/integration_test.dart';
 
 import 'accessibility_scenarios.dart';
 import 'app_smoke_scenarios.dart';
+import 'context_menu_labels_scenarios.dart';
 import 'context_menu_scenarios.dart';
 import 'drag_scenarios.dart';
 import 'event_geometry_scenarios.dart';
@@ -22,6 +23,7 @@ void main() {
 
   accessibilityScenarios();
   appSmokeScenarios();
+  contextMenuLabelsScenarios();
   contextMenuScenarios();
   dragScenarios();
   eventGeometryScenarios();
