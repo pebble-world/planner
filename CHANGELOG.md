@@ -2,6 +2,14 @@
 
 ## 0.2.0 - 2026-06-06
 
+- Added accessibility for the event canvas: each event now exposes a `Semantics`
+  node describing it (title, day-column label, time span and duration) and its
+  actions to assistive technology — activate or "Edit" to edit, "Delete", and
+  "Move earlier"/"Move later" (which nudge the event by an hour, the accessible
+  equivalent of a drag-move). Actions route through the existing
+  `onEntryEdit`/`onEntryDelete`/`onEntryMove` callbacks; only the ones the host
+  wires up are offered. The single `CustomPaint` canvas was previously opaque to
+  screen readers.
 - Unified event-time snapping: creating an event by tapping and dragging/resizing
   one now snap to a single configurable interval, `PlannerConfig.snapMinutes`
   (default `15`), instead of separate ad-hoc, zoom-dependent thresholds. Pass
