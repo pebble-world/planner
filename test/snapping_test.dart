@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/internal/manager.dart';
 import 'package:planner/planner.dart';
-import 'package:planner/planner_time.dart';
 
 void main() {
   // Regression for D8 (#14): create-time (`getTimeAtPos`) and drag-time
