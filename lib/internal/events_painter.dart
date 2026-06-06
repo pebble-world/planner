@@ -64,7 +64,11 @@ class EventsPainter extends CustomPainter {
       if (!rect.overlaps(viewport)) continue;
 
       final canEdit = config.onEntryEdit != null;
-      final canMove = config.onEntryMove != null;
+      // Spanning events are read-only in this first cut (#47): they can't be
+      // dragged, so the accessibility move nudges (the keyboard equivalent of a
+      // drag-move) aren't offered for them either. Edit/delete stay available.
+      final canMove =
+          config.onEntryMove != null && !event.entry.time.spansColumns;
 
       nodes.add(CustomPainterSemantics(
         key: ValueKey(event.entry.id),

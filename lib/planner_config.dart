@@ -3,6 +3,24 @@ import 'package:flutter/material.dart';
 import 'planner_entry.dart';
 import 'planner_time.dart';
 
+/// How a column-spanning event (one whose [PlannerTime.endDay] covers several
+/// columns, #47) coexists with the per-column overlap layout that splits
+/// concurrent single-column events into side-by-side sub-columns (#20 / D11).
+enum SpanOverlap {
+  /// The spanning event draws as one continuous rectangle across the full width
+  /// of every column it covers, and is **excluded** from the sub-column packing.
+  /// Concurrent single-column events keep their own side-by-side split and may
+  /// visually overlap the span. The default — simplest and the usual look for a
+  /// multi-day banner-style event.
+  fullWidth,
+
+  /// The spanning event takes part in each covered column's overlap cluster,
+  /// reserving a sub-column beside the concurrent single-column events there.
+  /// Because the sub-column it gets can differ per column, the span is drawn as
+  /// one rectangle per column rather than a single continuous box.
+  split,
+}
+
 class PlannerConfig {
   List<String> labels;
 
@@ -74,6 +92,13 @@ class PlannerConfig {
   /// `DateTime` enters the public API. An out-of-range index highlights nothing.
   int? highlightedColumn;
 
+  /// How column-spanning events (those whose [PlannerTime.endDay] covers several
+  /// columns, #47) coexist with the per-column overlap split (#20). Defaults to
+  /// [SpanOverlap.fullWidth] — the span draws as one continuous box across its
+  /// columns; switch to [SpanOverlap.split] to fold it into each column's
+  /// sub-column layout instead. Has no effect on single-column events.
+  SpanOverlap spanOverlap;
+
   /// Fill colour painted across the [highlightedColumn], behind the grid lines
   /// and events. Defaults to a subtle translucent white wash so setting
   /// [highlightedColumn] alone is visible on the default dark [plannerBackground];
@@ -131,6 +156,7 @@ class PlannerConfig {
     this.contextMenuCreateLabel = 'Create Event',
     this.contextMenuEditLabel = 'Edit Event',
     this.contextMenuDeleteLabel = 'Delete Event',
+    this.spanOverlap = SpanOverlap.fullWidth,
     this.highlightedColumn,
     this.highlightColumnColor = const Color.fromARGB(40, 255, 255, 255),
     this.hourBackground = Colors.white,

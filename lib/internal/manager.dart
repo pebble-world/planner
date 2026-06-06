@@ -58,11 +58,16 @@ class Manager {
 
   /// Rebuilds the [_eventsByDay] hit-test buckets from the current [events].
   /// One linear pass, called only when the event set or an event's day can have
-  /// changed (build/update and after a drag commits a possible day move).
+  /// changed (build/update and after a drag commits a possible day move). A
+  /// spanning event (#47) is bucketed into every column it covers, so it
+  /// hit-tests from any of them, not just its start column.
   void _rebuildDayIndex() {
     _eventsByDay.clear();
     for (final Event event in events) {
-      _eventsByDay.putIfAbsent(event.entry.time.day, () => []).add(event);
+      final time = event.entry.time;
+      for (int day = time.day; day <= time.lastDay; day++) {
+        _eventsByDay.putIfAbsent(day, () => []).add(event);
+      }
     }
   }
 
@@ -73,17 +78,41 @@ class Manager {
   /// events reuse a column), then every event in a connected overlap cluster is
   /// narrowed to `1 / columns` of the day-column and offset to its own
   /// sub-column — the standard side-by-side calendar layout.
+  ///
+  /// A column-spanning event (#47) is folded into the packing of **every column
+  /// it covers** only under [SpanOverlap.split]; under [SpanOverlap.fullWidth]
+  /// (the default) it is excluded so it draws across the full column width.
+  /// Because a spanning event's placement is gathered across several columns, it
+  /// is relaid out once at the end (single-column events relayout as each cluster
+  /// closes).
   void _layoutOverlaps() {
+    final split = config.spanOverlap == SpanOverlap.split;
     final byDay = <int, List<Event>>{};
     for (final event in events) {
-      byDay.putIfAbsent(event.entry.time.day, () => []).add(event);
+      final time = event.entry.time;
+      if (time.spansColumns) {
+        // Reset any prior placement; an excluded (full-width) span keeps it
+        // empty and draws across all its columns.
+        event.clearSpanColumns();
+        if (!split) continue;
+        for (int day = time.day; day <= time.lastDay; day++) {
+          byDay.putIfAbsent(day, () => []).add(event);
+        }
+      } else {
+        byDay.putIfAbsent(time.day, () => []).add(event);
+      }
     }
-    for (final dayEvents in byDay.values) {
-      _layoutDayColumn(dayEvents);
+    for (final entry in byDay.entries) {
+      _layoutDayColumn(entry.key, entry.value);
+    }
+    // Spanning events depend on placements gathered across all their columns, so
+    // build their geometry only once every column has been packed.
+    for (final event in events) {
+      if (event.entry.time.spansColumns) event.relayout();
     }
   }
 
-  void _layoutDayColumn(List<Event> dayEvents) {
+  void _layoutDayColumn(int day, List<Event> dayEvents) {
     int startOf(Event e) => e.entry.time.hour * 60 + e.entry.time.minutes;
     int endOf(Event e) => startOf(e) + e.entry.time.duration;
 
@@ -94,18 +123,23 @@ class Manager {
     });
 
     // The events of the current connected overlap cluster, the end time of the
-    // last event placed in each of its sub-columns, and the cluster's latest end.
+    // last event placed in each of its sub-columns, the sub-column each event
+    // landed in, and the cluster's latest end. The sub-column is kept in a local
+    // map rather than on the Event, since a spanning event is packed once per
+    // column it crosses and must not clobber its other columns' placements.
     final cluster = <Event>[];
     final columnEnds = <int>[];
+    final columnOf = <Event, int>{};
     int clusterEnd = -1;
 
     void closeCluster() {
+      final count = columnEnds.length;
       for (final event in cluster) {
-        event.columnCount = columnEnds.length;
-        event.relayout();
+        _assignColumn(event, day, columnOf[event]!, count);
       }
       cluster.clear();
       columnEnds.clear();
+      columnOf.clear();
       clusterEnd = -1;
     }
 
@@ -125,12 +159,25 @@ class Manager {
       } else {
         columnEnds[column] = endOf(event);
       }
-      event.columnIndex =
-          column; // columnCount is filled in when the cluster closes
+      columnOf[event] = column; // count is filled in when the cluster closes
       cluster.add(event);
       if (endOf(event) > clusterEnd) clusterEnd = endOf(event);
     }
     closeCluster();
+  }
+
+  /// Applies the packed sub-column ([index] of [count]) to [event] for [day]. A
+  /// single-column event stores it directly and relays out now; a spanning event
+  /// records it per column (relayout is deferred to [_layoutOverlaps] once all
+  /// its columns are packed).
+  void _assignColumn(Event event, int day, int index, int count) {
+    if (event.entry.time.spansColumns) {
+      event.setSpanColumn(day, index, count);
+    } else {
+      event.columnIndex = index;
+      event.columnCount = count;
+      event.relayout();
+    }
   }
 
   Event? _draggedEvent;
@@ -150,6 +197,10 @@ class Manager {
     if (_draggedEvent != null) return;
     final event = getEventAtPos(localPos);
     if (event == null) return;
+    // Spanning events are read-only in this first cut (#47): a long-press on one
+    // starts no drag, so it can't be moved or resized (it stays tappable for
+    // edit/delete via double-tap and the context menu).
+    if (event.entry.time.spansColumns) return;
     _draggedEvent = event;
     event.startDrag(_toGridPos(localPos));
     controller.triggerUpdate.value++;
@@ -221,7 +272,7 @@ class Manager {
     if (candidates == null) return null;
 
     for (final Event event in candidates) {
-      if (event.canvasRect.contains(realPos)) {
+      if (event.containsGridPoint(realPos)) {
         return event;
       }
     }

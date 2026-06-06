@@ -10,11 +10,20 @@ import 'package:planner/planner.dart';
 void main() {
   group('public API surface (single umbrella import)', () {
     test('PlannerTime is reachable via package:planner/planner.dart', () {
-      final time = PlannerTime(day: 1, hour: 9, minutes: 30, duration: 45);
+      final time =
+          PlannerTime(day: 1, endDay: 3, hour: 9, minutes: 30, duration: 45);
       expect(time.day, 1);
+      expect(time.endDay, 3); // column span (#47)
       expect(time.hour, 9);
       expect(time.minutes, 30);
       expect(time.duration, 45);
+    });
+
+    test('SpanOverlap and the config field are reachable', () {
+      final config =
+          PlannerConfig(labels: const ['Mon'], spanOverlap: SpanOverlap.split);
+      expect(config.spanOverlap, SpanOverlap.split);
+      expect(SpanOverlap.values, hasLength(2));
     });
 
     test('PlannerEntry, PlannerConfig and Planner are reachable too', () {

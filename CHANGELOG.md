@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added column-spanning (multi-day) events. Set `PlannerTime.endDay` to a
+  column index after `day` and the event renders across the whole `day..endDay`
+  range; `null` (the default) or any value `<= day` is a single-column event, so
+  existing entries are unaffected. The span stays index-based — no `DateTime`
+  enters the model (ADR 0001). Spanning events are read-only in this first cut
+  (they can't be dragged or resized) but stay tappable for edit/delete. A new
+  `PlannerConfig.spanOverlap` chooses how a span coexists with the per-column
+  overlap split: `SpanOverlap.fullWidth` (the default) draws it as one box across
+  its columns; `SpanOverlap.split` folds it into each column's sub-column layout.
 - Added an optional column highlight (a "today"-style emphasis). Set
   `PlannerConfig.highlightedColumn` to a column index (into `labels`) and the
   grid fills that column behind the lines and events; `highlightColumnColor`
