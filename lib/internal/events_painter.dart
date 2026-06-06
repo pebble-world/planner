@@ -9,8 +9,14 @@ class EventsPainter extends CustomPainter {
   final Grid _grid;
   final Manager manager;
 
+  // The manager's data revision when this delegate was built; compared in
+  // shouldRepaint so the canvas repaints (and its semantics rebuild) only when
+  // the event data changed, not on every unrelated parent rebuild (#25 / D6).
+  final int _revision;
+
   EventsPainter({required this.manager, required Listenable repaint})
       : _grid = Grid(manager: manager),
+        _revision = manager.revision,
         super(repaint: repaint);
 
   // Pure rendering only: draw the grid, then each event using its own drag
@@ -82,5 +88,6 @@ class EventsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant EventsPainter oldDelegate) =>
+      _revision != oldDelegate._revision;
 }

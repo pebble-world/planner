@@ -10,6 +10,21 @@ class Manager {
   final Controller controller;
   final List<Event> events = [];
 
+  // Bumped every time the event set is rebuilt (construct / update). Painters
+  // snapshot it and compare it in shouldRepaint, so the canvas repaints — and
+  // its accessibility semantics rebuild — exactly when the data changed, not on
+  // every unrelated parent rebuild (#25 / D6). Scroll and zoom repaints stay on
+  // the controller's repaint listenable, independent of this.
+  int _revision = 0;
+  int get revision => _revision;
+
+  // Events bucketed by their day-column (entry.time.day). getEventAtPos
+  // hit-tests only the tapped column's bucket instead of scanning every event
+  // (#25): an event's rect lies entirely within its own day-column, so no other
+  // bucket can contain the point. Rebuilt only when the event set or an event's
+  // day can have changed — never per frame or per tap.
+  final Map<int, List<Event>> _eventsByDay = {};
+
   Manager({
     required this.config,
     required this.entries,
@@ -37,6 +52,18 @@ class Manager {
       events.add(Event(entry: entry, manager: this));
     }
     _layoutOverlaps();
+    _rebuildDayIndex();
+    _revision++;
+  }
+
+  /// Rebuilds the [_eventsByDay] hit-test buckets from the current [events].
+  /// One linear pass, called only when the event set or an event's day can have
+  /// changed (build/update and after a drag commits a possible day move).
+  void _rebuildDayIndex() {
+    _eventsByDay.clear();
+    for (final Event event in events) {
+      _eventsByDay.putIfAbsent(event.entry.time.day, () => []).add(event);
+    }
   }
 
   /// Splits each day-column among events that overlap in time (#20 /
@@ -143,6 +170,9 @@ class Manager {
     final dragged = _draggedEvent!;
     _draggedEvent = null;
     dragged.endDrag();
+    // A move can change the event's day-column, so refresh the hit-test buckets
+    // even if the host doesn't rebuild in response to onEntryMove (#25).
+    _rebuildDayIndex();
     config.onEntryMove?.call(dragged.entry);
     controller.triggerUpdate.value++;
   }
@@ -179,9 +209,16 @@ class Manager {
   }
 
   Event? getEventAtPos(Offset pos) {
-    Offset realPos = _toGridPos(pos);
+    final Offset realPos = _toGridPos(pos);
 
-    for (Event event in events) {
+    // Only events in the tapped day-column can contain the point, so scan that
+    // one bucket instead of every event (#25). A tap outside the grid maps to
+    // an absent bucket and simply finds nothing.
+    final int day = (realPos.dx / config.blockWidth).floor();
+    final List<Event>? candidates = _eventsByDay[day];
+    if (candidates == null) return null;
+
+    for (final Event event in candidates) {
       if (event.canvasRect.contains(realPos)) {
         return event;
       }
