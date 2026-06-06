@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:planner/internal/event.dart';
 import 'package:planner/planner.dart';
 
-import '../planner_time.dart';
 import 'controller.dart';
 
 class Manager {

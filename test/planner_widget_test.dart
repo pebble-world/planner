@@ -2,7 +2,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/planner.dart';
-import 'package:planner/planner_time.dart';
 
 void main() {
   // End-to-end against the *real* composed widget (real layout, real fonts, real

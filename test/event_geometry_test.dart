@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/internal/event.dart';
 import 'package:planner/internal/manager.dart';
 import 'package:planner/planner.dart';
-import 'package:planner/planner_time.dart';
 
 void main() {
   // Regression for D3 + D4 (#10): an event's canvasRect must derive its top

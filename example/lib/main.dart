@@ -1,7 +1,6 @@
 import 'package:example/data.dart';
 import 'package:flutter/material.dart';
 import 'package:planner/planner.dart';
-import 'package:planner/planner_time.dart';
 
 void main() {
   runApp(const MyApp());

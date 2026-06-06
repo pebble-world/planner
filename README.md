@@ -39,7 +39,6 @@ Then import it:
 
 ```dart
 import 'package:planner/planner.dart';
-import 'package:planner/planner_time.dart';
 ```
 
 ## Usage
@@ -47,7 +46,6 @@ import 'package:planner/planner_time.dart';
 ```dart
 import 'package:flutter/material.dart';
 import 'package:planner/planner.dart';
-import 'package:planner/planner_time.dart';
 
 class CalendarPage extends StatelessWidget {
   const CalendarPage({super.key});

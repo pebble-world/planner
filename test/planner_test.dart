@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:planner/planner.dart';
-import 'package:planner/planner_time.dart';
 
 void main() {
   group('PlannerTime', () {
