@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Fixed event accessibility semantics not updating when the canvas is scrolled
+  or zoomed. A screen reader now reaches *every* event — not just those that were
+  on screen the last time the data changed or the canvas was laid out — and each
+  event's semantics node now tracks the scroll/zoom so its hit-area and focus
+  highlight stay aligned as the user pans. Previously off-viewport events were
+  culled and never re-exposed (the canvas has no a11y scroll action to bring them
+  back), and a scrolled event kept a stale node rect.
 - Added `PlannerConfig.onEntryLongPress`, fired with the long-pressed
   `PlannerEntry`. This is the primary way to act on an event by **touch** (touch
   has no right-click, and a one-finger drag now pans, so long-press is the

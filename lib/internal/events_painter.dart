@@ -33,8 +33,19 @@ class EventsPainter extends CustomPainter {
 
   // Expose each event to assistive technology (#21). A CustomPaint canvas is one
   // opaque semantics node, so screen readers can otherwise neither perceive
-  // events nor act on them. For every event currently in view we emit one node
-  // carrying its description (title, time, duration) and the host's actions.
+  // events nor act on them. For *every* event — not just the on-screen ones — we
+  // emit one node carrying its description (title, time, duration) and the host's
+  // actions.
+  //
+  // We deliberately do NOT cull off-viewport events (#56): this canvas exposes no
+  // accessibility scroll-into-view action, so a screen-reader user can't scroll a
+  // culled event back in — culling would make it permanently unreachable. Off-
+  // canvas nodes are still reachable: a RenderCustomPaint's CustomPainterSemantics
+  // children are not subject to the ancestor ClipRect's semantic culling. The
+  // node's `rect` is the event's *live* on-screen rect; scrolling/zooming only
+  // bumps the paint-listenable (markNeedsPaint, never markNeedsSemanticsUpdate),
+  // so `_PlannerState` separately pokes this canvas to rebuild its semantics on
+  // pan/zoom (see `_rebuildEventSemantics`), keeping each rect tracking the view.
   //
   // The actions map onto first-class semantics actions, NOT customSemanticsActions:
   // RenderCustomPaint forwards only the built-in SemanticsProperties callbacks to
@@ -53,15 +64,12 @@ class EventsPainter extends CustomPainter {
 
   List<CustomPainterSemantics> _buildSemantics(Size size) {
     final config = manager.config;
-    final viewport = Offset.zero & size;
     final nodes = <CustomPainterSemantics>[];
 
     for (final event in manager.events) {
+      // A node per event regardless of scroll position (see semanticsBuilder):
+      // its rect is the live on-screen rect, even when that lies off-canvas.
       final rect = event.screenRect;
-      // Skip events scrolled out of view: an off-canvas rect is no perceivable
-      // target. Semantics rebuild on scroll (shouldRebuildSemantics tracks
-      // shouldRepaint), so a scrolled-in event reappears.
-      if (!rect.overlaps(viewport)) continue;
 
       final canEdit = config.onEntryEdit != null;
       // Spanning events are read-only in this first cut (#47): they can't be

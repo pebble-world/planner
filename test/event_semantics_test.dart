@@ -7,12 +7,14 @@ import 'package:planner/planner.dart';
 void main() {
   // #21: the planner is drawn on a single CustomPaint canvas, which is one opaque
   // node to a screen reader. EventsPainter now provides a semanticsBuilder that
-  // emits one node per visible event — describing it (title/day/time/duration)
-  // and exposing its actions via first-class semantics callbacks (activate=edit,
+  // emits one node per event — describing it (title/day/time/duration) and
+  // exposing its actions via first-class semantics callbacks (activate=edit,
   // dismiss=delete, increase/decrease=move later/earlier; customSemanticsActions
-  // are not used because RenderCustomPaint drops them). These tests drive that
-  // builder directly: a unit-level guard on the labels, action gating, the rect,
-  // and the move/clamp behaviour.
+  // are not used because RenderCustomPaint drops them). #56: it emits a node for
+  // *every* event regardless of scroll position (no viewport cull), with the
+  // rect tracking the current scroll offset. These tests drive that builder
+  // directly: a unit-level guard on the labels, action gating, the rect (and that
+  // it follows the scroll), no culling, and the move/clamp behaviour.
 
   PlannerEntry entryAt({
     String id = 'e',
@@ -49,8 +51,8 @@ void main() {
         entries: entries,
       );
 
-  // A viewport tall enough to reach any hour 0..23 (24 * 40px = 960), so the
-  // off-screen filter never hides the event under test unless that's the point.
+  // The builder ignores `size` (it no longer culls to the viewport, #56); the
+  // default is just a representative canvas size.
   List<CustomPainterSemantics> buildFor(Manager manager,
       [Size size = const Size(800, 1000)]) {
     final painter = EventsPainter(
@@ -179,12 +181,29 @@ void main() {
     expect(moved, isEmpty, reason: 'a no-op nudge must not fire onEntryMove');
   });
 
-  test('events scrolled out of the viewport emit no semantics node', () {
-    // Day 0 / hour 9 -> grid rect (0,360)-(200,400). With no scroll the rect is
-    // unchanged; a viewport only 100px tall cannot overlap it, so it is omitted.
+  test('emits a node for an off-viewport event (no viewport cull, #56)', () {
+    // Day 0 / hour 9 -> on-screen rect (0,360)-(200,400). Even a viewport far too
+    // short to contain it still emits the node: this canvas has no a11y scroll
+    // action, so a culled event would be permanently unreachable. The node is
+    // emitted with its true (here off-canvas) rect.
     final manager = managerWith(entries: [entryAt(hour: 9)]);
-    expect(buildFor(manager, const Size(800, 100)), isEmpty);
-    // The same event is reported once the viewport is tall enough to reach it.
-    expect(buildFor(manager, const Size(800, 600)), hasLength(1));
+    final nodes = buildFor(manager, const Size(800, 100));
+    expect(nodes, hasLength(1));
+    expect(nodes.single.rect, manager.events.single.screenRect);
+  });
+
+  test('the node rect follows the controller scroll offset (#56)', () {
+    // The semantics rect is the event's live on-screen rect, so once the view is
+    // scrolled the rebuilt node reports the new position (the widget layer pokes
+    // markNeedsSemanticsUpdate on scroll so this rebuild actually happens).
+    final manager = managerWith(entries: [entryAt(hour: 9)]);
+    final before = buildFor(manager).single.rect;
+
+    manager.controller.y = -120; // scroll the time axis up by 120px
+    final after = buildFor(manager).single.rect;
+
+    expect(after, manager.events.single.screenRect);
+    expect(after.top, before.top - 120,
+        reason: 'the node rect moves with the scroll, not frozen');
   });
 }
