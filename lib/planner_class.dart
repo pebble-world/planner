@@ -32,6 +32,13 @@ class _PlannerState extends State<Planner> {
   // static to survive that churn.
   late Manager _data;
 
+  // Drives the position-aware double-tap detector from the single events
+  // GestureDetector below. Nesting a second tap detector (the old layout) let
+  // the inner detector win the gesture arena, so the double-tap stream was
+  // never fed and onEntryEdit/onEntryCreate never fired (#40). Feeding the
+  // detector through its controller keeps one detector in the arena.
+  final PositionedTapController _tapController = PositionedTapController();
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +69,7 @@ class _PlannerState extends State<Planner> {
                   child: Stack(
                     children: [
                       PositionedTapDetector2(
+                        controller: _tapController,
                         onDoubleTap: (position) {
                           if (position.relative == null) {
                             return;
@@ -220,8 +228,16 @@ class _PlannerState extends State<Planner> {
       onLongPressEnd: (details) {
         _data.endDrag();
       },
+      // Feed taps to the double-tap detector via its controller (see
+      // _tapController): onTapDown records the pending tap, onTap confirms it.
+      // hideMenu stays on the immediate tap so dismissing the menu isn't held
+      // back by the double-tap window.
+      onTapDown: (details) {
+        _tapController.onTapDown(details);
+      },
       onTap: () {
         _data.controller.hideMenu();
+        _tapController.onTap();
       },
       onSecondaryTapDown: (details) {
         showMenu(details);

@@ -138,6 +138,18 @@ void main() {
     await tester.pump();
   }
 
+  // Two quick taps at the same point, within the detector's 250ms double-tap
+  // window. PositionedTapDetector2 buffers the first tap on a stream and only
+  // resolves a double-tap once the second arrives in time, so the gap stays
+  // well under the window; the trailing pump past it flushes the (now no-op)
+  // timeout timer so none is left pending.
+  Future<void> doubleTapAt(WidgetTester tester, Offset at) async {
+    await tester.tapAt(at);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tapAt(at);
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
   testWidgets('two planners keep independent scroll state (D1)',
       (tester) async {
     const keyA = ValueKey('plannerA');
@@ -493,6 +505,72 @@ void main() {
       expect(deleted, hasLength(1));
       expect(identical(deleted.single, entry), isTrue,
           reason: 'onEntryDelete receives the right-clicked entry');
+    });
+  });
+
+  // Regression for #40: the double-tap edit/create paths were dead. The
+  // PositionedTapDetector2 that owns onDoubleTap wrapped the paintEvents
+  // GestureDetector, whose own onTap won the gesture arena, so the parent's tap
+  // stream was never fed and onDoubleTap never resolved. The detector is now
+  // driven from the single events detector via its controller, so a real
+  // double-tap reaches onEntryEdit / onEntryCreate. These drive the real
+  // composed Planner with two genuine taps inside the double-tap window.
+  group('double-tap edit/create (#40)', () {
+    testWidgets('double-tapping an event fires onEntryEdit', (tester) async {
+      const key = ValueKey('planner');
+      final edited = <PlannerEntry>[];
+      final created = <PlannerTime>[];
+      final entry = eventAtHour9();
+      final rect = await pumpEntryPlanner(tester, key, entry,
+          onEdit: edited.add, onCreate: created.add);
+
+      // The event's centre is planner-local (150, 430) (see eventAtHour9).
+      await doubleTapAt(tester, rect.topLeft + const Offset(150, 430));
+
+      expect(edited, hasLength(1),
+          reason: 'double-tapping an event must fire onEntryEdit');
+      expect(identical(edited.single, entry), isTrue,
+          reason: 'onEntryEdit receives the double-tapped entry');
+      expect(created, isEmpty,
+          reason: 'a hit on an event edits it, it does not create');
+    });
+
+    testWidgets('double-tapping empty grid fires onEntryCreate',
+        (tester) async {
+      const key = ValueKey('planner');
+      final created = <PlannerTime>[];
+      final edited = <PlannerEntry>[];
+
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Planner(
+            key: key,
+            config: PlannerConfig(
+              labels: const ['c1', 'c2', 'c3'],
+              minHour: 0,
+              maxHour: 23,
+              onEntryEdit: edited.add,
+              onEntryCreate: created.add,
+            ),
+            entries: const [],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // events-local (100, 200) past the hour column (50) and date row (50):
+      // column 0, and y=200 in an unscrolled 40px grid maps to hour 5.
+      final rect = tester.getRect(find.byKey(key));
+      await doubleTapAt(
+          tester, rect.topLeft + const Offset(50 + 100, 50 + 200));
+
+      expect(created, hasLength(1),
+          reason: 'double-tapping empty grid must fire onEntryCreate');
+      expect(created.single.day, 0);
+      expect(created.single.hour, 5,
+          reason: 'the tapped point maps to day 0 / hour 5');
+      expect(edited, isEmpty,
+          reason: 'an empty-grid hit creates, it does not edit');
     });
   });
 
