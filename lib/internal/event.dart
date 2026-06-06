@@ -158,8 +158,7 @@ class Event {
 
   void _paintHandle(Canvas canvas, Offset topLeft, double width) {
     Paint paint = Paint()
-      ..color =
-          _dragType == DragType.none ? entry.color.withAlpha(255) : Colors.white
+      ..color = _dragType == DragType.none ? entry.color : Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 

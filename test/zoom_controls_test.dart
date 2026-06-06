@@ -47,7 +47,7 @@ void main() {
 
     expect(find.byIcon(Icons.zoom_in), findsNothing);
     expect(find.byIcon(Icons.zoom_out), findsNothing);
-    expect(find.byType(RawMaterialButton), findsNothing);
+    expect(find.byType(IconButton), findsNothing);
   });
 
   testWidgets('zoomButtonColor / zoomButtonIconColor override the styling',
@@ -58,11 +58,10 @@ void main() {
         app(config(zoomButtonColor: fill, zoomButtonIconColor: iconColor)));
     await tester.pumpAndSettle();
 
-    final buttons =
-        tester.widgetList<RawMaterialButton>(find.byType(RawMaterialButton));
+    final buttons = tester.widgetList<IconButton>(find.byType(IconButton));
     expect(buttons, hasLength(2));
     for (final button in buttons) {
-      expect(button.fillColor, fill);
+      expect(_fillOf(button), fill);
     }
     expect(tester.widget<Icon>(find.byIcon(Icons.zoom_in)).color, iconColor);
     expect(tester.widget<Icon>(find.byIcon(Icons.zoom_out)).color, iconColor);
@@ -77,10 +76,14 @@ void main() {
     await tester.pumpWidget(app(config(), theme: theme));
     await tester.pumpAndSettle();
 
-    final button = tester
-        .widgetList<RawMaterialButton>(find.byType(RawMaterialButton))
-        .first;
-    expect(button.fillColor, secondary,
+    final button = tester.widgetList<IconButton>(find.byType(IconButton)).first;
+    expect(_fillOf(button), secondary,
         reason: 'null zoomButtonColor preserves the old theme-driven fill');
   });
 }
+
+/// Resolves the background fill an [IconButton] paints. `RawMaterialButton`
+/// exposed `fillColor` directly; its replacement carries the fill in
+/// `style.backgroundColor`, a [WidgetStateProperty] that must be resolved.
+Color? _fillOf(IconButton button) =>
+    button.style?.backgroundColor?.resolve(<WidgetState>{});
