@@ -24,31 +24,27 @@ class Event {
   late Offset _dragOffset;
   late DragType _dragType = DragType.none;
 
+  /// Which sub-column this event occupies within its day-column, and how many
+  /// sub-columns the day-column is split into. They default to a single
+  /// full-width column; [Manager] overwrites them with the day's overlap layout
+  /// (#20 / PROJECT_OVERVIEW D11) and then calls [relayout].
+  int columnIndex = 0;
+  int columnCount = 1;
+
   Event({required this.entry, required this.manager}) {
-    _createPainters();
+    _createPaints();
+    relayout();
   }
 
-  void _createPainters() {
+  /// Recomputes the geometry and text wrapping after [columnIndex]/[columnCount]
+  /// change. [Manager] calls this once a day's overlap layout is known, so the
+  /// event occupies its narrowed sub-column instead of the full day-column.
+  void relayout() {
     _calculateCanvasRect();
+    _layoutText();
+  }
 
-    _titlePainter = TextPainter(
-      text: TextSpan(text: entry.title, style: entry.titleStyle),
-      textAlign: TextAlign.left,
-      textDirection: TextDirection.ltr,
-      maxLines: 1,
-      ellipsis: "...",
-    );
-    _titlePainter.layout(maxWidth: manager.config.blockWidth - 10);
-
-    _contentPainter = TextPainter(
-      text: TextSpan(text: entry.content, style: entry.textStyle),
-      textAlign: TextAlign.left,
-      textDirection: TextDirection.ltr,
-      maxLines: 4,
-      ellipsis: "...",
-    );
-    _contentPainter.layout(maxWidth: manager.config.blockWidth - 20);
-
+  void _createPaints() {
     _fillPaint = Paint()
       ..color = entry.color.withAlpha(100)
       ..style = PaintingStyle.fill;
@@ -65,26 +61,56 @@ class Event {
       ..strokeWidth = 1;
   }
 
+  void _layoutText() {
+    // Text wraps/ellipsizes within the event's actual (possibly narrowed) width,
+    // not the full day-column, so a split event still reads correctly.
+    final width = canvasRect.width;
+
+    _titlePainter = TextPainter(
+      text: TextSpan(text: entry.title, style: entry.titleStyle),
+      textAlign: TextAlign.left,
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+      ellipsis: "...",
+    );
+    _titlePainter.layout(maxWidth: (width - 10).clamp(0.0, double.infinity));
+
+    _contentPainter = TextPainter(
+      text: TextSpan(text: entry.content, style: entry.textStyle),
+      textAlign: TextAlign.left,
+      textDirection: TextDirection.ltr,
+      maxLines: 4,
+      ellipsis: "...",
+    );
+    _contentPainter.layout(maxWidth: (width - 20).clamp(0.0, double.infinity));
+  }
+
   void _calculateCanvasRect() {
     final blockHeight = manager.config.blockHeight;
+    // Concurrent events share a day-column by splitting it into [columnCount]
+    // equal sub-columns; this event sits in the [columnIndex]th one.
+    final fullWidth = manager.config.blockWidth.toDouble();
+    final columnWidth = fullWidth / columnCount;
     Offset a = Offset(
-        (entry.time.day * manager.config.blockWidth).toDouble(),
+        entry.time.day * fullWidth + columnIndex * columnWidth,
         (entry.time.hour - manager.config.minHour) * blockHeight +
             entry.time.minutes / 60 * blockHeight);
-    Offset b = a.translate(manager.config.blockWidth.toDouble(),
-        entry.time.duration / 60 * blockHeight);
+    Offset b = a.translate(columnWidth, entry.time.duration / 60 * blockHeight);
     canvasRect = Rect.fromPoints(a, b);
   }
 
-  void _paintHandle(Canvas canvas, Offset topLeft) {
+  void _paintHandle(Canvas canvas, Offset topLeft, double width) {
     Paint paint = Paint()
       ..color =
           _dragType == DragType.none ? entry.color.withAlpha(255) : Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 
-    Offset left = topLeft.translate(manager.config.blockWidth * 0.5 - 20, 0.0);
-    Offset right = left.translate(40.0, 0.0);
+    // Centre the handle within the event's own width so a split event's handles
+    // stay inside its narrowed box (the 40px handle shrinks to fit if narrower).
+    final handleWidth = width < 40 ? width : 40.0;
+    Offset left = topLeft.translate((width - handleWidth) * 0.5, 0.0);
+    Offset right = left.translate(handleWidth, 0.0);
 
     canvas.drawLine(
       Offset(manager.controller.offset.dx + left.dx,
@@ -113,8 +139,8 @@ class Event {
     canvas.drawRect(screenRect,
         _dragType == DragType.none ? _strokePaint : _draggedStrokePaint);
 
-    _paintHandle(canvas, rect.topLeft.translate(0.0, 1));
-    _paintHandle(canvas, rect.bottomLeft.translate(0.0, -1));
+    _paintHandle(canvas, rect.topLeft.translate(0.0, 1), rect.width);
+    _paintHandle(canvas, rect.bottomLeft.translate(0.0, -1), rect.width);
 
     Rect clipRect = Rect.fromPoints(
         screenRect.topLeft.translate(2,
@@ -199,9 +225,11 @@ class Event {
     switch (_dragType) {
       case DragType.body:
         // Move: the column snaps to the nearest day, the start time snaps to the
-        // configured interval, and the duration is unchanged.
-        entry.time.day =
-            ((canvasRect.left + _dragOffset.dx) / config.blockWidth).round();
+        // configured interval, and the duration is unchanged. The day shifts by
+        // the horizontal drag in whole columns — measured from the current day,
+        // not canvasRect.left, which now carries a sub-column offset when the
+        // event is split across overlapping neighbours (#20).
+        entry.time.day += (_dragOffset.dx / config.blockWidth).round();
         final start = minutesAt(canvasRect.top + _dragOffset.dy);
         entry.time.hour = config.minHour + start ~/ 60;
         entry.time.minutes = start % 60;

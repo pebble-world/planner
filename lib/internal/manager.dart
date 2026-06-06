@@ -36,6 +36,74 @@ class Manager {
     for (PlannerEntry entry in entries) {
       events.add(Event(entry: entry, manager: this));
     }
+    _layoutOverlaps();
+  }
+
+  /// Splits each day-column among events that overlap in time (#20 /
+  /// PROJECT_OVERVIEW D11). Without this, concurrent events all paint at full
+  /// column width and stack unreadably. Per day we greedily pack events into the
+  /// fewest sub-columns (a first-fit interval-graph colouring, so non-overlapping
+  /// events reuse a column), then every event in a connected overlap cluster is
+  /// narrowed to `1 / columns` of the day-column and offset to its own
+  /// sub-column — the standard side-by-side calendar layout.
+  void _layoutOverlaps() {
+    final byDay = <int, List<Event>>{};
+    for (final event in events) {
+      byDay.putIfAbsent(event.entry.time.day, () => []).add(event);
+    }
+    for (final dayEvents in byDay.values) {
+      _layoutDayColumn(dayEvents);
+    }
+  }
+
+  void _layoutDayColumn(List<Event> dayEvents) {
+    int startOf(Event e) => e.entry.time.hour * 60 + e.entry.time.minutes;
+    int endOf(Event e) => startOf(e) + e.entry.time.duration;
+
+    // Sort by start, then by end: first-fit packing assumes ascending starts.
+    dayEvents.sort((a, b) {
+      final byStart = startOf(a).compareTo(startOf(b));
+      return byStart != 0 ? byStart : endOf(a).compareTo(endOf(b));
+    });
+
+    // The events of the current connected overlap cluster, the end time of the
+    // last event placed in each of its sub-columns, and the cluster's latest end.
+    final cluster = <Event>[];
+    final columnEnds = <int>[];
+    int clusterEnd = -1;
+
+    void closeCluster() {
+      for (final event in cluster) {
+        event.columnCount = columnEnds.length;
+        event.relayout();
+      }
+      cluster.clear();
+      columnEnds.clear();
+      clusterEnd = -1;
+    }
+
+    for (final event in dayEvents) {
+      // A start at/after every event placed so far ends the cluster: its column
+      // count is now final, so close it before opening the next one.
+      if (cluster.isNotEmpty && startOf(event) >= clusterEnd) {
+        closeCluster();
+      }
+
+      // First-fit: reuse the earliest sub-column whose previous event has ended;
+      // otherwise open a new one.
+      var column = columnEnds.indexWhere((end) => end <= startOf(event));
+      if (column == -1) {
+        column = columnEnds.length;
+        columnEnds.add(endOf(event));
+      } else {
+        columnEnds[column] = endOf(event);
+      }
+      event.columnIndex =
+          column; // columnCount is filled in when the cluster closes
+      cluster.add(event);
+      if (endOf(event) > clusterEnd) clusterEnd = endOf(event);
+    }
+    closeCluster();
   }
 
   Event? _draggedEvent;
