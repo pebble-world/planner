@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:planner/planner_time.dart';
 
 import 'planner_entry.dart';
+import 'planner_time.dart';
 
 class PlannerConfig {
   List<String> labels;

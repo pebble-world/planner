@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:planner/internal/manager.dart';
 
 import 'event.dart';
 import 'grid.dart';
+import 'manager.dart';
 
 class EventsPainter extends CustomPainter {
   final Grid _grid;
