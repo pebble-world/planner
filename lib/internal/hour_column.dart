@@ -23,8 +23,14 @@ class HourColumn extends CustomPainter {
   final List<HourLabel> _labels = <HourLabel>[];
   final Manager manager;
 
+  // The manager's data revision when this delegate was built; compared in
+  // shouldRepaint so the column repaints only when the data changed, not on
+  // every unrelated parent rebuild (#25 / D6).
+  final int _revision;
+
   HourColumn({required this.manager, required Listenable repaint})
-      : super(repaint: repaint) {
+      : _revision = manager.revision,
+        super(repaint: repaint) {
     int pos = 15;
     for (final text in buildHourLabels(manager.config)) {
       _labels.add(HourLabel(
@@ -44,5 +50,6 @@ class HourColumn extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant HourColumn oldDelegate) =>
+      _revision != oldDelegate._revision;
 }
