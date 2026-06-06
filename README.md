@@ -116,6 +116,26 @@ A complete, runnable demo lives in [`example/`](example/lib/main.dart).
 > Your callbacks own the data. Update your own list of entries (and call
 > `setState`) in response — the widget reports interactions but does not persist them.
 
+### Localizing the context menu
+
+The context-menu item labels default to English but are plain `String`s on
+`PlannerConfig`, so you can translate or rename them:
+
+```dart
+PlannerConfig(
+  labels: const ['Lun', 'Mar', 'Mer'],
+  contextMenuCreateLabel: 'Créer un événement',
+  contextMenuEditLabel: 'Modifier l’événement',
+  contextMenuDeleteLabel: 'Supprimer l’événement',
+);
+```
+
+| Field | Defaults to | Item |
+|-------|-------------|------|
+| `contextMenuCreateLabel` | `'Create Event'` | Shown on an empty grid cell. |
+| `contextMenuEditLabel` | `'Edit Event'` | Shown on an existing event. |
+| `contextMenuDeleteLabel` | `'Delete Event'` | Shown on an existing event. |
+
 ## Additional information
 
 - **Roadmap & known issues:** [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
