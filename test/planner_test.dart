@@ -50,6 +50,8 @@ void main() {
       expect(config.maxHour, 23);
       expect(config.blockWidth, 200);
       expect(config.blockHeight, 40);
+      expect(config.snapMinutes, 15);
+      expect(config.snapMinutesForZoom, isNull);
     });
   });
 }

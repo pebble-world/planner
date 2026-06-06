@@ -101,14 +101,43 @@ class Manager {
     int day = (realPos.dx / config.blockWidth)
         .floor()
         .clamp(0, config.labels.length - 1);
-    int hour = (config.minHour + (realPos.dy / config.blockHeight).floor())
-        .clamp(config.minHour, config.maxHour);
-    int minutes = 0;
-    if (controller.zoom > 2.25) {
-      minutes = ((realPos.dy.toInt() % config.blockHeight) / 10).floor() * 15;
-    } else if (controller.zoom > 1.25) {
-      minutes = ((realPos.dy.toInt() % config.blockHeight) / 20).floor() * 30;
+
+    // Row index from the top of the grid, plus the proportional minute offset
+    // into that row (pixels -> minutes via blockHeight, not a hardcoded 40),
+    // snapped to the configured interval so a created event lands on the same
+    // grid a dragged one does.
+    final double rawRow = realPos.dy / config.blockHeight;
+    final int row = rawRow.floor();
+    int hour = config.minHour + row;
+    int minutes = snapToInterval(((rawRow - row) * 60).floor());
+
+    // A tap outside the grid clamps to a valid hour; its minute offset is
+    // meaningless, so pin it to the hour boundary.
+    if (hour < config.minHour) {
+      hour = config.minHour;
+      minutes = 0;
+    } else if (hour > config.maxHour) {
+      hour = config.maxHour;
+      minutes = 0;
     }
+
     return PlannerTime(day: day, hour: hour, minutes: minutes);
+  }
+
+  /// The snap interval (in minutes) in effect right now: the zoom-aware override
+  /// if the host supplied one, otherwise the flat [PlannerConfig.snapMinutes].
+  int get activeSnapMinutes =>
+      config.snapMinutesForZoom?.call(controller.zoom) ?? config.snapMinutes;
+
+  /// Snaps [minutes] to a multiple of [activeSnapMinutes]. The single snapping
+  /// primitive shared by create ([getTimeAtPos]) and drag/resize
+  /// ([Event.endDrag]), so the two stay in lockstep. An interval `<= 1` leaves
+  /// [minutes] untouched (minute precision); it truncates rather than rounds so
+  /// a within-hour offset can't spill into the next hour (e.g. 58 -> 45, never
+  /// 60, at a 15-minute snap).
+  int snapToInterval(int minutes) {
+    final step = activeSnapMinutes;
+    if (step <= 1) return minutes;
+    return (minutes ~/ step) * step;
   }
 }

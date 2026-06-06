@@ -186,49 +186,50 @@ class Event {
   }
 
   void endDrag() {
-    if (_dragType == DragType.body) {
-      int newDay =
-          ((canvasRect.topLeft.dx + _dragOffset.dx) / manager.config.blockWidth)
-              .round();
-      double newHour = ((canvasRect.topLeft.dy + _dragOffset.dy) /
-              manager.config.blockHeight) +
-          manager.config.minHour;
-      entry.time.day = newDay;
-      entry.time.hour = newHour.floor();
-      entry.time.minutes = ((newHour - newHour.floor()) * 60).floor();
-    } else if (_dragType == DragType.topHandle) {
-      double newHour = (((canvasRect.topLeft.dy + _dragOffset.dy) /
-                      manager.config.blockHeight)
-                  .round() +
-              manager.config.minHour)
-          .toDouble();
-      int newMinutes =
-          _roundedMinutes(((newHour - newHour.floor()) * 60).floor());
-      entry.time.duration += ((entry.time.hour - newHour.floor()) * 60) -
-          (newMinutes - entry.time.minutes);
-      entry.time.hour = newHour.floor();
-      entry.time.minutes = newMinutes;
-    } else if (_dragType == DragType.bottomHandle) {
-      entry.time.duration +=
-          (_dragOffset.dy / (manager.config.blockHeight * 0.25)).round() * 15;
-      entry.time.duration = _roundedMinutes(entry.time.duration);
+    final config = manager.config;
+    final blockHeight = config.blockHeight;
+
+    // Absolute minutes from minHour for an event edge at grid-y [y], snapped to
+    // the configured interval — the same primitive create uses, so a dragged
+    // edge lands on the same grid as a freshly created event.
+    int minutesAt(double y) =>
+        manager.snapToInterval((y / blockHeight * 60).round());
+
+    switch (_dragType) {
+      case DragType.body:
+        // Move: the column snaps to the nearest day, the start time snaps to the
+        // configured interval, and the duration is unchanged.
+        entry.time.day =
+            ((canvasRect.left + _dragOffset.dx) / config.blockWidth).round();
+        final start = minutesAt(canvasRect.top + _dragOffset.dy);
+        entry.time.hour = config.minHour + start ~/ 60;
+        entry.time.minutes = start % 60;
+        break;
+      case DragType.topHandle:
+        // Resize from the top: the bottom edge stays put, so the snapped start
+        // time is absorbed by the duration.
+        final bottom = (entry.time.hour - config.minHour) * 60 +
+            entry.time.minutes +
+            entry.time.duration;
+        final start = minutesAt(canvasRect.top + _dragOffset.dy);
+        entry.time.hour = config.minHour + start ~/ 60;
+        entry.time.minutes = start % 60;
+        entry.time.duration = bottom - start;
+        break;
+      case DragType.bottomHandle:
+        // Resize from the bottom: the start stays put, the bottom edge snaps.
+        final start =
+            (entry.time.hour - config.minHour) * 60 + entry.time.minutes;
+        entry.time.duration =
+            minutesAt(canvasRect.bottom + _dragOffset.dy) - start;
+        break;
+      case DragType.none:
+        break;
     }
 
     _calculateCanvasRect();
 
     _dragOffset = Offset.zero;
     _dragType = DragType.none;
-  }
-
-  int _roundedMinutes(int minutes) {
-    if (manager.controller.zoom <= 1) {
-      return (minutes ~/ 30) * 30;
-    } else if (manager.controller.zoom <= 2) {
-      return (minutes ~/ 15) * 15;
-    } else if (manager.controller.zoom < 3) {
-      return (minutes ~/ 5) * 5;
-    } else {
-      return minutes;
-    }
   }
 }

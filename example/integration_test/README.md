@@ -11,6 +11,7 @@ surface) can miss rendering/geometry bugs.
 | [`drag_scenarios.dart`](drag_scenarios.dart) | Long-press-dragging an event moves it and fires `onEntryMove` with no paint-phase side effects (device-level counterpart of the #11 / D5 regression). |
 | [`event_geometry_scenarios.dart`](event_geometry_scenarios.dart) | An event's hit-area derives from `config.blockHeight` with proportional minutes (#10 / D3 + D4). |
 | [`hour_label_scenarios.dart`](hour_label_scenarios.dart) | The default `maxHour` (23) clamps a below-grid tap to hour 23, not the invalid 24 (#13 / D10). |
+| [`snapping_scenarios.dart`](snapping_scenarios.dart) | Create and drag snap event times to the single configurable `snapMinutes` interval, and agree (#14 / D8). |
 | [`multi_planner_scenarios.dart`](multi_planner_scenarios.dart) | Two planners on one screen keep independent scroll state (device-level counterpart of the #9 / D1 regression). |
 | [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `longPressDrag`). |
 
