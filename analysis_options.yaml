@@ -1,9 +1,4 @@
 include: package:flutter_lints/flutter.yaml
 
-analyzer:
-  exclude:
-    # Vendored third-party code (see PROJECT_OVERVIEW.md, issue B3).
-    - lib/internal/positioned_tap_detector_2.dart
-
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
