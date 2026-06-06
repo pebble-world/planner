@@ -56,9 +56,9 @@ class _ContextMenuState extends State<ContextMenu> {
             ),
             onPressed: () {
               if (widget.manager.config.onEntryEdit != null &&
-                  widget.manager.controller.menuEvent != null) {
+                  widget.manager.controller.menuEntry != null) {
                 widget.manager.config
-                    .onEntryEdit!(widget.manager.controller.menuEvent!.entry);
+                    .onEntryEdit!(widget.manager.controller.menuEntry!);
               }
               widget.manager.controller.hideMenu();
             },
@@ -72,9 +72,10 @@ class _ContextMenuState extends State<ContextMenu> {
             child: Text(widget.manager.config.contextMenuDeleteLabel,
                 style: widget.manager.config.contextMenuDeleteTextStyle),
             onPressed: () {
-              if (widget.manager.config.onEntryDelete != null) {
+              if (widget.manager.config.onEntryDelete != null &&
+                  widget.manager.controller.menuEntry != null) {
                 widget.manager.config
-                    .onEntryDelete!(widget.manager.controller.menuEvent!.entry);
+                    .onEntryDelete!(widget.manager.controller.menuEntry!);
               }
               widget.manager.controller.hideMenu();
               setState(() {});

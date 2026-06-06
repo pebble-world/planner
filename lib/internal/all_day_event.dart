@@ -19,11 +19,14 @@ const double allDayChipInset = 2.0;
 /// [lane] it was packed into (concurrent all-day events stack into separate
 /// lanes — see [Manager]'s all-day layout).
 ///
-/// Render-only in this first cut, mirroring how spanning events shipped (#47):
-/// chips are painted but not draggable, editable, or hit-tested, and carry no
-/// accessibility node yet. Geometry tracks only the horizontal scroll
-/// ([Controller.offset]'s `dx`) — the band is a fixed header strip, so it
-/// neither zooms nor scrolls with the time axis.
+/// Interactive at parity with timed events (#72): a chip is hit-tested
+/// ([Manager.getAllDayEventAtPos]) so it can be edited (double-tap), acted on
+/// via the context menu (right-click) or [PlannerConfig.onEntryLongPress], and
+/// it carries an accessibility node ([AllDayBand]) with edit/delete actions. It
+/// is still not draggable/resizable — moving between columns or converting
+/// to/from a timed event is out of scope (#72). Geometry tracks only the
+/// horizontal scroll ([Controller.offset]'s `dx`) — the band is a fixed header
+/// strip, so it neither zooms nor scrolls with the time axis.
 class AllDayEvent {
   final PlannerEntry entry;
   final Manager manager;
@@ -81,8 +84,40 @@ class AllDayEvent {
 
   /// The chip's on-screen rectangle: its [_gridRect] shifted by the current
   /// horizontal scroll only (the band doesn't move vertically or zoom). Exposed
-  /// so tests can assert placement without scraping the canvas.
+  /// so tests can assert placement without scraping the canvas, and used to
+  /// hit-test the chip ([Manager.getAllDayEventAtPos]) and to place its
+  /// accessibility node ([AllDayBand]).
   Rect get screenRect => _gridRect.translate(manager.controller.offset.dx, 0);
+
+  /// A screen-reader description of this chip — its title, the column label(s)
+  /// it covers, and that it is an all-day event (#72). Mirrors
+  /// [Event.semanticsLabel] but carries no time span: an all-day event isn't
+  /// hour-positioned. A multi-day chip reads its first..last column labels (e.g.
+  /// "Conference, Mon to Wed, all day"). English-only for now, matching the
+  /// (also unlocalized) timed-event label and context-menu strings.
+  String get semanticsLabel {
+    final labels = manager.config.labels;
+    final time = entry.time;
+    String? labelAt(int i) =>
+        (i >= 0 && i < labels.length && labels[i].isNotEmpty)
+            ? labels[i]
+            : null;
+
+    final start = labelAt(time.day);
+    final end = labelAt(time.lastDay);
+    final String? dayPart;
+    if (time.spansColumns && start != null && end != null) {
+      dayPart = '$start to $end';
+    } else {
+      dayPart = start ?? end;
+    }
+
+    return [
+      entry.title,
+      if (dayPart != null) dayPart,
+      'all day',
+    ].join(', ');
+  }
 
   void paint(Canvas canvas) {
     final rect = screenRect;

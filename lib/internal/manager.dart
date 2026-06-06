@@ -13,8 +13,9 @@ class Manager {
 
   /// The all-day events (#48), packed into stacked lanes for the all-day band.
   /// Built from entries whose [PlannerTime.allDay] is set; those are kept out of
-  /// [events] (the hour-positioned grid) entirely. Empty when none are all-day,
-  /// in which case the band is omitted and [allDayBandHeight] is zero.
+  /// [events] (the hour-positioned grid) entirely. Empty — so the band is
+  /// omitted and [allDayBandHeight] is zero — when none are all-day or the band
+  /// is disabled ([PlannerConfig.showAllDayBand] is `false`, the default).
   final List<AllDayEvent> allDayEvents = [];
 
   /// How many stacked lanes the all-day band needs — the height of the busiest
@@ -63,8 +64,11 @@ class Manager {
     for (PlannerEntry entry in entries) {
       // All-day entries render in the band, not the hour grid, so they're kept
       // out of `events` (and thus out of overlap layout, hit-testing and drag).
+      // The band is opt-in (#72): when [PlannerConfig.showAllDayBand] is off,
+      // all-day entries aren't collected at all, so the band stays empty and
+      // they render nowhere (they have no hour position to fall back to).
       if (entry.time.allDay) {
-        allDayInputs.add(entry);
+        if (config.showAllDayBand) allDayInputs.add(entry);
       } else {
         events.add(Event(entry: entry, manager: this));
       }
@@ -116,8 +120,9 @@ class Manager {
 
   /// The height the all-day band occupies above the time grid: enough for every
   /// stacked lane plus the band's top/bottom padding, or `0` when there are no
-  /// all-day events (the band is then omitted entirely). Drives both the band
-  /// widget's height and the controller's scroll-clamp reservation.
+  /// all-day events or the band is disabled ([PlannerConfig.showAllDayBand]) —
+  /// the band is then omitted entirely. Drives both the band widget's height and
+  /// the controller's scroll-clamp reservation.
   double get allDayBandHeight => allDayLaneCount == 0
       ? 0
       : allDayLaneCount * config.allDayBandLaneHeight +
@@ -309,6 +314,19 @@ class Manager {
   /// "Delete" action, mirroring the context menu's "Delete Event".
   void deleteEvent(Event event) => config.onEntryDelete?.call(event.entry);
 
+  /// Fires [PlannerConfig.onEntryEdit] for an all-day [chip] — the band's
+  /// counterpart to [editEvent], reached by double-tap, the context menu, or the
+  /// chip's a11y "activate" action (#72). All-day chips have no time axis, so
+  /// (unlike timed events) they expose no move/nudge — only edit and delete.
+  void editAllDayEvent(AllDayEvent chip) =>
+      config.onEntryEdit?.call(chip.entry);
+
+  /// Fires [PlannerConfig.onEntryDelete] for an all-day [chip] — the band's
+  /// counterpart to [deleteEvent], reached by the context menu or the chip's
+  /// a11y "dismiss" action (#72).
+  void deleteAllDayEvent(AllDayEvent chip) =>
+      config.onEntryDelete?.call(chip.entry);
+
   /// Shifts [event] by [hourDelta] whole hours, clamped to
   /// `[config.minHour, config.maxHour]`, then re-lays out overlaps, repaints,
   /// and fires [PlannerConfig.onEntryMove]. A screen-reader user can't drag, so
@@ -389,6 +407,33 @@ class Manager {
     }
 
     return PlannerTime(day: day, hour: hour, minutes: minutes);
+  }
+
+  /// The all-day chip under [bandLocalPos], or `null` if the point hits empty
+  /// band space (#72). [bandLocalPos] is in the band canvas's own coordinate
+  /// space — the same space [AllDayEvent.screenRect] lives in (full planner
+  /// width, horizontal scroll already applied) — so a chip is hit when its
+  /// on-screen rect contains the point. A linear scan: all-day chips are few and
+  /// aren't day-bucketed like the timed [events].
+  AllDayEvent? getAllDayEventAtPos(Offset bandLocalPos) {
+    for (final AllDayEvent chip in allDayEvents) {
+      if (chip.screenRect.contains(bandLocalPos)) return chip;
+    }
+    return null;
+  }
+
+  /// The all-day [PlannerTime] a tap on empty band space at [bandLocalPos]
+  /// (band-canvas coordinates) maps to — the band's counterpart to
+  /// [getTimeAtPos] on the grid (#72). Undoes the horizontal scroll and the
+  /// hour-gutter offset to find the column under the point, clamps it to a valid
+  /// column, and flags it [PlannerTime.allDay] so create-on-empty-band yields an
+  /// all-day entry. There is no hour/minute — an all-day time isn't positioned.
+  PlannerTime getAllDayTimeAtPos(Offset bandLocalPos) {
+    final localX =
+        bandLocalPos.dx - controller.offset.dx - config.hourColumnWidth;
+    final day =
+        (localX / config.blockWidth).floor().clamp(0, config.labels.length - 1);
+    return PlannerTime(day: day, allDay: true);
   }
 
   /// The snap interval (in minutes) in effect right now: the zoom-aware override
