@@ -31,3 +31,31 @@ jobs:
 
       - name: Run tests
         run: flutter test
+
+  integration-windows:
+    name: integration (windows)
+    runs-on: windows-latest
+    # Windows desktop runners are expensive, and the suite is run locally before
+    # every PR. Gate it to the develop -> main release PR only (skipped on pushes
+    # and on PRs into develop).
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install example dependencies
+        run: flutter pub get
+        working-directory: example
+
+      - name: Run integration tests on Windows
+        run: flutter test integration_test -d windows
+        working-directory: example

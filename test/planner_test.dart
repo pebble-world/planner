@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:planner/planner.dart';
-import 'package:planner/planner_time.dart';
 
 void main() {
   group('PlannerTime', () {
@@ -47,9 +46,11 @@ void main() {
       final config = PlannerConfig(labels: const ['Mon', 'Tue']);
       expect(config.labels, ['Mon', 'Tue']);
       expect(config.minHour, 0);
-      expect(config.maxHour, 24);
+      expect(config.maxHour, 23);
       expect(config.blockWidth, 200);
       expect(config.blockHeight, 40);
+      expect(config.snapMinutes, 15);
+      expect(config.snapMinutesForZoom, isNull);
     });
   });
 }

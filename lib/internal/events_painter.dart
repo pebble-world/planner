@@ -1,48 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:planner/internal/manager.dart';
 
 import 'event.dart';
 import 'grid.dart';
+import 'manager.dart';
 
 class EventsPainter extends CustomPainter {
   final Grid _grid;
   final Manager manager;
 
-  Event? draggedEvent;
-
   EventsPainter({required this.manager, required Listenable repaint})
       : _grid = Grid(manager: manager),
         super(repaint: repaint);
 
+  // Pure rendering only: draw the grid, then each event using its own drag
+  // state. Drag detection and the onEntryMove callback live in the widget layer
+  // (gesture handlers -> Manager.start/update/endDrag), never here — a painter
+  // must not mutate state or fire callbacks while painting.
   @override
   void paint(Canvas canvas, Size size) {
     _grid.draw(canvas);
-
-    if (manager.controller.touchPos == null && draggedEvent != null) {
-      draggedEvent!.endDrag();
-      if (manager.config.onEntryMove != null) {
-        manager.config.onEntryMove!(draggedEvent!.entry);
-      }
-      draggedEvent = null;
-    }
     for (Event event in manager.events) {
-      if (manager.controller.touchPos != null && draggedEvent == null) {
-        Offset realPos = Offset(
-            manager.controller.touchPos!.dx - manager.controller.offset.dx,
-            (manager.controller.touchPos!.dy - manager.controller.offset.dy) /
-                manager.controller.zoom);
-
-        if (event.canvasRect.contains(realPos)) {
-          draggedEvent = event;
-          draggedEvent!.startDrag(realPos);
-        }
-      } else if (manager.controller.touchPos != null && draggedEvent == event) {
-        Offset realPos = Offset(
-            manager.controller.touchPos!.dx - manager.controller.offset.dx,
-            (manager.controller.touchPos!.dy - manager.controller.offset.dy) /
-                manager.controller.zoom);
-        draggedEvent!.updateDrag(realPos);
-      }
       event.paint(canvas);
     }
   }

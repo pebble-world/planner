@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:planner/planner_time.dart';
 
-enum DragType {
-  body,
-  topHandle,
-  bottomHandle,
-  none,
-}
+import 'planner_time.dart';
 
 class PlannerEntry {
   String id;
