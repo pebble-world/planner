@@ -149,17 +149,23 @@ void main() {
 
   test('increase / decrease nudge the event one hour and fire onEntryMove', () {
     final moved = <PlannerEntry>[];
-    final entry = entryAt(id: 'a', hour: 9);
-    final manager = managerWith(entries: [entry], onMove: moved.add);
+    final manager =
+        managerWith(entries: [entryAt(id: 'a', hour: 9)], onMove: moved.add);
+    final event = manager.events.single;
 
     buildFor(manager).single.properties.onIncrease!();
-    expect(entry.time.hour, 10, reason: 'increase advances one hour');
+    final afterIncrease = event.entry;
+    expect(afterIncrease.time.hour, 10, reason: 'increase advances one hour');
 
     buildFor(manager).single.properties.onDecrease!();
-    expect(entry.time.hour, 9, reason: 'decrease rewinds one hour');
+    final afterDecrease = event.entry;
+    expect(afterDecrease.time.hour, 9, reason: 'decrease rewinds one hour');
 
+    // The models are immutable (#27): each nudge swaps in a new entry, and the
+    // instance reported to onEntryMove is the one the event then holds.
     expect(moved, hasLength(2));
-    expect(moved.every((e) => identical(e, entry)), isTrue);
+    expect(identical(moved[0], afterIncrease), isTrue);
+    expect(identical(moved[1], afterDecrease), isTrue);
   });
 
   test('a move clamped at the hour bound is a no-op and fires nothing', () {
