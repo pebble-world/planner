@@ -1,6 +1,7 @@
 import 'package:integration_test/integration_test.dart';
 
 import 'accessibility_scenarios.dart';
+import 'all_day_band_scenarios.dart';
 import 'app_smoke_scenarios.dart';
 import 'context_menu_labels_scenarios.dart';
 import 'context_menu_scenarios.dart';
@@ -29,6 +30,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   accessibilityScenarios();
+  allDayBandScenarios();
   appSmokeScenarios();
   contextMenuLabelsScenarios();
   contextMenuScenarios();

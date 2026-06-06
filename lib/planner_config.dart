@@ -65,6 +65,19 @@ class PlannerConfig {
   double dateRowHeight;
   double hourColumnWidth;
 
+  /// Height, in logical pixels, of one stacked lane in the all-day band (#48).
+  /// All-day events ([PlannerTime.allDay]) render as chips above the time grid;
+  /// concurrent ones (sharing a column) stack into separate lanes, and the band
+  /// auto-sizes to the number of lanes used. The band is omitted entirely (zero
+  /// height) when there are no all-day events, so this has no effect then.
+  double allDayBandLaneHeight;
+
+  /// Background fill of the all-day band (#48). Defaults to a dark grey close to
+  /// the [plannerBackground] so the band reads as the top of the column area;
+  /// override it to match a light theme or to set it off from the grid. Ignored
+  /// when there are no all-day events (the band isn't shown).
+  Color allDayBandBackground;
+
   TextStyle hourLabelStyle;
   TextStyle dateLabelStyle;
   TextStyle contextMenuTextStyle;
@@ -180,6 +193,8 @@ class PlannerConfig {
     this.zoomButtonColor,
     this.zoomButtonIconColor = Colors.white,
     this.scrollStep = 20,
+    this.allDayBandLaneHeight = 24,
+    this.allDayBandBackground = const Color.fromARGB(255, 60, 60, 60),
     this.plannerBackground = const Color.fromARGB(255, 50, 50, 50),
     this.horizontalLineColor = const Color.fromARGB(255, 100, 100, 100),
     this.verticalLineColor = const Color.fromARGB(255, 150, 150, 150),

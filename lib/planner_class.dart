@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'internal/all_day_band.dart';
 import 'internal/context_menu.dart';
 import 'internal/controller.dart';
 import 'internal/event.dart';
@@ -130,6 +131,10 @@ class _PlannerState extends State<Planner> {
       return Column(
         children: [
           paintDates(),
+          // The all-day band (#48) sits between the date row and the time grid.
+          // It self-sizes to its lanes and is omitted entirely (no widget, no
+          // reserved space) when there are no all-day events.
+          if (_data.allDayBandHeight > 0) paintAllDayBand(),
           Expanded(
             child: Row(
               children: [
@@ -207,6 +212,33 @@ class _PlannerState extends State<Planner> {
           color: _data.config.dateBackground,
           child: CustomPaint(
             painter: DateRow(
+              manager: _data,
+              repaint: _data.controller.triggerUpdate,
+            ),
+            child: Container(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The all-day band (#48): a fixed strip of chips above the time grid for
+  /// events flagged [PlannerTime.allDay]. Like the date row directly above it,
+  /// it pans the day axis on a horizontal drag (so it isn't a dead zone) and
+  /// tracks the horizontal scroll, but it does not zoom or scroll with the time
+  /// axis. Only mounted when there is at least one all-day event.
+  Widget paintAllDayBand() {
+    return GestureDetector(
+      onHorizontalDragStart: (detail) =>
+          _data.controller.startHorizontalDrag(detail.globalPosition.dx),
+      onHorizontalDragUpdate: (detail) =>
+          _data.controller.updateHorizontalDrag(detail.globalPosition.dx),
+      child: ClipRect(
+        child: Container(
+          height: _data.allDayBandHeight,
+          color: _data.config.allDayBandBackground,
+          child: CustomPaint(
+            painter: AllDayBand(
               manager: _data,
               repaint: _data.controller.triggerUpdate,
             ),
