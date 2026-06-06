@@ -1,3 +1,4 @@
+import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/internal/controller.dart';
 import 'package:planner/planner.dart';
@@ -106,6 +107,35 @@ void main() {
   // Regression for D12 (#28): verticalScroll used a fixed 20px step, so one wheel
   // notch moved progressively less *time* the further you zoomed in (each hour
   // row is `blockHeight * zoom` px tall). The step now scales with zoom.
+  // Regression for #64: when the grid is narrower than the canvas,
+  // _maxXOffset was positive, so any horizontal drag snapped x to that positive
+  // value — pushing columns to the far right.  The guard now clamps it to 0.
+  group('horizontal pan is a no-op when grid is narrower than viewport (#64)',
+      () {
+    Controller wideViewport() {
+      // 3 labels × blockWidth 200 = 600 px of grid; canvas is 1600 px wide.
+      final c = Controller(
+        PlannerConfig(labels: const ['A', 'B', 'C'], blockWidth: 200),
+      );
+      c.setSize(const Size(1600, 900));
+      return c;
+    }
+
+    test('x stays 0 after a left drag', () {
+      final c = wideViewport();
+      c.startHorizontalDrag(100);
+      c.updateHorizontalDrag(80); // drag left 20 px
+      expect(c.x, 0, reason: 'grid is fully visible — no horizontal pan');
+    });
+
+    test('x stays 0 after a right drag', () {
+      final c = wideViewport();
+      c.startHorizontalDrag(100);
+      c.updateHorizontalDrag(200); // drag right 100 px
+      expect(c.x, 0, reason: 'cannot pan right past x=0');
+    });
+  });
+
   group('verticalScroll step scales with zoom (D12, #28)', () {
     test('at zoom 1 one notch moves by the base scrollStep (default 20)', () {
       final controller = Controller(makeConfig());
