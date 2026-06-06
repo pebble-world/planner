@@ -100,7 +100,7 @@ A complete, runnable demo lives in [`example/`](example/lib/main.dart).
 | Type | Purpose |
 |------|---------|
 | `Planner` | The widget. Takes a `config` and a list of `entries`. |
-| `PlannerConfig` | Sizing (`blockWidth`, `blockHeight`, `minHour`, `maxHour` — the inclusive last hour, default `23`, …), colors, text styles, an optional `hourLabelFormatter`, the zoom controls (`showZoomControls`, `zoomButtonColor`, `zoomButtonIconColor`), the wheel `scrollStep`, and the `onEntry*` callbacks. `labels` is required. |
+| `PlannerConfig` | Sizing (`blockWidth`, `blockHeight`, `minHour`, `maxHour` — the inclusive last hour, default `23`, …), colors, text styles, an optional `hourLabelFormatter`, the optional column highlight (`highlightedColumn`, `highlightColumnColor`), the zoom controls (`showZoomControls`, `zoomButtonColor`, `zoomButtonIconColor`), the wheel `scrollStep`, and the `onEntry*` callbacks. `labels` is required. |
 | `PlannerEntry` | One event: `id`, `time`, `title`, `content`, `color`, and optional text styles. |
 | `PlannerTime` | `day` (index into `labels`), `hour`, `minutes`, and `duration` (in minutes). |
 
@@ -135,6 +135,34 @@ PlannerConfig(
 | `contextMenuCreateLabel` | `'Create Event'` | Shown on an empty grid cell. |
 | `contextMenuEditLabel` | `'Edit Event'` | Shown on an existing event. |
 | `contextMenuDeleteLabel` | `'Delete Event'` | Shown on an existing event. |
+
+### Highlighting a column ("today" style)
+
+`planner` is column-based, not date-based (see the note above), so it has no idea
+which column is "today". To emphasize one — a calendar's current day, the active
+room, the selected lane — set `highlightedColumn` to its **index** into `labels`;
+the grid fills that column behind the lines and events:
+
+```dart
+final labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+PlannerConfig(
+  labels: labels,
+  // A calendar consumer owns the date↔index mapping and passes the index:
+  highlightedColumn: 2, // e.g. DateTime.now().weekday - 1
+  highlightColumnColor: Colors.amber.withOpacity(0.15), // optional
+);
+```
+
+`highlightedColumn` defaults to `null` (no highlight); an out-of-range index
+highlights nothing. `highlightColumnColor` defaults to a subtle translucent white
+wash that reads on the default dark background — override it for a different tint
+(or a darker wash on a light background).
+
+| Field | Defaults to | Purpose |
+|-------|-------------|---------|
+| `highlightedColumn` | `null` | Index into `labels` of the column to emphasize. |
+| `highlightColumnColor` | translucent white | Fill painted across that column. |
 
 ## Additional information
 

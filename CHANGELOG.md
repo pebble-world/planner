@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Added an optional column highlight (a "today"-style emphasis). Set
+  `PlannerConfig.highlightedColumn` to a column index (into `labels`) and the
+  grid fills that column behind the lines and events; `highlightColumnColor`
+  (default a subtle translucent white wash) sets the fill. The widget stays
+  date-agnostic — a calendar consumer maps `DateTime.now()` to an index itself
+  (ADR 0001). `null` (the default) or an out-of-range index highlights nothing.
+
 ## 0.2.0 - 2026-06-06
 
 - Made the on-canvas zoom +/- buttons configurable: hide them with
