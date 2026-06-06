@@ -89,6 +89,54 @@ void main() {
     }
   }
 
+  // An event at day 0 / hour 9. With the default 200x40 grid it occupies grid
+  // rect (0,360)-(200,400); its centre is events-local (100,380) which, past the
+  // hour column (50) and date row (50), is planner-local (150, 430).
+  PlannerEntry eventAtHour9() => PlannerEntry(
+        id: 'evt',
+        time: PlannerTime(day: 0, hour: 9),
+        title: 'Meeting',
+        content: '',
+        color: const Color(0xFF2244AA),
+      );
+
+  // Pumps a single full-screen Planner holding [entry], wiring whichever entry
+  // callbacks the test cares about, and returns its on-screen rect.
+  Future<Rect> pumpEntryPlanner(
+    WidgetTester tester,
+    Key key,
+    PlannerEntry entry, {
+    void Function(PlannerEntry)? onEdit,
+    void Function(PlannerEntry)? onDelete,
+    void Function(PlannerTime)? onCreate,
+  }) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          key: key,
+          config: PlannerConfig(
+            labels: const ['c1', 'c2', 'c3'],
+            minHour: 0,
+            maxHour: 23,
+            onEntryEdit: onEdit,
+            onEntryDelete: onDelete,
+            onEntryCreate: onCreate,
+          ),
+          entries: [entry],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    return tester.getRect(find.byKey(key));
+  }
+
+  Future<void> rightClickAt(WidgetTester tester, Offset at) async {
+    final gesture = await tester.startGesture(at, buttons: kSecondaryButton);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+  }
+
   testWidgets('two planners keep independent scroll state (D1)',
       (tester) async {
     const keyA = ValueKey('plannerA');
@@ -387,5 +435,59 @@ void main() {
     expect(created!.hour, 2,
         reason:
             'zoom is floored at minZoom (0.5); unbounded it would hit maxHour');
+  });
+
+  // The entry context menu (right-click an existing event) and its onEntryEdit /
+  // onEntryDelete callbacks were untested — only the empty-grid "Create Event"
+  // menu (onEntryCreate) and the long-press drag (onEntryMove) had coverage.
+  // These drive the real composed Planner: a secondary tap on the event opens
+  // the *entry* menu, then tapping an item fires the matching callback.
+  group('entry context menu (right-click an event)', () {
+    testWidgets('opens the edit/delete menu and Edit fires onEntryEdit',
+        (tester) async {
+      const key = ValueKey('planner');
+      final edited = <PlannerEntry>[];
+      final entry = eventAtHour9();
+      final rect = await pumpEntryPlanner(tester, key, entry,
+          onEdit: edited.add, onDelete: (_) {}, onCreate: (_) {});
+
+      await rightClickAt(tester, rect.topLeft + const Offset(150, 430));
+
+      // The entry menu (edit/delete) opens — not the empty-grid create menu.
+      expect(
+          find.descendant(
+              of: find.byKey(key), matching: find.text('Edit Event')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(key), matching: find.text('Delete Event')),
+          findsOneWidget);
+      expect(find.text('Create Event'), findsNothing);
+
+      await tester.tap(find.descendant(
+          of: find.byKey(key), matching: find.text('Edit Event')));
+      await tester.pump();
+
+      expect(edited, hasLength(1));
+      expect(identical(edited.single, entry), isTrue,
+          reason: 'onEntryEdit receives the right-clicked entry');
+    });
+
+    testWidgets('Delete fires onEntryDelete with the event', (tester) async {
+      const key = ValueKey('planner');
+      final deleted = <PlannerEntry>[];
+      final entry = eventAtHour9();
+      final rect = await pumpEntryPlanner(tester, key, entry,
+          onEdit: (_) {}, onDelete: deleted.add, onCreate: (_) {});
+
+      await rightClickAt(tester, rect.topLeft + const Offset(150, 430));
+      await tester.tap(find.descendant(
+          of: find.byKey(key), matching: find.text('Delete Event')));
+      await tester.pump();
+
+      expect(deleted, hasLength(1));
+      expect(identical(deleted.single, entry), isTrue,
+          reason: 'onEntryDelete receives the right-clicked entry');
+    });
   });
 }
