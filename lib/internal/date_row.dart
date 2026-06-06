@@ -9,14 +9,14 @@ class DateRow extends CustomPainter {
 
   DateRow({required this.manager, required Listenable repaint})
       : super(repaint: repaint) {
-    int _pos = 60;
+    int pos = 60;
     for (String element in manager.config.labels) {
       _labels.add(DateLabel(
         label: element,
-        position: _pos,
+        position: pos,
         manager: manager,
       ));
-      _pos += manager.config.blockWidth;
+      pos += manager.config.blockWidth;
     }
   }
 

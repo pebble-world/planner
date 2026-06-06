@@ -6,7 +6,7 @@ import 'manager.dart';
 class ContextMenu extends StatefulWidget {
   final Manager manager;
 
-  const ContextMenu({Key? key, required this.manager}) : super(key: key);
+  const ContextMenu({super.key, required this.manager});
 
   @override
   State<ContextMenu> createState() => _ContextMenuState();

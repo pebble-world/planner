@@ -1,4 +1,4 @@
-library planner;
+library;
 
 export 'planner_class.dart';
 export 'planner_entry.dart';
