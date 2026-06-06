@@ -20,6 +20,24 @@ class PlannerConfig {
   int blockWidth;
   int blockHeight;
 
+  /// Granularity, in minutes, that event times snap to — for **both** creating
+  /// an event by tapping an empty cell and dragging/resizing an existing one,
+  /// so the two behave identically (the old code used different ad-hoc,
+  /// zoom-dependent thresholds for each).
+  ///
+  /// Use a value that divides 60 evenly (e.g. `5`, `10`, `15`, `30`, `60`) so
+  /// snaps land on clean sub-hour boundaries. A value `<= 1` disables snapping
+  /// (minute precision). Snapping truncates rather than rounds, so a within-hour
+  /// offset never spills into the next hour.
+  int snapMinutes;
+
+  /// Optional zoom-aware override of [snapMinutes]. When non-null it is called
+  /// with the current zoom factor and its result is used as the snap interval
+  /// for that frame, letting events snap more finely as the user zooms in, e.g.
+  /// `snapMinutesForZoom: (z) => z >= 3 ? 5 : z >= 2 ? 15 : 30`. When null (the
+  /// default) the flat [snapMinutes] applies at every zoom level.
+  int Function(double zoom)? snapMinutesForZoom;
+
   /// Lower/upper bounds applied to the pinch/zoom factor in
   /// [Controller.updateZoom]. Without these the zoom could shrink toward 0
   /// (blocks collapse, hit-testing explodes) or grow without limit.
@@ -53,6 +71,8 @@ class PlannerConfig {
     this.hourLabelFormatter,
     this.blockWidth = 200,
     this.blockHeight = 40,
+    this.snapMinutes = 15,
+    this.snapMinutesForZoom,
     this.minZoom = 0.5,
     this.maxZoom = 4.0,
     this.hourLabelStyle = const TextStyle(color: Colors.black),
