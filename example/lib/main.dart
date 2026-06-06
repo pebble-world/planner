@@ -86,6 +86,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 "day 9",
                 "day 10"
               ],
+              // Emphasize a column ("today" style). The widget is date-agnostic,
+              // so a real calendar would map DateTime.now() to this index itself.
+              highlightedColumn: 0,
               //dateBackground: Colors.red,
               //hourBackground: Colors.deepOrange,
               onEntryMove: (entry) {

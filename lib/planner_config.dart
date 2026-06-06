@@ -67,6 +67,20 @@ class PlannerConfig {
   /// English `'Delete Event'`.
   String contextMenuDeleteLabel;
 
+  /// Index into [labels] of a column to emphasize — e.g. a "today" highlight —
+  /// or `null` (the default) to highlight nothing. The widget stays
+  /// date-agnostic: a consumer building a calendar maps `DateTime.now()` to a
+  /// column index itself and passes it here (see ADR 0001 / #46), so no
+  /// `DateTime` enters the public API. An out-of-range index highlights nothing.
+  int? highlightedColumn;
+
+  /// Fill colour painted across the [highlightedColumn], behind the grid lines
+  /// and events. Defaults to a subtle translucent white wash so setting
+  /// [highlightedColumn] alone is visible on the default dark [plannerBackground];
+  /// override it for a different emphasis (e.g. a brand "today" tint, or a darker
+  /// wash on a light background). Ignored when [highlightedColumn] is `null`.
+  Color highlightColumnColor;
+
   Color hourBackground;
   Color dateBackground;
   Color plannerBackground = const Color.fromARGB(255, 50, 50, 50);
@@ -117,6 +131,8 @@ class PlannerConfig {
     this.contextMenuCreateLabel = 'Create Event',
     this.contextMenuEditLabel = 'Edit Event',
     this.contextMenuDeleteLabel = 'Delete Event',
+    this.highlightedColumn,
+    this.highlightColumnColor = const Color.fromARGB(40, 255, 255, 255),
     this.hourBackground = Colors.white,
     this.dateBackground = Colors.white,
     this.contextMenuBackground = Colors.white,

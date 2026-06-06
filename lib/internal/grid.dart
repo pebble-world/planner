@@ -23,7 +23,26 @@ class Grid {
   final List<Line> hLines = [];
   final List<Line> vLines = [];
 
+  // Optional "today"-style column emphasis (#46). When the host sets a valid
+  // [PlannerConfig.highlightedColumn] we fill that column behind the grid lines
+  // and events. Resolved once here (index + Paint) rather than per frame; both
+  // stay null when nothing is highlighted or the index is out of range, so
+  // [draw] skips the highlight entirely.
+  int? highlightColumn;
+  Paint? highlightPaint;
+
   Grid({required this.manager}) {
+    final config = manager.config;
+    final highlighted = config.highlightedColumn;
+    if (highlighted != null &&
+        highlighted >= 0 &&
+        highlighted < config.labels.length) {
+      highlightColumn = highlighted;
+      highlightPaint = Paint()
+        ..color = config.highlightColumnColor
+        ..style = PaintingStyle.fill;
+    }
+
     // vertical lines: drawn after each day
     Offset vstart = Offset(manager.config.blockWidth.toDouble(), 0);
     Offset vend = Offset(
@@ -68,6 +87,10 @@ class Grid {
   }
 
   void draw(Canvas canvas) {
+    // The highlighted column is filled first so the grid lines and events draw
+    // on top of it (it emphasizes the column without obscuring its content).
+    _drawHighlight(canvas);
+
     // vertical lines can be drawn instantly
     for (var line in vLines) {
       line.draw(canvas, vPaint);
@@ -102,5 +125,32 @@ class Grid {
         hLines[i].draw(canvas, div3Paint);
       }
     }
+  }
+
+  // Fills the highlighted column (if any) across the full hour range. The rect
+  // is mapped through the controller's scroll [offset] and time-axis [zoom] the
+  // same way the grid lines are (see [Line.draw]), so the highlight tracks the
+  // column as the user pans/zooms. A no-op when no column is highlighted.
+  void _drawHighlight(Canvas canvas) {
+    final column = highlightColumn;
+    final paint = highlightPaint;
+    if (column == null || paint == null) return;
+
+    final config = manager.config;
+    final offset = manager.controller.offset;
+    final zoom = manager.controller.zoom;
+    final blockWidth = config.blockWidth.toDouble();
+    final gridHeight =
+        config.blockHeight.toDouble() * (config.maxHour - config.minHour + 1);
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        offset.dx + column * blockWidth,
+        offset.dy,
+        blockWidth,
+        gridHeight * zoom,
+      ),
+      paint,
+    );
   }
 }
