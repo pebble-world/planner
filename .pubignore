@@ -1,0 +1,4 @@
+# Files kept in the repository but excluded from the published pub.dev archive.
+
+# Internal quality-audit / orientation doc — useful for contributors, not for consumers.
+PROJECT_OVERVIEW.md
