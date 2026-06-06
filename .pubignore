@@ -31,3 +31,5 @@ build/
 # --- package-specific exclusions ---
 # Internal quality-audit / orientation doc — kept in the repo, not shipped.
 PROJECT_OVERVIEW.md
+# Internal architecture decision records — kept in the repo, not shipped.
+docs/decisions/

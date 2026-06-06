@@ -8,7 +8,7 @@
 - **Version:** 0.0.4
 - **Repo:** https://github.com/pebble-world/planner
 - **Status:** internal-only (`publish_to: none`); goal is pub.dev + cross-project reuse.
-- **Last reviewed:** 2026-06-05
+- **Last reviewed:** 2026-06-06
 
 ---
 
@@ -31,8 +31,9 @@ rectangle positioned by time. The user can:
 There are **no real calendar dates anywhere**. [`PlannerTime`](lib/planner_time.dart)
 is `{ int day, int hour, int minutes, int duration }`, where `day` is an **index
 into `config.labels`** (a `List<String>`). The widget is really a *generic grid of
-time-slots in N labelled columns*, not a date-aware calendar. This is the single
-biggest design decision to revisit (see §4, Features).
+time-slots in N labelled columns*, not a date-aware calendar. This was the single
+biggest design fork — **now decided: keep the day-index model** (#19; see §4 and
+`docs/decisions/0001-time-model-day-index.md`).
 
 ---
 
@@ -170,29 +171,49 @@ Severity: 🔴 blocker/bug · 🟠 important · 🟡 polish.
 - **C4:** export `planner_time.dart`. **C1/C2/C3:** remove dead code / fix typo.
 - **C6:** add a real test suite (widget + golden), fix the example smoke test.
 
-### P2 — Make it a great *calendar* (pick a direction — see below)
-- Real date support, week navigation, "today" highlight, multi-day/all-day events.
+### P2 — Make it a great *calendar* (direction decided — see below)
+- ✅ **Time-model direction resolved (#19):** keep the day-index model; do **not**
+  migrate to `DateTime`. See `docs/decisions/0001-time-model-day-index.md`.
+- Add the genuine widget-level primitives as additive, non-breaking follow-ups:
+  highlight-column ("today" style, #46), event column-span (multi-day, #47),
+  all-day band (#48), optional `date ↔ index` consumer helpers (#49).
 - **D11** overlap/column layout. Accessibility (`Semantics`), localization of menu strings.
 
 ### P3 — Polish & tooling
 - **B2** bump `flutter_lints`; **E1/E2** CI + stricter analysis; **D6/D7** repaint &
   allocation optimizations; **B3** resolve the vendored dependency; **C7** example churn.
 
-### The key design fork — time model (no decision forced)
+### The key design fork — time model (✅ DECIDED: keep day-index, #19)
 
-**Option 1 — keep the abstract day-index model.**
+**Decision (2026-06-06):** keep the abstract **day-index** model — `day` stays an
+index into `config.labels`. We will **not** migrate to `DateTime`, and **not** take
+the optional-`DateTime`-per-column middle path. Full rationale in
+`docs/decisions/0001-time-model-day-index.md`.
+
+The reasoning, in short: the widget treats `day` purely as a column index and the
+label is already a free-form string, so `DateTime` turned out to be an **ergonomics**
+choice, not a **capability** unlock. Week navigation, `intl` formatting, and even
+"today" highlighting are all achievable in consumer code (or via tiny index-based
+primitives) without putting `DateTime` in the public API. Adding `DateTime` would
+only move responsibility into the library at the cost of a breaking change.
+
+The options as originally framed (retained for the record):
+
+**Option 1 — keep the abstract day-index model.** ← **chosen**
 - ➕ Minimal change; stays a flexible "N labelled columns of time-slots" widget;
   useful for non-calendar scheduling (rooms, machines, lanes).
-- ➖ Never a true calendar; the consumer must map dates ↔ indices themselves.
+- ➖ Never a true calendar out-of-the-box; the consumer maps dates ↔ indices
+  themselves (to be eased by optional, non-core helpers).
 
-**Option 2 — migrate to `DateTime`.**
-- ➕ Unlocks week navigation, today-highlight, multi-day/all-day events, time
-  zones/DST, and `intl` formatting — i.e. an actual calendar.
-- ➖ Larger API change (`PlannerTime` → `DateTime` + `Duration`), needs a migration
-  guide and a major version bump.
+**Option 2 — migrate to `DateTime`.** ← rejected
+- ➕ Batteries-included calendar ergonomics (week-stepping, today, multi-day) without
+  the consumer hand-rolling date↔index mapping.
+- ➖ Larger breaking API change (`PlannerTime` → `DateTime` + `Duration`), needs a
+  migration guide and a major version bump — for convenience, not new capability.
 
-A middle path exists: keep the column model but let each column *optionally* carry a
-`DateTime`, so date-aware features layer on without forcing the breaking change.
+**Middle path — optional `DateTime` per column.** ← rejected
+- Keeps the column model but lets each column optionally carry a `DateTime`; judged
+  not worth the added surface given the features are consumer-doable.
 
 ---
 
