@@ -71,6 +71,16 @@ class _PlannerState extends State<Planner> {
   final ValueNotifier<MouseCursor> _cursor =
       ValueNotifier<MouseCursor>(SystemMouseCursors.basic);
 
+  // Identifies the events-canvas RenderCustomPaint so a scroll/zoom can rebuild
+  // its accessibility semantics (#56). RenderCustomPaint wires the painter's
+  // `repaint` listenable to markNeedsPaint only — never markNeedsSemanticsUpdate
+  // — so a pan/zoom (which just ticks triggerUpdate) repaints the events but
+  // leaves their semantics nodes frozen at the rects they had when last built.
+  // We listen to that same notifier and poke this canvas to rebuild its
+  // semantics, so each event node's rect tracks the view (keeping touch-
+  // exploration hit-areas and the AT focus highlight correct as the user pans).
+  final GlobalKey _eventsCanvasKey = GlobalKey();
+
   /// Whether [kind] is a precise pointer (a mouse) that gets the Outlook-style
   /// immediate drag-move/resize. Touch keeps one-finger drag as pan; its
   /// move/resize affordance is the long-press callback (the companion #66).
@@ -80,6 +90,21 @@ class _PlannerState extends State<Planner> {
   void initState() {
     super.initState();
     _data = Manager(config: widget.config, entries: widget.entries);
+    // Rebuild the event semantics whenever the view changes (#56). The
+    // controller is preserved across rebuilds (Manager.update keeps it), so this
+    // listener stays valid for the life of the State.
+    _data.controller.triggerUpdate.addListener(_rebuildEventSemantics);
+  }
+
+  /// Rebuilds the events-canvas accessibility semantics so each event node's
+  /// rect tracks the current scroll/zoom (#56). Fired on every controller
+  /// update: RenderCustomPaint only repaints (not re-semantics) on the `repaint`
+  /// listenable, so without this poke a scrolled event keeps its stale node rect.
+  /// A no-op until the canvas is mounted (`currentContext` is null before then).
+  void _rebuildEventSemantics() {
+    _eventsCanvasKey.currentContext
+        ?.findRenderObject()
+        ?.markNeedsSemanticsUpdate();
   }
 
   @override
@@ -93,6 +118,7 @@ class _PlannerState extends State<Planner> {
 
   @override
   void dispose() {
+    _data.controller.triggerUpdate.removeListener(_rebuildEventSemantics);
     _cursor.dispose();
     super.dispose();
   }
@@ -420,6 +446,7 @@ class _PlannerState extends State<Planner> {
               child: Container(
                   color: _data.config.plannerBackground,
                   child: CustomPaint(
+                    key: _eventsCanvasKey,
                     painter: EventsPainter(
                       manager: _data,
                       repaint: _data.controller.triggerUpdate,

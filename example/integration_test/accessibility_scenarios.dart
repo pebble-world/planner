@@ -3,6 +3,8 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/planner.dart';
 
+import 'planner_harness.dart';
+
 /// End-to-end guard for #21 (PROJECT_OVERVIEW D12): the planner is drawn on a
 /// single `CustomPaint` canvas, which is one opaque node to a screen reader, so
 /// events were neither perceivable nor actionable by assistive technology.
@@ -78,6 +80,94 @@ void accessibilityScenarios() {
     // the one we constructed, so read the moved hour off the reported instance.
     expect(moved.single.id, 'standup');
     expect(moved.single.time.hour, 10);
+
+    handle.dispose();
+  });
+
+  testWidgets('an event below the viewport is still exposed to a11y (#56)',
+      (tester) async {
+    // The events canvas has no accessibility scroll-into-view action, so an event
+    // off the bottom of the viewport must still get a (non-hidden) semantics node
+    // — otherwise a screen-reader user could never reach it. With the default
+    // ~550px-tall canvas, hour 20 (grid y=800) starts well below the fold.
+    final handle = tester.ensureSemantics();
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          config: PlannerConfig(
+            labels: const ['Mon', 'Tue', 'Wed'],
+            minHour: 0,
+            maxHour: 23,
+          ),
+          entries: [
+            PlannerEntry(
+              id: 'late',
+              time: PlannerTime(day: 0, hour: 20),
+              title: 'Late',
+              content: '',
+              color: const Color(0xFF2244AA),
+            ),
+          ],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final owner =
+        tester.renderObject(find.byType(Planner)).owner!.semanticsOwner!;
+    final node = _findByLabelPrefix(owner, 'Late');
+    final data = node.getSemanticsData();
+    expect(data.label, startsWith('Late, Mon, 20:00'));
+    expect(data.flagsCollection.isHidden, isFalse,
+        reason: 'an off-viewport event must stay reachable, not hidden');
+
+    handle.dispose();
+  });
+
+  testWidgets('scrolling the canvas updates an event node rect (#56)',
+      (tester) async {
+    // RenderCustomPaint repaints on scroll but never rebuilds semantics on its
+    // own, so without the widget-layer poke an event node keeps the rect it had
+    // when last built. Scroll the time axis and confirm the node's rect actually
+    // moves up — proof the semantics were rebuilt against the new scroll offset.
+    final handle = tester.ensureSemantics();
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          config: PlannerConfig(
+            labels: const ['Mon', 'Tue', 'Wed'],
+            minHour: 0,
+            maxHour: 23,
+          ),
+          entries: [
+            PlannerEntry(
+              id: 'standup',
+              time: PlannerTime(day: 0, hour: 9),
+              title: 'Standup',
+              content: '',
+              color: const Color(0xFF2244AA),
+            ),
+          ],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final owner =
+        tester.renderObject(find.byType(Planner)).owner!.semanticsOwner!;
+    final before = _findByLabelPrefix(owner, 'Standup').rect.top;
+
+    // Five wheel notches down the time axis (20px each at zoom 1 = 100px up).
+    await wheelScroll(tester, tester.getCenter(find.byType(Planner)), 5);
+    await tester.pumpAndSettle();
+
+    final after = _findByLabelPrefix(owner, 'Standup').rect.top;
+    expect(after, lessThan(before),
+        reason: 'the node rect must track the scroll, not stay frozen');
+    expect(before - after, closeTo(100, 0.5),
+        reason: 'five 20px notches move the event up by 100px');
 
     handle.dispose();
   });
