@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/internal/all_day_band.dart';
 import 'package:planner/internal/all_day_event.dart';
@@ -22,9 +23,11 @@ void main() {
   Manager managerWith(
     List<PlannerEntry> entries, {
     List<String> labels = const ['A', 'B', 'C'],
+    bool showAllDayBand = true,
   }) =>
       Manager(
-        config: PlannerConfig(labels: labels, minHour: 0),
+        config: PlannerConfig(
+            labels: labels, minHour: 0, showAllDayBand: showAllDayBand),
         entries: entries,
       );
 
@@ -215,6 +218,74 @@ void main() {
     });
   });
 
+  group('showAllDayBand opt-in gate (#72)', () {
+    test('off by default: all-day entries render nowhere, band is 0-height',
+        () {
+      final manager = managerWith([
+        allDayAt('holiday', day: 0),
+        timedAt('meeting', day: 0, hour: 9),
+      ], showAllDayBand: false);
+
+      // The all-day entry is neither collected for the band nor placed on the
+      // hour grid (it has no hour position), so it simply doesn't render.
+      expect(manager.allDayEvents, isEmpty);
+      expect(manager.allDayLaneCount, 0);
+      expect(manager.allDayBandHeight, 0);
+      expect(manager.events.map((e) => e.entry.id), ['meeting']);
+    });
+
+    test('enabled: the same all-day entry is collected and sizes the band', () {
+      final manager = managerWith([allDayAt('holiday', day: 0)]);
+      expect(manager.allDayEvents.map((e) => e.entry.id), ['holiday']);
+      expect(manager.allDayBandHeight, bandHeightFor(1));
+    });
+  });
+
+  group('chip hit-testing (#72)', () {
+    // Single chip at day 1: screenRect is x 252..448, y 4..24 (the chip-geometry
+    // group pins this), in the band canvas's own coordinate space.
+    test('a point inside a chip resolves to that chip', () {
+      final manager = managerWith([allDayAt('a', day: 1)]);
+      final chip = manager.getAllDayEventAtPos(const Offset(300, 12));
+      expect(chip?.entry.id, 'a');
+    });
+
+    test('a point in empty band space resolves to no chip', () {
+      final manager = managerWith([allDayAt('a', day: 1)]);
+      // Column 0 (x 50..250) carries no chip.
+      expect(manager.getAllDayEventAtPos(const Offset(100, 12)), isNull);
+    });
+
+    test('getAllDayTimeAtPos maps the column under the point, flagged allDay',
+        () {
+      final manager = managerWith([allDayAt('a', day: 1)]);
+      // x 100 is in column 0 (past the 50px gutter); x 300 is in column 1.
+      final t0 = manager.getAllDayTimeAtPos(const Offset(100, 12));
+      expect(t0.day, 0);
+      expect(t0.allDay, isTrue);
+      expect(manager.getAllDayTimeAtPos(const Offset(300, 12)).day, 1);
+    });
+
+    test('getAllDayTimeAtPos clamps a point left of the grid to column 0', () {
+      final manager = managerWith([allDayAt('a', day: 1)]);
+      expect(manager.getAllDayTimeAtPos(const Offset(0, 12)).day, 0);
+    });
+  });
+
+  group('chip semantics label (#72)', () {
+    test('a single-column chip reads title, column label, and "all day"', () {
+      final chip = managerWith([allDayAt('Holiday', day: 1)],
+          labels: const ['Mon', 'Tue', 'Wed']).allDayEvents.single;
+      expect(chip.semanticsLabel, 'Holiday, Tue, all day');
+    });
+
+    test('a multi-day chip reads its first..last column labels', () {
+      final chip = managerWith([allDayAt('Conf', day: 0, endDay: 2)],
+          labels: const ['Mon', 'Tue', 'Wed']).allDayEvents.single;
+      expect(chip.semanticsLabel, 'Conf, Mon to Wed, all day');
+    });
+  });
+
   group('widget rendering', () {
     Finder allDayCanvas() => find.byWidgetPredicate(
           (w) => w is CustomPaint && w.painter is AllDayBand,
@@ -223,12 +294,19 @@ void main() {
           (w) => w is CustomPaint && w.painter is EventsPainter,
         );
 
-    Future<void> pump(WidgetTester tester, List<PlannerEntry> entries) async {
+    Future<void> pump(
+      WidgetTester tester,
+      List<PlannerEntry> entries, {
+      bool showAllDayBand = true,
+    }) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: Planner(
             config: PlannerConfig(
-                labels: const ['c1', 'c2', 'c3'], minHour: 0, maxHour: 23),
+                labels: const ['c1', 'c2', 'c3'],
+                minHour: 0,
+                maxHour: 23,
+                showAllDayBand: showAllDayBand),
             entries: entries,
           ),
         ),
@@ -269,5 +347,85 @@ void main() {
       expect(bandTop, 50);
       expect(gridTop, greaterThanOrEqualTo(bandTop + bandHeightFor(1)));
     });
+
+    testWidgets('no band is mounted when disabled, even with all-day entries',
+        (tester) async {
+      await pump(tester, [allDayAt('a', day: 1)], showAllDayBand: false);
+      // The opt-in gate is off, so the band never appears and the grid is flush
+      // under the date row.
+      expect(allDayCanvas(), findsNothing);
+      expect(tester.getRect(eventsCanvas()).top, 50);
+    });
   });
+
+  group('chip accessibility (#72)', () {
+    testWidgets(
+        'the band exposes each chip and its edit/delete actions to a11y',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final edited = <PlannerEntry>[];
+      final deleted = <PlannerEntry>[];
+
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Planner(
+            config: PlannerConfig(
+              labels: const ['Mon', 'Tue', 'Wed'],
+              minHour: 0,
+              maxHour: 23,
+              showAllDayBand: true,
+              onEntryEdit: edited.add,
+              onEntryDelete: deleted.add,
+            ),
+            entries: [allDayAt('Holiday', day: 1)],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      final owner =
+          tester.renderObject(find.byType(Planner)).owner!.semanticsOwner!;
+      final node = _findByLabelPrefix(owner, 'Holiday');
+      final data = node.getSemanticsData();
+
+      // The chip is announced with its title, column and "all day", and reads as
+      // an actionable button — but, having no time axis, exposes no nudge.
+      expect(data.label, 'Holiday, Tue, all day');
+      expect(data.flagsCollection.isButton, isTrue);
+      expect(data.hasAction(SemanticsAction.increase), isFalse);
+      expect(data.hasAction(SemanticsAction.decrease), isFalse);
+
+      // Activate -> edit; dismiss -> delete (mirrors the timed-event canvas).
+      owner.performAction(node.id, SemanticsAction.tap);
+      await tester.pump();
+      expect(edited.single.id, 'Holiday');
+
+      owner.performAction(node.id, SemanticsAction.dismiss);
+      await tester.pump();
+      expect(deleted.single.id, 'Holiday');
+
+      handle.dispose();
+    });
+  });
+}
+
+/// Returns the first semantics node under [owner] whose label starts with
+/// [prefix]. CustomPaint semantics are raw `SemanticsNode`s, so a widget finder
+/// can't reach them — the tree is walked directly.
+SemanticsNode _findByLabelPrefix(SemanticsOwner owner, String prefix) {
+  SemanticsNode? found;
+  void visit(SemanticsNode node) {
+    if (found == null && node.getSemanticsData().label.startsWith(prefix)) {
+      found = node;
+    }
+    node.visitChildren((child) {
+      visit(child);
+      return found == null;
+    });
+  }
+
+  visit(owner.rootSemanticsNode!);
+  expect(found, isNotNull,
+      reason: 'no semantics node labelled "$prefix…" was found');
+  return found!;
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
 import 'all_day_event.dart';
 import 'manager.dart';
@@ -29,6 +30,43 @@ class AllDayBand extends CustomPainter {
     for (final AllDayEvent event in manager.allDayEvents) {
       event.paint(canvas);
     }
+  }
+
+  // Expose each all-day chip to assistive technology (#72), bringing the band to
+  // parity with the timed-event canvas (#21/#56). Mirrors [EventsPainter]'s
+  // semantics: one node per chip carrying its description and the host's actions,
+  // mapped onto first-class semantics actions (RenderCustomPaint drops
+  // customSemanticsActions) — activate (onTap) -> edit, dismiss (onDismiss) ->
+  // delete. There is no increase/decrease: an all-day chip has no time axis to
+  // nudge along (drag/resize is out of scope for #72). A node is emitted for
+  // every chip regardless of horizontal scroll; its rect is the chip's live
+  // on-screen rect, so `_PlannerState` pokes this canvas to rebuild semantics on
+  // a day-axis pan (the `repaint` listenable only triggers markNeedsPaint), the
+  // same way it does for the event canvas. Stable per-chip keys (the entry id)
+  // keep node identity across those rebuilds.
+  @override
+  SemanticsBuilderCallback get semanticsBuilder => _buildSemantics;
+
+  List<CustomPainterSemantics> _buildSemantics(Size size) {
+    final config = manager.config;
+    final canEdit = config.onEntryEdit != null;
+    final canDelete = config.onEntryDelete != null;
+
+    return [
+      for (final AllDayEvent chip in manager.allDayEvents)
+        CustomPainterSemantics(
+          key: ValueKey(chip.entry.id),
+          rect: chip.screenRect,
+          properties: SemanticsProperties(
+            label: chip.semanticsLabel,
+            textDirection: TextDirection.ltr,
+            button: canEdit,
+            enabled: true,
+            onTap: canEdit ? () => manager.editAllDayEvent(chip) : null,
+            onDismiss: canDelete ? () => manager.deleteAllDayEvent(chip) : null,
+          ),
+        ),
+    ];
   }
 
   @override

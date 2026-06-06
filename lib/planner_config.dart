@@ -65,17 +65,28 @@ class PlannerConfig {
   double dateRowHeight;
   double hourColumnWidth;
 
+  /// Whether the all-day band (#48) is shown at all. Opt-in: defaults to
+  /// `false`, so by default no band is rendered and [PlannerTime.allDay] entries
+  /// don't appear anywhere (they have no hour position, so they're simply not
+  /// drawn). Set it to `true` to enable the band — it then appears above the
+  /// time grid whenever there is at least one all-day event, and the chips
+  /// become interactive and accessible (#72). With the band disabled,
+  /// [allDayBandLaneHeight] / [allDayBandBackground] have no effect.
+  bool showAllDayBand;
+
   /// Height, in logical pixels, of one stacked lane in the all-day band (#48).
   /// All-day events ([PlannerTime.allDay]) render as chips above the time grid;
   /// concurrent ones (sharing a column) stack into separate lanes, and the band
   /// auto-sizes to the number of lanes used. The band is omitted entirely (zero
-  /// height) when there are no all-day events, so this has no effect then.
+  /// height) when [showAllDayBand] is `false` or there are no all-day events, so
+  /// this has no effect then.
   double allDayBandLaneHeight;
 
   /// Background fill of the all-day band (#48). Defaults to a dark grey close to
   /// the [plannerBackground] so the band reads as the top of the column area;
   /// override it to match a light theme or to set it off from the grid. Ignored
-  /// when there are no all-day events (the band isn't shown).
+  /// when [showAllDayBand] is `false` or there are no all-day events (the band
+  /// isn't shown).
   Color allDayBandBackground;
 
   TextStyle hourLabelStyle;
@@ -193,6 +204,7 @@ class PlannerConfig {
     this.zoomButtonColor,
     this.zoomButtonIconColor = Colors.white,
     this.scrollStep = 20,
+    this.showAllDayBand = false,
     this.allDayBandLaneHeight = 24,
     this.allDayBandBackground = const Color.fromARGB(255, 60, 60, 60),
     this.plannerBackground = const Color.fromARGB(255, 50, 50, 50),

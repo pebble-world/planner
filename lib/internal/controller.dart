@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../planner.dart';
-import 'event.dart';
 
 enum MenuType {
   planner,
@@ -51,8 +50,17 @@ class Controller {
   double _reservedHeight = 0;
 
   MenuType menuType = MenuType.none;
+
+  /// The menu's top-left position in **planner-local** coordinates (the whole
+  /// widget's box), so the single overlay can sit over either the time grid or
+  /// the all-day band (#72). The widget layer converts each surface's local hit
+  /// position into this space before calling [showEventMenu]/[showPlannerMenu].
   Offset? menuPos;
-  Event? menuEvent;
+
+  /// The entry the entry-menu (edit/delete) acts on. A [PlannerEntry] rather
+  /// than an [Event] so the same menu serves both timed events and all-day chips
+  /// (#72) — both carry a [PlannerEntry], which is all edit/delete need.
+  PlannerEntry? menuEntry;
   PlannerTime? menuTime;
   Function? _onCloseMenu;
 
@@ -180,10 +188,13 @@ class Controller {
     triggerUpdate.value++;
   }
 
-  void showEventMenu(Offset pos, Event? event, Function onClose) {
+  /// Opens the entry menu (edit/delete) for [entry] at planner-local [pos]. The
+  /// caller (timed grid or all-day band) passes the chip's/event's
+  /// [PlannerEntry], so the same menu serves both surfaces (#72).
+  void showEventMenu(Offset pos, PlannerEntry entry, Function onClose) {
     menuPos = pos;
     menuType = MenuType.entry;
-    menuEvent = event;
+    menuEntry = entry;
     menuTime = null;
     _onCloseMenu = onClose;
   }
@@ -191,13 +202,17 @@ class Controller {
   void showPlannerMenu(Offset pos, PlannerTime time, Function onClose) {
     menuPos = pos;
     menuType = MenuType.planner;
-    menuEvent = null;
+    menuEntry = null;
     menuTime = time;
+    // Wire the close callback here too (it was previously only set for the entry
+    // menu), so dismissing the create menu rebuilds the host like the entry menu
+    // does — needed now that the all-day band also opens the create menu (#72).
+    _onCloseMenu = onClose;
   }
 
   void hideMenu() {
     menuType = MenuType.none;
-    menuEvent = null;
+    menuEntry = null;
     menuTime = null;
     if (_onCloseMenu != null) {
       _onCloseMenu!();

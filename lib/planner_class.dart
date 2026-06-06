@@ -82,6 +82,18 @@ class _PlannerState extends State<Planner> {
   // exploration hit-areas and the AT focus highlight correct as the user pans).
   final GlobalKey _eventsCanvasKey = GlobalKey();
 
+  // The all-day band's RenderCustomPaint, poked on a day-axis pan to rebuild its
+  // chip semantics the same way as the event canvas (#72/#56): the band's chip
+  // rects track the horizontal scroll, and the `repaint` listenable only
+  // triggers markNeedsPaint, never markNeedsSemanticsUpdate. Null until (and
+  // unless) the band is mounted, so the poke is a no-op when there's no band.
+  final GlobalKey _allDayCanvasKey = GlobalKey();
+
+  // The local position of the most recent double-tap-down on the all-day band,
+  // captured so [_onAllDayDoubleTap] (which carries no position itself) knows
+  // which chip / empty column the double-tap landed on.
+  Offset _allDayDoubleTapPos = Offset.zero;
+
   /// Whether [kind] is a precise pointer (a mouse) that gets the Outlook-style
   /// immediate drag-move/resize. Touch keeps one-finger drag as pan; its
   /// move/resize affordance is the long-press callback (the companion #66).
@@ -91,19 +103,23 @@ class _PlannerState extends State<Planner> {
   void initState() {
     super.initState();
     _data = Manager(config: widget.config, entries: widget.entries);
-    // Rebuild the event semantics whenever the view changes (#56). The
+    // Rebuild the canvas semantics whenever the view changes (#56). The
     // controller is preserved across rebuilds (Manager.update keeps it), so this
     // listener stays valid for the life of the State.
-    _data.controller.triggerUpdate.addListener(_rebuildEventSemantics);
+    _data.controller.triggerUpdate.addListener(_rebuildCanvasSemantics);
   }
 
-  /// Rebuilds the events-canvas accessibility semantics so each event node's
-  /// rect tracks the current scroll/zoom (#56). Fired on every controller
-  /// update: RenderCustomPaint only repaints (not re-semantics) on the `repaint`
-  /// listenable, so without this poke a scrolled event keeps its stale node rect.
-  /// A no-op until the canvas is mounted (`currentContext` is null before then).
-  void _rebuildEventSemantics() {
+  /// Rebuilds the events-canvas and all-day-band accessibility semantics so each
+  /// node's rect tracks the current scroll/zoom (#56/#72). Fired on every
+  /// controller update: RenderCustomPaint only repaints (not re-semantics) on
+  /// the `repaint` listenable, so without this poke a scrolled event/chip keeps
+  /// its stale node rect. A no-op for a canvas that isn't mounted
+  /// (`currentContext` is null — e.g. the band when it's disabled or empty).
+  void _rebuildCanvasSemantics() {
     _eventsCanvasKey.currentContext
+        ?.findRenderObject()
+        ?.markNeedsSemanticsUpdate();
+    _allDayCanvasKey.currentContext
         ?.findRenderObject()
         ?.markNeedsSemanticsUpdate();
   }
@@ -119,7 +135,7 @@ class _PlannerState extends State<Planner> {
 
   @override
   void dispose() {
-    _data.controller.triggerUpdate.removeListener(_rebuildEventSemantics);
+    _data.controller.triggerUpdate.removeListener(_rebuildCanvasSemantics);
     _cursor.dispose();
     super.dispose();
   }
@@ -128,50 +144,73 @@ class _PlannerState extends State<Planner> {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       _data.controller.setSize(constraints.biggest);
-      return Column(
+      // The context menu overlay is lifted to a planner-wide Stack so it can
+      // sit over either the time grid or the all-day band (#72): the band is a
+      // thin strip above the grid in the Column, so a menu opened from it must
+      // be free to overflow downward over the grid — impossible while the menu
+      // lived inside the grid's own Stack (the grid paints over earlier Column
+      // children). menuPos is therefore planner-local; both surfaces convert
+      // their local hit position into this space.
+      return Stack(
         children: [
-          paintDates(),
-          // The all-day band (#48) sits between the date row and the time grid.
-          // It self-sizes to its lanes and is omitted entirely (no widget, no
-          // reserved space) when there are no all-day events.
-          if (_data.allDayBandHeight > 0) paintAllDayBand(),
-          Expanded(
-            child: Row(
-              children: [
-                paintHours(),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      PositionedTapDetector2(
-                        controller: _tapController,
-                        onDoubleTap: (position) {
-                          if (position.relative == null) {
-                            return;
-                          }
-                          var event = _data.getEventAtPos(position.relative!);
-                          if (event != null &&
-                              _data.config.onEntryEdit != null) {
-                            _data.config.onEntryEdit!(event.entry);
-                          } else if (event == null &&
-                              _data.config.onEntryCreate != null) {
-                            var time = _data.getTimeAtPos(position.relative!);
-                            _data.config.onEntryCreate!(time);
-                          }
-                        },
-                        child: paintEvents(),
+          Column(
+            children: [
+              paintDates(),
+              // The all-day band (#48) sits between the date row and the time
+              // grid. It self-sizes to its lanes and is omitted entirely (no
+              // widget, no reserved space) when the band is disabled
+              // (showAllDayBand) or there are no all-day events.
+              if (_data.allDayBandHeight > 0) paintAllDayBand(),
+              Expanded(
+                child: Row(
+                  children: [
+                    paintHours(),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          PositionedTapDetector2(
+                            controller: _tapController,
+                            onDoubleTap: (position) {
+                              if (position.relative == null) {
+                                return;
+                              }
+                              var event =
+                                  _data.getEventAtPos(position.relative!);
+                              if (event != null &&
+                                  _data.config.onEntryEdit != null) {
+                                _data.config.onEntryEdit!(event.entry);
+                              } else if (event == null &&
+                                  _data.config.onEntryCreate != null) {
+                                var time =
+                                    _data.getTimeAtPos(position.relative!);
+                                _data.config.onEntryCreate!(time);
+                              }
+                            },
+                            child: paintEvents(),
+                          ),
+                          paintZoomButtons(context),
+                        ],
                       ),
-                      paintZoomButtons(context),
-                      ...paintMenu(),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          )
+              )
+            ],
+          ),
+          ...paintMenu(),
         ],
       );
     });
   }
+
+  /// The events canvas's top-left in planner-local coordinates: right of the
+  /// hour gutter and below the date row plus any all-day band. Used to map an
+  /// events-canvas-local hit position into the planner-local space the lifted
+  /// context menu is positioned in (#72).
+  Offset get _eventsCanvasOrigin => Offset(
+        _data.config.hourColumnWidth,
+        _data.config.dateRowHeight + _data.allDayBandHeight,
+      );
 
   List<Widget> paintMenu() {
     List<Widget> result = [];
@@ -226,18 +265,31 @@ class _PlannerState extends State<Planner> {
   /// events flagged [PlannerTime.allDay]. Like the date row directly above it,
   /// it pans the day axis on a horizontal drag (so it isn't a dead zone) and
   /// tracks the horizontal scroll, but it does not zoom or scroll with the time
-  /// axis. Only mounted when there is at least one all-day event.
+  /// axis. Only mounted when the band is enabled and there is at least one
+  /// all-day event.
+  ///
+  /// Its chips are interactive at parity with timed events (#72): double-tap a
+  /// chip to edit (or empty space to create), right-click for the edit/delete
+  /// (or create) context menu, and long-press a chip for [onEntryLongPress].
+  /// These coexist with the day-axis horizontal drag in one GestureDetector —
+  /// a moving press pans, a still tap/press resolves to the tap gestures.
   Widget paintAllDayBand() {
     return GestureDetector(
       onHorizontalDragStart: (detail) =>
           _data.controller.startHorizontalDrag(detail.globalPosition.dx),
       onHorizontalDragUpdate: (detail) =>
           _data.controller.updateHorizontalDrag(detail.globalPosition.dx),
+      // Double-tap carries no position, so capture it on the down event.
+      onDoubleTapDown: (detail) => _allDayDoubleTapPos = detail.localPosition,
+      onDoubleTap: _onAllDayDoubleTap,
+      onSecondaryTapDown: (detail) => _showAllDayMenu(detail.localPosition),
+      onLongPressStart: (detail) => _onAllDayLongPress(detail.localPosition),
       child: ClipRect(
         child: Container(
           height: _data.allDayBandHeight,
           color: _data.config.allDayBandBackground,
           child: CustomPaint(
+            key: _allDayCanvasKey,
             painter: AllDayBand(
               manager: _data,
               repaint: _data.controller.triggerUpdate,
@@ -247,6 +299,48 @@ class _PlannerState extends State<Planner> {
         ),
       ),
     );
+  }
+
+  /// Double-tap on the all-day band (#72): edit the chip under the press, or —
+  /// mirroring the grid's double-tap — create an all-day event on empty band
+  /// space (the position was captured by `onDoubleTapDown`).
+  void _onAllDayDoubleTap() {
+    final chip = _data.getAllDayEventAtPos(_allDayDoubleTapPos);
+    if (chip != null) {
+      _data.config.onEntryEdit?.call(chip.entry);
+    } else if (_data.config.onEntryCreate != null) {
+      _data
+          .config.onEntryCreate!(_data.getAllDayTimeAtPos(_allDayDoubleTapPos));
+    }
+  }
+
+  /// Right-click on the all-day band (#72): open the edit/delete menu for the
+  /// chip under [bandLocalPos], or the create menu on empty band space. The
+  /// band sits at planner-local `(0, dateRowHeight)`, so the band-local press
+  /// maps to planner-local by shifting down past the date row for the lifted
+  /// menu overlay.
+  void _showAllDayMenu(Offset bandLocalPos) {
+    final plannerPos = bandLocalPos + Offset(0, _data.config.dateRowHeight);
+    final chip = _data.getAllDayEventAtPos(bandLocalPos);
+    if (chip != null) {
+      _data.controller.showEventMenu(plannerPos, chip.entry, hideMenu);
+    } else {
+      _data.controller.showPlannerMenu(
+          plannerPos, _data.getAllDayTimeAtPos(bandLocalPos), hideMenu);
+    }
+    setState(() {});
+  }
+
+  /// Long-press on an all-day chip fires [PlannerConfig.onEntryLongPress] (#72),
+  /// the touch path to act on a chip — at parity with a long-press on a timed
+  /// event ([_onLongPress]). A press on empty band space, or with no callback
+  /// wired, is a no-op.
+  void _onAllDayLongPress(Offset bandLocalPos) {
+    final onLongPress = _data.config.onEntryLongPress;
+    if (onLongPress == null) return;
+    final chip = _data.getAllDayEventAtPos(bandLocalPos);
+    if (chip == null) return;
+    onLongPress(chip.entry);
   }
 
   Widget paintZoomButtons(BuildContext context) {
@@ -530,12 +624,16 @@ class _PlannerState extends State<Planner> {
   }
 
   void showMenu(TapDownDetails details) {
-    var event = _data.getEventAtPos(details.localPosition);
+    // Hit-testing uses the events-canvas-local position; the menu is positioned
+    // in planner-local space (the lifted overlay), so shift by the canvas origin.
+    final local = details.localPosition;
+    final plannerPos = local + _eventsCanvasOrigin;
+    var event = _data.getEventAtPos(local);
     if (event != null) {
-      _data.controller.showEventMenu(details.localPosition, event, hideMenu);
+      _data.controller.showEventMenu(plannerPos, event.entry, hideMenu);
     } else {
-      var time = _data.getTimeAtPos(details.localPosition);
-      _data.controller.showPlannerMenu(details.localPosition, time, hideMenu);
+      var time = _data.getTimeAtPos(local);
+      _data.controller.showPlannerMenu(plannerPos, time, hideMenu);
     }
 
     setState(() {});
