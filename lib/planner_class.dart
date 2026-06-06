@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'internal/context_menu.dart';
 import 'internal/controller.dart';
@@ -275,8 +276,12 @@ class _PlannerState extends State<Planner> {
       }
     }
 
+    // Empty-area (and touch) drag pans both axes within the existing clamps,
+    // reusing the controller's per-axis drag handlers (the day axis is also
+    // panned by the date row, the time axis by the hour gutter).
     _mode = _GestureMode.pan;
     _data.controller.startHorizontalDrag(details.focalPoint.dx);
+    _data.controller.startVerticalDrag(details.focalPoint.dy);
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
@@ -289,6 +294,7 @@ class _PlannerState extends State<Planner> {
       _data.controller.updateZoom(details.verticalScale);
     } else if (_mode == _GestureMode.pan) {
       _data.controller.updateHorizontalDrag(details.focalPoint.dx);
+      _data.controller.updateVerticalDrag(details.focalPoint.dy);
     }
   }
 
@@ -297,6 +303,25 @@ class _PlannerState extends State<Planner> {
       _data.endDrag();
     }
     _mode = _GestureMode.idle;
+  }
+
+  /// Routes a mouse-wheel notch by keyboard modifier (#65): plain wheel scrolls
+  /// the time axis (unchanged), Shift+wheel scrolls the day axis, Ctrl+wheel
+  /// zooms (clamped to `minZoom`/`maxZoom` by the controller). The vertical
+  /// `dy > 0` sign drives all three so they agree on notch direction; a notch
+  /// with no vertical delta (e.g. a pure horizontal trackpad scroll) is ignored.
+  void _handleWheel(PointerScrollEvent event) {
+    final dy = event.scrollDelta.dy;
+    if (dy == 0) return;
+    final keys = HardwareKeyboard.instance;
+    if (keys.isControlPressed) {
+      _data.controller.startZoom();
+      _data.controller.updateZoom(dy < 0 ? 1.1 : 0.9);
+    } else if (keys.isShiftPressed) {
+      _data.controller.horizontalScroll(dy > 0);
+    } else {
+      _data.controller.verticalScroll(dy > 0);
+    }
   }
 
   /// Maps a hover [position] (events-canvas-local) to the cursor that signals
@@ -365,13 +390,7 @@ class _PlannerState extends State<Planner> {
           valueListenable: _cursor,
           child: ClipRect(
             child: ScrollDetector(
-              onPointerScroll: (event) {
-                if (event.scrollDelta.dy > 0) {
-                  _data.controller.verticalScroll(true);
-                } else {
-                  _data.controller.verticalScroll(false);
-                }
-              },
+              onPointerScroll: _handleWheel,
               child: Container(
                   color: _data.config.plannerBackground,
                   child: CustomPaint(
@@ -404,13 +423,7 @@ class _PlannerState extends State<Planner> {
           _data.controller.updateVerticalDrag(details.globalPosition.dy)),
       child: ClipRect(
         child: ScrollDetector(
-          onPointerScroll: (event) {
-            if (event.scrollDelta.dy > 0) {
-              _data.controller.verticalScroll(true);
-            } else {
-              _data.controller.verticalScroll(false);
-            }
-          },
+          onPointerScroll: _handleWheel,
           child: Container(
             width: _data.config.hourColumnWidth,
             color: _data.config.hourBackground,

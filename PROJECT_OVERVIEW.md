@@ -19,10 +19,15 @@ and a `List<`[`PlannerEntry`](lib/planner_entry.dart)`>`, and it paints a grid o
 columns (one per label) with horizontal hour lines, then draws each event as a
 rectangle positioned by time. The user can:
 
-- **Pan horizontally** to move across day-columns.
-- **Pan / mouse-wheel scroll vertically** to move across hours.
-- **Zoom** the time axis via pinch or the on-canvas +/- buttons.
-- **Long-press + drag** an event to move it, or drag its top/bottom handle to resize.
+- **Pan** the canvas by dragging empty space — both axes at once (#65) — or pan
+  a single axis via the date row / hour gutter.
+- **Mouse wheel:** plain wheel scrolls the time axis, `Shift`+wheel scrolls the
+  day axis, `Ctrl`+wheel zooms (#65).
+- **Zoom** the time axis via pinch, `Ctrl`+wheel, or the on-canvas +/- buttons.
+- **Desktop drag-to-edit (#65):** press an event body and drag to move it, or
+  drag its top/bottom edge to resize — immediately, no long-press. Hovering shows
+  a `move` / `resizeUpDown` cursor as the cue. On **touch**, a one-finger drag
+  pans; event move/resize is reserved for the `onEntryLongPress` callback (#66).
 - **Double-tap / right-click** to open a context menu that fires
   `onEntryCreate` / `onEntryEdit` / `onEntryDelete` / `onEntryMove` callbacks.
 

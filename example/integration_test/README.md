@@ -10,6 +10,7 @@ surface) can miss rendering/geometry bugs.
 | [`app_smoke_scenarios.dart`](app_smoke_scenarios.dart) | Boots the real example app; asserts a `Planner` renders and the real secondary-tap menu opens. |
 | [`drag_scenarios.dart`](drag_scenarios.dart) | Mouse-dragging an event body moves it, and dragging its top edge resizes it; both fire `onEntryMove` with no paint-phase side effects (device-level counterpart of the #11 / D5 regression). |
 | [`direct_manipulation_scenarios.dart`](direct_manipulation_scenarios.dart) | Outlook-style direct manipulation (#65): desktop hover cursors (move over a body, resize over an edge, basic over empty), and a one-finger touch drag pans rather than moving the event. |
+| [`pan_zoom_scenarios.dart`](pan_zoom_scenarios.dart) | 2D pan and wheel modifiers (#65): dragging empty canvas pans both axes; Shift+wheel scrolls the day axis; Ctrl+wheel zooms. |
 | [`event_geometry_scenarios.dart`](event_geometry_scenarios.dart) | An event's hit-area derives from `config.blockHeight` with proportional minutes (#10 / D3 + D4). |
 | [`hour_label_scenarios.dart`](hour_label_scenarios.dart) | The default `maxHour` (23) clamps a below-grid tap to hour 23, not the invalid 24 (#13 / D10). |
 | [`snapping_scenarios.dart`](snapping_scenarios.dart) | Create and drag snap event times to the single configurable `snapMinutes` interval, and agree (#14 / D8). |

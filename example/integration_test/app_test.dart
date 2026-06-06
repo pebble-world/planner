@@ -12,6 +12,7 @@ import 'highlight_column_scenarios.dart';
 import 'hour_label_scenarios.dart';
 import 'multi_planner_scenarios.dart';
 import 'overlap_scenarios.dart';
+import 'pan_zoom_scenarios.dart';
 import 'snapping_scenarios.dart';
 import 'span_scenarios.dart';
 import 'zoom_scenarios.dart';
@@ -38,6 +39,7 @@ void main() {
   hourLabelScenarios();
   multiPlannerScenarios();
   overlapScenarios();
+  panZoomScenarios();
   snappingScenarios();
   spanScenarios();
   zoomScenarios();

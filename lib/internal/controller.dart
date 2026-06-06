@@ -136,6 +136,23 @@ class Controller {
     }
   }
 
+  /// Scrolls the day-axis by one wheel notch — the Shift+wheel horizontal scroll
+  /// (#65). [forward] (a wheel-down notch) reveals later columns by decreasing
+  /// [x]; the reverse reveals earlier ones. The step is the flat
+  /// [PlannerConfig.scrollStep]: unlike the time axis, columns are a fixed
+  /// [PlannerConfig.blockWidth] wide and don't scale with zoom, so a notch always
+  /// moves the same distance. Clamped to the same `[_maxXOffset, _minXOffset]`
+  /// bounds as a horizontal drag, so it can't reveal past the grid edges.
+  void horizontalScroll(bool forward) {
+    final step = config.scrollStep;
+    x += forward ? -step : step;
+    if (x > _minXOffset) {
+      x = _minXOffset;
+    } else if (x < _maxXOffset) {
+      x = _maxXOffset;
+    }
+  }
+
   void startZoom() {
     _previousZoom = _zoom;
   }

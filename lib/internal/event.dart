@@ -349,9 +349,12 @@ class Event {
   /// hover-cursor hit test (`Manager.dragTypeAt`) so the cursor shown over an
   /// event matches the drag a press there would actually start.
   DragType dragTypeForGridPoint(Offset gridPos) {
-    if ((gridPos.dy - canvasRect.top).abs() < 8) return DragType.topHandle;
-    if ((gridPos.dy - canvasRect.bottom).abs() < 8)
+    if ((gridPos.dy - canvasRect.top).abs() < 8) {
+      return DragType.topHandle;
+    }
+    if ((gridPos.dy - canvasRect.bottom).abs() < 8) {
       return DragType.bottomHandle;
+    }
     return DragType.body;
   }
 
