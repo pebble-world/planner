@@ -27,7 +27,10 @@ rectangle positioned by time. The user can:
 - **Desktop drag-to-edit (#65):** press an event body and drag to move it, or
   drag its top/bottom edge to resize — immediately, no long-press. Hovering shows
   a `move` / `resizeUpDown` cursor as the cue. On **touch**, a one-finger drag
-  pans; event move/resize is reserved for the `onEntryLongPress` callback (#66).
+  pans.
+- **Long-press** an event to fire `onEntryLongPress` with that entry (#66) — the
+  touch-reachable hook for acting on an event (touch has no right-click). The
+  widget stays presentation-only; the host decides the response.
 - **Double-tap / right-click** to open a context menu that fires
   `onEntryCreate` / `onEntryEdit` / `onEntryDelete` / `onEntryMove` callbacks.
 

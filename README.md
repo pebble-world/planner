@@ -16,12 +16,18 @@ hours, and let users pan, zoom, and drag events to move or resize them.
 ## Features
 
 - Multiple labelled columns with an hour grid drawn on a single `CustomPaint`.
-- Horizontal panning across columns; vertical pan + mouse-wheel scroll across hours.
-- Zoom the time axis with pinch gestures or the built-in +/- buttons; finer grid
-  lines fade in as you zoom.
-- Drag an event to move it, or drag its top/bottom handle to resize it.
-- Context menu (right-click or double-tap) to create, edit, and delete events.
+- 2D panning (drag the empty canvas) plus single-axis pan via the date row / hour
+  gutter, and mouse-wheel scroll with `Shift` / `Ctrl` modifiers.
+- Zoom the time axis with pinch, `Ctrl`+wheel, or the built-in +/- buttons; finer
+  grid lines fade in as you zoom.
+- Desktop drag-to-edit: press an event to move it or drag its top/bottom edge to
+  resize, with hover cursors as cues. Touch keeps one-finger drag for panning and
+  exposes a long-press hook (`onEntryLongPress`) for host-defined event actions.
+- Create / edit / delete via double-tap or a right-click context menu.
+- Per-event accessibility semantics (edit / delete / move) for screen readers.
 - Customizable colors and text styles for the grid, labels, events, and menu.
+
+See [Interactions](#interactions) below for the full mouse and touch gesture map.
 
 ## Getting started
 
@@ -112,6 +118,7 @@ A complete, runnable demo lives in [`example/`](example/lib/main.dart).
 | `onEntryEdit(PlannerEntry)` | An event is double-tapped or "Edit Event" is chosen. |
 | `onEntryDelete(PlannerEntry)` | "Delete Event" is chosen from the context menu. |
 | `onEntryMove(PlannerEntry)` | A drag-move or handle-resize finishes; the entry's `time` is already updated. |
+| `onEntryLongPress(PlannerEntry)` | An event is long-pressed — the touch hook for host-defined actions (see [Interactions](#interactions)). |
 
 > Your callbacks own the data. Update your own list of entries (and call
 > `setState`) in response — the widget reports interactions but does not persist them.
@@ -163,6 +170,62 @@ wash that reads on the default dark background — override it for a different t
 |-------|-------------|---------|
 | `highlightedColumn` | `null` | Index into `labels` of the column to emphasize. |
 | `highlightColumnColor` | translucent white | Fill painted across that column. |
+
+## Interactions
+
+The widget reports user actions through the `onEntry*` callbacks; it never mutates
+your data itself. The gesture set adapts to the input device: a precise pointer
+(mouse) gets immediate drag-to-edit, while touch reserves one-finger drag for
+panning and surfaces event actions through a long-press.
+
+### Mouse / desktop
+
+| Gesture | Result |
+|---------|--------|
+| Drag the empty canvas | Pan both axes (day + time) at once. |
+| Drag the date row | Pan the day axis only. |
+| Drag the hour gutter | Pan the time axis only. |
+| Press an event body + drag | Move the event immediately (no long-press); fires `onEntryMove` on release. |
+| Press an event's top/bottom edge + drag | Resize the event; fires `onEntryMove` on release. |
+| Hover an event | Cursor hints the action: `move` over the body, `resizeUpDown` over an edge. |
+| Mouse wheel | Scroll the time axis. |
+| `Shift` + wheel | Scroll the day axis. |
+| `Ctrl` + wheel | Zoom the time axis. |
+| +/- buttons | Zoom the time axis (hide with `showZoomControls: false`). |
+| Double-click an event | `onEntryEdit`. |
+| Double-click an empty slot | `onEntryCreate`. |
+| Right-click an event | Context menu → Edit / Delete (`onEntryEdit` / `onEntryDelete`). |
+| Right-click an empty slot | Context menu → Create (`onEntryCreate`). |
+| Long-press an event | `onEntryLongPress` — the same hook touch uses. |
+
+One wheel notch always advances the same amount of *time* regardless of zoom; tune
+the base step with `scrollStep`.
+
+### Touch
+
+| Gesture | Result |
+|---------|--------|
+| One-finger drag | Pan both axes (day + time) at once. |
+| Two-finger pinch | Zoom the time axis. |
+| Double-tap an event | `onEntryEdit`. |
+| Double-tap an empty slot | `onEntryCreate`. |
+| Long-press an event | `onEntryLongPress` with that entry. |
+| Long-press an empty slot | Nothing. |
+
+Touch has no right-click and reserves one-finger drag for panning, so **long-press
+is how a touch user acts on an event**. The widget stays presentation-only: it
+hands the pressed `PlannerEntry` to `onEntryLongPress` and takes no action of its
+own (no built-in selection, highlight, or menu), so the host decides the response —
+show an action sheet, a selection UI, a delete confirmation, or start a move flow.
+To move an event by touch, drive it from this callback; immediate drag-move/resize
+is a desktop-only affordance.
+
+### Accessibility
+
+The event canvas is a single `CustomPaint`, so each event also exposes a semantics
+node for screen readers: activate to edit, dismiss to delete, and increase/decrease
+to nudge it an hour later/earlier (`onEntryMove`). Only the actions whose callback
+you wire are offered.
 
 ## Additional information
 

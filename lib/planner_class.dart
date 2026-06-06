@@ -305,6 +305,19 @@ class _PlannerState extends State<Planner> {
     _mode = _GestureMode.idle;
   }
 
+  /// Fires [PlannerConfig.onEntryLongPress] when a long-press lands on an event
+  /// (#66) — the freed-up touch gesture for acting on one (touch has no
+  /// right-click, and a one-finger drag now pans); a desktop long-press fires it
+  /// too. The widget takes no action itself: the host decides the response. A
+  /// long-press on empty space, or one with no callback wired, is a no-op.
+  void _onLongPress(LongPressStartDetails details) {
+    final onLongPress = _data.config.onEntryLongPress;
+    if (onLongPress == null) return;
+    final event = _data.getEventAtPos(details.localPosition);
+    if (event == null) return;
+    onLongPress(event.entry);
+  }
+
   /// Routes a mouse-wheel notch by keyboard modifier (#65): plain wheel scrolls
   /// the time axis (unchanged), Shift+wheel scrolls the day axis, Ctrl+wheel
   /// zooms (clamped to `minZoom`/`maxZoom` by the controller). The vertical
@@ -380,6 +393,19 @@ class _PlannerState extends State<Planner> {
                 ..onSecondaryTapDown = (d) {
                   showMenu(d);
                 };
+            },
+          ),
+          // Long-press -> onEntryLongPress (#66). Shares this arena with the
+          // scale and tap recognizers: a still press past the long-press timeout
+          // wins here, while a press that moves past the pan slop lets the scale
+          // recognizer take the gesture, so long-press never steals a pan or a
+          // desktop drag (this is the same arena the old layout ran a long-press
+          // in). Always registered; with no callback wired it's an inert no-op.
+          LongPressGestureRecognizer:
+              GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+            () => LongPressGestureRecognizer(),
+            (LongPressGestureRecognizer instance) {
+              instance.onLongPressStart = _onLongPress;
             },
           ),
         },

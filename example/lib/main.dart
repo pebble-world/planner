@@ -110,6 +110,12 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               onEntryDelete: (entry) {
                 debugPrint('deleting entry: ' + entry.title);
+              },
+              // The freed-up touch gesture (#66): the widget is presentation-
+              // only, so the host decides the response. A real app would show a
+              // selection UI / action sheet here.
+              onEntryLongPress: (entry) {
+                debugPrint('long-pressed entry: ' + entry.title);
               }),
           entries: entries,
         )

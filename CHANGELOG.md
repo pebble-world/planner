@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added `PlannerConfig.onEntryLongPress`, fired with the long-pressed
+  `PlannerEntry`. This is the primary way to act on an event by **touch** (touch
+  has no right-click, and a one-finger drag now pans, so long-press is the
+  freed-up gesture); a desktop long-press fires it too. The widget stays
+  presentation-only — it takes no action of its own (no built-in selection,
+  highlight, or menu), so the host decides the response. `null` (the default) and
+  a long-press on empty space are both no-ops.
 - Added column-spanning (multi-day) events. Set `PlannerTime.endDay` to a
   column index after `day` and the event renders across the whole `day..endDay`
   range; `null` (the default) or any value `<= day` is a single-column event, so
