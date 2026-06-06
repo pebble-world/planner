@@ -99,6 +99,60 @@ class Event {
     canvasRect = Rect.fromPoints(a, b);
   }
 
+  /// Maps a rect from the grid's coordinate space to on-screen (canvas-local)
+  /// coordinates, applying the current scroll offset and time-axis zoom. The
+  /// single source of truth shared by [paint] and [screenRect].
+  Rect _toScreen(Rect gridRect) {
+    final offset = manager.controller.offset;
+    final zoom = manager.controller.zoom;
+    return Rect.fromPoints(
+      Offset(offset.dx + gridRect.topLeft.dx,
+          offset.dy + gridRect.topLeft.dy * zoom),
+      Offset(offset.dx + gridRect.bottomRight.dx,
+          offset.dy + gridRect.bottomRight.dy * zoom),
+    );
+  }
+
+  /// This event's current on-screen rectangle — its grid rect (including any
+  /// live drag offset) mapped through the controller's scroll/zoom. Used by
+  /// [paint] to draw it and by the accessibility layer to place the event's
+  /// semantics node (#21).
+  Rect get screenRect => _toScreen(_getCurrentRect());
+
+  /// A screen-reader description of this event — its title, day-column label,
+  /// time span and duration — so the otherwise-opaque `CustomPaint` canvas
+  /// exposes each event to assistive technology (#21). English-only for now,
+  /// matching the (also unlocalized) context-menu strings.
+  String get semanticsLabel {
+    final time = entry.time;
+    final labels = manager.config.labels;
+    final dayLabel =
+        (time.day >= 0 && time.day < labels.length) ? labels[time.day] : null;
+    final start = _formatClock(time.hour, time.minutes);
+    final endTotal = time.hour * 60 + time.minutes + time.duration;
+    final end = _formatClock(endTotal ~/ 60, endTotal % 60);
+
+    return [
+      entry.title,
+      if (dayLabel != null && dayLabel.isNotEmpty) dayLabel,
+      '$start to $end',
+      _formatDuration(time.duration),
+    ].join(', ');
+  }
+
+  static String _formatClock(int hour, int minutes) =>
+      '${hour.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+
+  static String _formatDuration(int totalMinutes) {
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+    final parts = <String>[
+      if (hours > 0) '$hours ${hours == 1 ? 'hour' : 'hours'}',
+      if (minutes > 0) '$minutes ${minutes == 1 ? 'minute' : 'minutes'}',
+    ];
+    return parts.isEmpty ? '0 minutes' : parts.join(' ');
+  }
+
   void _paintHandle(Canvas canvas, Offset topLeft, double width) {
     Paint paint = Paint()
       ..color =
@@ -123,16 +177,7 @@ class Event {
 
   void paint(Canvas canvas) {
     Rect rect = _getCurrentRect();
-    Rect screenRect = Rect.fromPoints(
-      Offset(
-          manager.controller.offset.dx + rect.topLeft.dx,
-          manager.controller.offset.dy +
-              rect.topLeft.dy * manager.controller.zoom),
-      Offset(
-          manager.controller.offset.dx + rect.bottomRight.dx,
-          manager.controller.offset.dy +
-              rect.bottomRight.dy * manager.controller.zoom),
-    );
+    Rect screenRect = _toScreen(rect);
 
     canvas.drawRect(screenRect,
         _dragType == DragType.none ? _fillPaint : _draggedFillPaint);

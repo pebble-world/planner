@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/planner.dart';
 
@@ -490,4 +491,84 @@ void main() {
           reason: 'onEntryDelete receives the right-clicked entry');
     });
   });
+
+  // The event canvas is a single CustomPaint, opaque to screen readers (#21).
+  // EventsPainter now adds a semantics node per event. This drives the *real*
+  // composed Planner with semantics turned on — proof the semanticsBuilder is
+  // actually wired into the RenderCustomPaint (a unit test on the builder alone
+  // can't show that), and that activating/Edit/Delete/Move route to the host
+  // callbacks through the live semantics owner.
+  testWidgets('the event canvas exposes a labelled, actionable semantics node',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    final edited = <PlannerEntry>[];
+    final deleted = <PlannerEntry>[];
+    final moved = <PlannerEntry>[];
+    final entry = eventAtHour9(); // 'Meeting' at day 0 / 09:00 for 60 min
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          config: PlannerConfig(
+            labels: const ['Mon', 'Tue', 'Wed'],
+            minHour: 0,
+            maxHour: 23,
+            onEntryEdit: edited.add,
+            onEntryDelete: deleted.add,
+            onEntryMove: moved.add,
+          ),
+          entries: [entry],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final owner =
+        tester.renderObject(find.byType(Planner)).owner!.semanticsOwner!;
+    final node = findSemanticsByLabelPrefix(owner, 'Meeting');
+    final data = node.getSemanticsData();
+    expect(data.label, 'Meeting, Mon, 09:00 to 10:00, 1 hour');
+    expect(data.flagsCollection.isButton, isTrue);
+
+    // Activate -> edit (mirrors double-tap-to-edit on the canvas).
+    owner.performAction(node.id, SemanticsAction.tap);
+    await tester.pump();
+    expect(edited.single.id, entry.id);
+
+    // Dismiss -> delete (the standard "remove" gesture).
+    owner.performAction(node.id, SemanticsAction.dismiss);
+    await tester.pump();
+    expect(deleted.single.id, entry.id);
+
+    // Increase -> move one hour later and fire onEntryMove (a screen reader
+    // can't drag, so the event reads as an adjustable nudged in whole hours).
+    owner.performAction(node.id, SemanticsAction.increase);
+    await tester.pump();
+    expect(moved.single.id, entry.id);
+    expect(entry.time.hour, 10);
+
+    handle.dispose();
+  });
+}
+
+/// Walks the live semantics tree under [owner] and returns the first node whose
+/// label starts with [prefix]. CustomPaint semantics are raw `SemanticsNode`s
+/// (not widgets), so a widget finder like `find.bySemanticsLabel` can't reach
+/// them.
+SemanticsNode findSemanticsByLabelPrefix(SemanticsOwner owner, String prefix) {
+  SemanticsNode? found;
+  void visit(SemanticsNode node) {
+    if (found == null && node.getSemanticsData().label.startsWith(prefix)) {
+      found = node;
+    }
+    node.visitChildren((child) {
+      visit(child);
+      return found == null;
+    });
+  }
+
+  visit(owner.rootSemanticsNode!);
+  expect(found, isNotNull,
+      reason: 'no semantics node labelled "$prefix…" was found');
+  return found!;
 }

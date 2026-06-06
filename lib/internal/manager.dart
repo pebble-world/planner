@@ -147,6 +147,37 @@ class Manager {
     controller.triggerUpdate.value++;
   }
 
+  // --- Accessibility actions (#21) --------------------------------------------
+  // The event canvas is a single opaque CustomPaint, so screen-reader users
+  // reach an event's actions through its semantics node, not the pointer-only
+  // context menu / drag. These route to the same host callbacks the pointer UI
+  // uses, so "edit"/"delete"/"move" behave identically however they're invoked.
+
+  /// Fires [PlannerConfig.onEntryEdit] for [event] — the accessibility "Edit"
+  /// action, mirroring the context menu's "Edit Event".
+  void editEvent(Event event) => config.onEntryEdit?.call(event.entry);
+
+  /// Fires [PlannerConfig.onEntryDelete] for [event] — the accessibility
+  /// "Delete" action, mirroring the context menu's "Delete Event".
+  void deleteEvent(Event event) => config.onEntryDelete?.call(event.entry);
+
+  /// Shifts [event] by [hourDelta] whole hours, clamped to
+  /// `[config.minHour, config.maxHour]`, then re-lays out overlaps, repaints,
+  /// and fires [PlannerConfig.onEntryMove]. A screen-reader user can't drag, so
+  /// the accessibility layer exposes "Move earlier"/"Move later" nudges — the
+  /// keyboard-friendly equivalent of a drag-move. A nudge that would leave the
+  /// hour unchanged (already at the bound) is a no-op and fires nothing.
+  void nudgeEvent(Event event, int hourDelta) {
+    final time = event.entry.time;
+    final newHour =
+        (time.hour + hourDelta).clamp(config.minHour, config.maxHour);
+    if (newHour == time.hour) return;
+    time.hour = newHour;
+    _layoutOverlaps();
+    controller.triggerUpdate.value++;
+    config.onEntryMove?.call(event.entry);
+  }
+
   Event? getEventAtPos(Offset pos) {
     Offset realPos = _toGridPos(pos);
 
