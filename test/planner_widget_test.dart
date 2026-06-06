@@ -314,7 +314,11 @@ void main() {
     expect(tester.takeException(), isNull,
         reason: 'onEntryMove must not fire during paint');
     expect(moved, hasLength(1), reason: 'the drag committed exactly one move');
-    expect(entry.time.hour, 10, reason: 'a one-block drag advances one hour');
+    // Immutable models (#27): the drag reports a new entry instead of mutating
+    // the one we passed in, so read the moved hour off the reported instance.
+    expect(entry.time.hour, 9, reason: 'the original entry is untouched');
+    expect(moved.single.time.hour, 10,
+        reason: 'a one-block drag advances one hour');
   });
 
   // Regression for D9 (#12): getTimeAtPos returned an overshoot day/hour for a
@@ -544,8 +548,10 @@ void main() {
     // can't drag, so the event reads as an adjustable nudged in whole hours).
     owner.performAction(node.id, SemanticsAction.increase);
     await tester.pump();
+    // Immutable models (#27): the nudge reports a new entry rather than mutating
+    // the one we constructed, so read the moved hour off the reported instance.
     expect(moved.single.id, entry.id);
-    expect(entry.time.hour, 10);
+    expect(moved.single.time.hour, 10);
 
     handle.dispose();
   });

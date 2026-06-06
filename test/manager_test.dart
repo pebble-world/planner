@@ -68,8 +68,9 @@ void main() {
     test('start/update/end moves the entry and fires onEntryMove once', () {
       final moved = <PlannerEntry>[];
       final manager = makeManager(moved.add);
-      final entry = manager.events.first.entry;
-      expect(entry.time.hour, 9);
+      final event = manager.events.first;
+      final original = event.entry;
+      expect(original.time.hour, 9);
 
       manager.startDrag(const Offset(100, 380));
       expect(manager.draggedEvent, isNotNull);
@@ -79,10 +80,15 @@ void main() {
 
       manager.endDrag();
       expect(manager.draggedEvent, isNull);
-      expect(entry.time.hour, 10, reason: 'a one-block drag advances one hour');
+      // The models are immutable (#27): the drag swaps in a new entry instead of
+      // mutating the original in place.
+      expect(original.time.hour, 9, reason: 'the original entry is untouched');
+      expect(event.entry.time.hour, 10,
+          reason: 'a one-block drag advances one hour');
       expect(moved, hasLength(1),
           reason: 'onEntryMove fires exactly once, on end');
-      expect(identical(moved.single, entry), isTrue);
+      expect(identical(moved.single, event.entry), isTrue,
+          reason: 'the reported entry is the new instance the event now holds');
     });
 
     test('startDrag on empty space is a no-op and never fires onEntryMove', () {

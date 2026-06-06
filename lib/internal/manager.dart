@@ -202,7 +202,9 @@ class Manager {
     final newHour =
         (time.hour + hourDelta).clamp(config.minHour, config.maxHour);
     if (newHour == time.hour) return;
-    time.hour = newHour;
+    // Immutable models (#27): swap in a new entry rather than mutating in place;
+    // _layoutOverlaps reads the new time, and onEntryMove reports the new entry.
+    event.entry = event.entry.copyWith(time: time.copyWith(hour: newHour));
     _layoutOverlaps();
     controller.triggerUpdate.value++;
     config.onEntryMove?.call(event.entry);

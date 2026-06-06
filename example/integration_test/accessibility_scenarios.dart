@@ -74,8 +74,10 @@ void accessibilityScenarios() {
     // the accessible equivalent of a drag-move (a screen reader can't drag).
     owner.performAction(node.id, SemanticsAction.increase);
     await tester.pump();
+    // Immutable models (#27): the nudge reports a new entry rather than mutating
+    // the one we constructed, so read the moved hour off the reported instance.
     expect(moved.single.id, 'standup');
-    expect(entry.time.hour, 10);
+    expect(moved.single.time.hour, 10);
 
     handle.dispose();
   });

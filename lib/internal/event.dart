@@ -11,7 +11,10 @@ enum DragType {
 }
 
 class Event {
-  final PlannerEntry entry;
+  /// The entry this event draws. Reassigned (never mutated) when a drag/resize
+  /// or nudge commits, since [PlannerEntry]/[PlannerTime] are immutable (#27):
+  /// the new instance is what flows on to [PlannerConfig.onEntryMove].
+  PlannerEntry entry;
   final Manager manager;
 
   late Rect canvasRect;
@@ -267,6 +270,10 @@ class Event {
     int minutesAt(double y) =>
         manager.snapToInterval((y / blockHeight * 60).round());
 
+    // The models are immutable (#27): each branch computes the new time and
+    // swaps in a fresh entry via copyWith rather than mutating in place. The new
+    // instance is what Manager.endDrag reports to onEntryMove.
+    final time = entry.time;
     switch (_dragType) {
       case DragType.body:
         // Move: the column snaps to the nearest day, the start time snaps to the
@@ -274,28 +281,38 @@ class Event {
         // the horizontal drag in whole columns — measured from the current day,
         // not canvasRect.left, which now carries a sub-column offset when the
         // event is split across overlapping neighbours (#20).
-        entry.time.day += (_dragOffset.dx / config.blockWidth).round();
+        final day = time.day + (_dragOffset.dx / config.blockWidth).round();
         final start = minutesAt(canvasRect.top + _dragOffset.dy);
-        entry.time.hour = config.minHour + start ~/ 60;
-        entry.time.minutes = start % 60;
+        entry = entry.copyWith(
+          time: time.copyWith(
+            day: day,
+            hour: config.minHour + start ~/ 60,
+            minutes: start % 60,
+          ),
+        );
         break;
       case DragType.topHandle:
         // Resize from the top: the bottom edge stays put, so the snapped start
         // time is absorbed by the duration.
-        final bottom = (entry.time.hour - config.minHour) * 60 +
-            entry.time.minutes +
-            entry.time.duration;
+        final bottom =
+            (time.hour - config.minHour) * 60 + time.minutes + time.duration;
         final start = minutesAt(canvasRect.top + _dragOffset.dy);
-        entry.time.hour = config.minHour + start ~/ 60;
-        entry.time.minutes = start % 60;
-        entry.time.duration = bottom - start;
+        entry = entry.copyWith(
+          time: time.copyWith(
+            hour: config.minHour + start ~/ 60,
+            minutes: start % 60,
+            duration: bottom - start,
+          ),
+        );
         break;
       case DragType.bottomHandle:
         // Resize from the bottom: the start stays put, the bottom edge snaps.
-        final start =
-            (entry.time.hour - config.minHour) * 60 + entry.time.minutes;
-        entry.time.duration =
-            minutesAt(canvasRect.bottom + _dragOffset.dy) - start;
+        final start = (time.hour - config.minHour) * 60 + time.minutes;
+        entry = entry.copyWith(
+          time: time.copyWith(
+            duration: minutesAt(canvasRect.bottom + _dragOffset.dy) - start,
+          ),
+        );
         break;
       case DragType.none:
         break;
