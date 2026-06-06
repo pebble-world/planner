@@ -12,6 +12,7 @@ import 'hour_label_scenarios.dart';
 import 'multi_planner_scenarios.dart';
 import 'overlap_scenarios.dart';
 import 'snapping_scenarios.dart';
+import 'span_scenarios.dart';
 import 'zoom_scenarios.dart';
 
 /// Single entry point for the integration suite.
@@ -36,5 +37,6 @@ void main() {
   multiPlannerScenarios();
   overlapScenarios();
   snappingScenarios();
+  spanScenarios();
   zoomScenarios();
 }

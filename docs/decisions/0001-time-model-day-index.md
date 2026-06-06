@@ -69,8 +69,9 @@ non-breaking follow-up issues:
   — a configurable "emphasize column index N" (enables a "today" style without the
   widget knowing dates).
 - **Event column-span** ([#47](https://github.com/pebble-world/planner/issues/47))
-  — let an entry render across a start→end column range (enables multi-day
-  rendering).
+  — ✅ done: `PlannerTime.endDay` lets an entry render across a start→end column
+  range (enables multi-day rendering), with `PlannerConfig.spanOverlap` choosing
+  how it coexists with the per-column overlap split.
 - **All-day band** ([#48](https://github.com/pebble-world/planner/issues/48)) — a
   row above the time grid for all-day / full-column entries.
 - **Optional consumer-side date helpers**

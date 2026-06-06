@@ -176,7 +176,8 @@ Severity: 🔴 blocker/bug · 🟠 important · 🟡 polish.
   migrate to `DateTime`. See `docs/decisions/0001-time-model-day-index.md`.
 - Add the genuine widget-level primitives as additive, non-breaking follow-ups:
   ✅ highlight-column ("today" style, #46 — `PlannerConfig.highlightedColumn`),
-  event column-span (multi-day, #47), all-day band (#48), optional
+  ✅ event column-span (multi-day, #47 — `PlannerTime.endDay` +
+  `PlannerConfig.spanOverlap`), all-day band (#48), optional
   `date ↔ index` consumer helpers (#49).
 - **D11** overlap/column layout. Accessibility (`Semantics`), localization of menu strings.
 
