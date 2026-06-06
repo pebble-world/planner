@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:planner/internal/manager.dart';
+
+import 'manager.dart';
 
 class DateLabel {
   final int position;

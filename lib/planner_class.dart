@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:planner/internal/contex_menu.dart';
-import 'package:planner/internal/controller.dart';
-import 'package:planner/internal/events_painter.dart';
-import 'package:planner/internal/hour_column.dart';
-import 'package:planner/internal/scroll_detector.dart';
+
+import 'internal/context_menu.dart';
+import 'internal/controller.dart';
+import 'internal/events_painter.dart';
+import 'internal/hour_column.dart';
+import 'internal/scroll_detector.dart';
 import 'internal/positioned_tap_detector_2.dart';
 import 'internal/date_row.dart';
 import 'internal/manager.dart';

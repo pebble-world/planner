@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:planner/planner.dart';
 
+import '../planner.dart';
 import 'event.dart';
 
 enum MenuType {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:planner/internal/event.dart';
-import 'package:planner/planner.dart';
 
+import '../planner.dart';
 import 'controller.dart';
+import 'event.dart';
 
 class Manager {
   PlannerConfig config;

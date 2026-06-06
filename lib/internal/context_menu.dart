@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:planner/internal/controller.dart';
 
+import 'controller.dart';
 import 'manager.dart';
 
 class ContextMenu extends StatefulWidget {
