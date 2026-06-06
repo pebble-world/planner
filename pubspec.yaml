@@ -2,7 +2,7 @@ name: planner
 description: >-
   A scrollable, zoomable day-grid widget for showing and editing events across
   labelled columns, with drag-to-move, drag-to-resize, and context-menu actions.
-version: 0.0.4
+version: 0.2.0
 homepage: https://github.com/pebble-world/planner
 repository: https://github.com/pebble-world/planner
 issue_tracker: https://github.com/pebble-world/planner/issues
