@@ -15,7 +15,10 @@ class DateRow extends CustomPainter {
   DateRow({required this.manager, required Listenable repaint})
       : _revision = manager.revision,
         super(repaint: repaint) {
-    int pos = 60;
+    // The date row spans the full planner width (it sits above the hour column
+    // too), so the first day-column's left edge is offset by the hour column's
+    // width to line up with the event grid below — not a hardcoded `60` (#28).
+    double pos = manager.config.hourColumnWidth;
     for (String element in manager.config.labels) {
       _labels.add(DateLabel(
         label: element,

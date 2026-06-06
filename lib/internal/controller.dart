@@ -120,7 +120,12 @@ class Controller {
   }
 
   void verticalScroll(bool up) {
-    y += up ? -20 : 20;
+    // Scale the step by the current zoom so one wheel notch always moves the
+    // same amount of *time*: each hour-row is `blockHeight * zoom` px tall, so a
+    // fixed pixel step (the old hardcoded 20) moved progressively less time the
+    // further you zoomed in. `step / (blockHeight * zoom)` hours is now constant.
+    final step = config.scrollStep * zoom;
+    y += up ? -step : step;
     if (y > _minYOffset) {
       y = _minYOffset;
     } else if (y < (_maxYOffset)) {

@@ -2,6 +2,16 @@
 
 ## 0.2.0 - 2026-06-06
 
+- Made the on-canvas zoom +/- buttons configurable: hide them with
+  `PlannerConfig.showZoomControls: false`, and recolour them with
+  `zoomButtonColor` (fill — falls back to the theme's secondary colour when
+  unset) and `zoomButtonIconColor` (default white).
+- Made mouse-wheel scrolling zoom-aware: the step now scales with the zoom level
+  (configurable base via `PlannerConfig.scrollStep`, default `20`), so one wheel
+  notch advances the same amount of *time* at any zoom instead of moving less the
+  further you zoomed in.
+- Centered the date and hour labels within their columns (and removed the
+  hardcoded pixel offsets they previously used).
 - Added accessibility for the event canvas: each event now exposes a `Semantics`
   node describing it (title, day-column label, time span and duration) and its
   actions to assistive technology — activate or "Edit" to edit, "Delete", and

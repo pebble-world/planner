@@ -74,6 +74,26 @@ class PlannerConfig {
   Color verticalLineColor = const Color.fromARGB(255, 150, 150, 150);
   Color contextMenuBackground;
 
+  /// Whether the on-canvas zoom +/- buttons are shown. Hosts that drive zoom by
+  /// pinch (or their own chrome) can hide the built-in buttons by setting this
+  /// to `false`. Defaults to `true`.
+  bool showZoomControls;
+
+  /// Fill colour of the zoom +/- buttons. When `null` (the default) the buttons
+  /// fall back to the ambient `Theme.of(context).colorScheme.secondary`, the
+  /// previous hardcoded behaviour; set a colour to override it.
+  Color? zoomButtonColor;
+
+  /// Colour of the +/- icons inside the zoom buttons. Defaults to white.
+  Color zoomButtonIconColor;
+
+  /// Base distance, in logical pixels, that one mouse-wheel notch scrolls the
+  /// time axis at zoom 1. The effective step is scaled by the current zoom
+  /// ([Controller.verticalScroll]) so a single notch always moves the same
+  /// amount of *time* regardless of zoom (the old code used a fixed 20px step
+  /// that moved less time the further you zoomed in). Defaults to `20`.
+  double scrollStep;
+
   Function(PlannerTime time)? onEntryCreate;
   Function(PlannerEntry)? onEntryEdit;
   Function(PlannerEntry)? onEntryDelete;
@@ -100,6 +120,10 @@ class PlannerConfig {
     this.hourBackground = Colors.white,
     this.dateBackground = Colors.white,
     this.contextMenuBackground = Colors.white,
+    this.showZoomControls = true,
+    this.zoomButtonColor,
+    this.zoomButtonIconColor = Colors.white,
+    this.scrollStep = 20,
     this.plannerBackground = const Color.fromARGB(255, 50, 50, 50),
     this.horizontalLineColor = const Color.fromARGB(255, 100, 100, 100),
     this.verticalLineColor = const Color.fromARGB(255, 150, 150, 150),

@@ -140,7 +140,18 @@ class _PlannerState extends State<Planner> {
     );
   }
 
-  Row paintZoomButtons(BuildContext context) {
+  Widget paintZoomButtons(BuildContext context) {
+    // Hosts that drive zoom themselves (pinch, own chrome) can hide the built-in
+    // controls via config; an empty box keeps the Stack child list stable.
+    if (!_data.config.showZoomControls) {
+      return const SizedBox.shrink();
+    }
+
+    // Fall back to the previous hardcoded theme colour when no override is set.
+    final Color fillColor =
+        _data.config.zoomButtonColor ?? Theme.of(context).colorScheme.secondary;
+    final Color iconColor = _data.config.zoomButtonIconColor;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -154,13 +165,13 @@ class _PlannerState extends State<Planner> {
             },
             elevation: 2.0,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            fillColor: Theme.of(context).colorScheme.secondary,
+            fillColor: fillColor,
             padding: const EdgeInsets.all(4.0),
             shape: const CircleBorder(),
-            child: const Icon(
+            child: Icon(
               Icons.zoom_out,
               size: 22.0,
-              color: Colors.white,
+              color: iconColor,
             ),
           ),
         ),
@@ -173,13 +184,13 @@ class _PlannerState extends State<Planner> {
             },
             elevation: 2.0,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            fillColor: Theme.of(context).colorScheme.secondary,
+            fillColor: fillColor,
             padding: const EdgeInsets.all(4.0),
             shape: const CircleBorder(),
-            child: const Icon(
+            child: Icon(
               Icons.zoom_in,
               size: 22.0,
-              color: Colors.white,
+              color: iconColor,
             ),
           ),
         ),
