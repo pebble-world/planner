@@ -138,6 +138,20 @@ class PlannerConfig {
   Function(PlannerEntry)? onEntryDelete;
   Function(PlannerEntry)? onEntryMove;
 
+  /// Fired when the user long-presses an event, with the pressed [PlannerEntry].
+  /// This is the primary way to act on an event by **touch**: touch has no
+  /// right-click, and a one-finger drag now pans, so long-press is the freed-up
+  /// gesture (#66). It also fires on a desktop long-press.
+  ///
+  /// The widget stays presentation-only and takes no action of its own — it
+  /// neither selects nor highlights the event nor shows a menu. The host decides
+  /// the response (open its own action sheet / selection UI, delete, start a move
+  /// flow, …), so this single hook is more flexible than a baked-in touch UI.
+  ///
+  /// When `null` (the default) a long-press is a no-op. A long-press on empty
+  /// space is always a no-op — create stays on double-tap / right-click.
+  Function(PlannerEntry)? onEntryLongPress;
+
   PlannerConfig({
     required this.labels,
     this.minHour = 0,
@@ -173,6 +187,7 @@ class PlannerConfig {
     this.onEntryDelete,
     this.onEntryEdit,
     this.onEntryMove,
+    this.onEntryLongPress,
     this.dateRowHeight = 50,
     this.hourColumnWidth = 50,
   });

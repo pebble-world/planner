@@ -10,6 +10,7 @@ import 'drag_scenarios.dart';
 import 'event_geometry_scenarios.dart';
 import 'highlight_column_scenarios.dart';
 import 'hour_label_scenarios.dart';
+import 'long_press_scenarios.dart';
 import 'multi_planner_scenarios.dart';
 import 'overlap_scenarios.dart';
 import 'pan_zoom_scenarios.dart';
@@ -37,6 +38,7 @@ void main() {
   eventGeometryScenarios();
   highlightColumnScenarios();
   hourLabelScenarios();
+  longPressScenarios();
   multiPlannerScenarios();
   overlapScenarios();
   panZoomScenarios();

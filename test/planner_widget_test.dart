@@ -111,6 +111,7 @@ void main() {
     void Function(PlannerEntry)? onEdit,
     void Function(PlannerEntry)? onDelete,
     void Function(PlannerTime)? onCreate,
+    void Function(PlannerEntry)? onLongPress,
   }) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
@@ -123,6 +124,7 @@ void main() {
             onEntryEdit: onEdit,
             onEntryDelete: onDelete,
             onEntryCreate: onCreate,
+            onEntryLongPress: onLongPress,
           ),
           entries: [entry],
         ),
@@ -572,6 +574,72 @@ void main() {
           reason: 'the tapped point maps to day 0 / hour 5');
       expect(edited, isEmpty,
           reason: 'an empty-grid hit creates, it does not edit');
+    });
+  });
+
+  // Touch has no right-click and a one-finger drag now pans, so long-press is
+  // the freed-up gesture for acting on an event (#66). PlannerConfig exposes it
+  // as onEntryLongPress; the widget stays presentation-only and just hands the
+  // pressed entry to the host. These drive the real composed Planner through the
+  // long-press recognizer that shares the events arena with scale and tap.
+  group('long-press (#66)', () {
+    testWidgets('long-pressing an event fires onEntryLongPress with the entry',
+        (tester) async {
+      const key = ValueKey('planner');
+      final longPressed = <PlannerEntry>[];
+      final edited = <PlannerEntry>[];
+      final created = <PlannerTime>[];
+      final entry = eventAtHour9();
+      final rect = await pumpEntryPlanner(tester, key, entry,
+          onEdit: edited.add,
+          onCreate: created.add,
+          onLongPress: longPressed.add);
+
+      // The event's centre is planner-local (150, 430) (see eventAtHour9).
+      await tester.longPressAt(rect.topLeft + const Offset(150, 430));
+      await tester.pump();
+
+      expect(longPressed, hasLength(1),
+          reason: 'long-pressing an event must fire onEntryLongPress');
+      expect(identical(longPressed.single, entry), isTrue,
+          reason: 'onEntryLongPress receives the long-pressed entry');
+      expect(edited, isEmpty,
+          reason: 'long-press is its own gesture, it does not edit');
+      expect(created, isEmpty, reason: 'a hit on an event does not create');
+    });
+
+    testWidgets('long-pressing empty grid does not fire onEntryLongPress',
+        (tester) async {
+      const key = ValueKey('planner');
+      final longPressed = <PlannerEntry>[];
+      final entry = eventAtHour9();
+      final rect = await pumpEntryPlanner(tester, key, entry,
+          onLongPress: longPressed.add);
+
+      // events-local (100, 200) past the hour column (50) and date row (50):
+      // column 0, hour 5 in the unscrolled grid — clear of the hour-9 event.
+      await tester.longPressAt(rect.topLeft + const Offset(50 + 100, 50 + 200));
+      await tester.pump();
+
+      expect(longPressed, isEmpty,
+          reason: 'a long-press on empty space is a no-op (#66)');
+    });
+
+    testWidgets('with no callback wired, long-pressing an event is a no-op',
+        (tester) async {
+      const key = ValueKey('planner');
+      final entry = eventAtHour9();
+      // onLongPress intentionally omitted (null).
+      final rect = await pumpEntryPlanner(tester, key, entry);
+
+      await tester.longPressAt(rect.topLeft + const Offset(150, 430));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull,
+          reason: 'a null onEntryLongPress must not throw');
+      // No built-in selection/menu appears (the widget stays presentation-only).
+      expect(find.text('Edit Event'), findsNothing);
+      expect(find.text('Delete Event'), findsNothing);
     });
   });
 
