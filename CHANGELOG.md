@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-06-06
 
 - Unified event-time snapping: creating an event by tapping and dragging/resizing
   one now snap to a single configurable interval, `PlannerConfig.snapMinutes`
