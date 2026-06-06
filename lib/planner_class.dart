@@ -158,38 +158,42 @@ class _PlannerState extends State<Planner> {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 8.0),
-          child: RawMaterialButton(
+          child: IconButton(
             onPressed: () {
               _data.controller.startZoom();
               _data.controller.updateZoom(0.9);
             },
-            elevation: 2.0,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            fillColor: fillColor,
+            iconSize: 22.0,
             padding: const EdgeInsets.all(4.0),
-            shape: const CircleBorder(),
-            child: Icon(
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            style: IconButton.styleFrom(
+              backgroundColor: fillColor,
+              elevation: 2.0,
+              shape: const CircleBorder(),
+            ),
+            icon: Icon(
               Icons.zoom_out,
-              size: 22.0,
               color: iconColor,
             ),
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(top: 8.0),
-          child: RawMaterialButton(
+          child: IconButton(
             onPressed: () {
               _data.controller.startZoom();
               _data.controller.updateZoom(1.1);
             },
-            elevation: 2.0,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            fillColor: fillColor,
+            iconSize: 22.0,
             padding: const EdgeInsets.all(4.0),
-            shape: const CircleBorder(),
-            child: Icon(
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            style: IconButton.styleFrom(
+              backgroundColor: fillColor,
+              elevation: 2.0,
+              shape: const CircleBorder(),
+            ),
+            icon: Icon(
               Icons.zoom_in,
-              size: 22.0,
               color: iconColor,
             ),
           ),
