@@ -5,18 +5,23 @@ import 'package:planner/planner.dart';
 import 'package:example/data.dart';
 import 'package:example/main.dart' as app;
 
+import 'planner_harness.dart';
+
 /// Drives the *real* example app end-to-end (real entrypoint, real fonts, real
-/// layout, real gestures) on the device under test. Event titles and hour/day
-/// labels are painted on the CustomPaint canvas rather than rendered as Text
-/// widgets, so assertions target the things that are real widgets: the app bar
-/// and the context menu.
+/// layout, real gestures) on the device under test. `main.dart` boots a gallery
+/// home (#90), so each scenario opens the Showcase page first via
+/// [openShowcase]. Event titles and hour/day labels are painted on the
+/// CustomPaint canvas rather than rendered as Text widgets, so assertions target
+/// the things that are real widgets: the app bar and the context menu.
 ///
 /// Registered from [app_test.dart]; not a standalone entry point (desktop can
 /// only launch one app per `flutter test` invocation).
 void appSmokeScenarios() {
-  testWidgets('example app boots and renders a Planner', (tester) async {
+  testWidgets('example app boots and the Showcase renders a Planner',
+      (tester) async {
     app.main();
     await tester.pumpAndSettle();
+    await openShowcase(tester);
 
     expect(find.byType(Planner<ActivityMeta>), findsOneWidget);
     expect(find.text('Planner Demo'), findsOneWidget);
@@ -26,6 +31,7 @@ void appSmokeScenarios() {
       (tester) async {
     app.main();
     await tester.pumpAndSettle();
+    await openShowcase(tester);
 
     // An empty spot in column 0: +100px right (into the grid) and +120px down
     // from the grid top maps to hour 3, which the sample data leaves free
