@@ -5,7 +5,7 @@ import 'package:planner/planner.dart';
 
 import 'planner_harness.dart';
 
-/// End-to-end guard for #21 (PROJECT_OVERVIEW D12): the planner is drawn on a
+/// End-to-end guard for #21: the planner is drawn on a
 /// single `CustomPaint` canvas, which is one opaque node to a screen reader, so
 /// events were neither perceivable nor actionable by assistive technology.
 /// `EventsPainter` now emits a semantics node per event describing it (title,

@@ -8,8 +8,8 @@ import 'manager.dart';
 /// mapped through the current scroll ([scrollY]) and [zoom] — the band is
 /// `blockHeight * zoom` px tall, so the label stays centered in the row as the
 /// time axis zooms. Kept as a pure function so the centering math is
-/// unit-testable without a canvas (#28 / PROJECT_OVERVIEW D12 — labels
-/// previously used a hardcoded `15` left offset and were not centered).
+/// unit-testable without a canvas (#28 — labels previously used a hardcoded
+/// `15` left offset and were not centered).
 Offset centeredHourLabelOffset({
   required double scrollY,
   required double rowTop,
