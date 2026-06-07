@@ -21,6 +21,7 @@ surface) can miss rendering/geometry bugs.
 | [`span_scenarios.dart`](span_scenarios.dart) | A column-spanning event (`PlannerTime.endDay`) paints one box across its columns, hit-tests from any column it covers, and is read-only — dragging it doesn't move it (#47). |
 | [`multi_planner_scenarios.dart`](multi_planner_scenarios.dart) | Two planners on one screen keep independent scroll state (device-level counterpart of the #9 / D1 regression). |
 | [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `mouseDrag`). |
+| [`screenshots_test.dart`](screenshots_test.dart) | **Not part of the suite.** A standalone capture target that renders each gallery page on a fixed surface and writes the documentation screenshots to `docs/screenshots/`. See [Regenerating screenshots](#regenerating-screenshots). |
 
 ## Running
 
@@ -28,9 +29,14 @@ Run from the `example/` directory.
 
 ### Windows (what CI runs)
 
+Target [`app_test.dart`](app_test.dart) explicitly — the single entry point —
+rather than the whole directory, so the standalone
+[`screenshots_test.dart`](screenshots_test.dart) capture target isn't picked up
+as a second test file (see [Regenerating screenshots](#regenerating-screenshots)).
+
 ```sh
 flutter config --enable-windows-desktop   # once, if not already enabled
-flutter test integration_test -d windows
+flutter test integration_test/app_test.dart -d windows
 ```
 
 ### Web (Chrome)
@@ -45,6 +51,23 @@ flutter drive \
   --target=integration_test/app_test.dart \
   -d chrome
 ```
+
+## Regenerating screenshots
+
+The README/docs images live in `docs/screenshots/`. [`screenshots_test.dart`](screenshots_test.dart)
+regenerates them by rendering each gallery page on a fixed surface (real Windows
+fonts, no Ahem distortion) and writing one PNG per page, named by its gallery
+`id` (`basic.png`, `showcase.png`, …). It is **not** registered in
+[`app_test.dart`](app_test.dart) — it pumps its own widget trees — so run it on
+its own, from `example/`:
+
+```sh
+flutter test integration_test/screenshots_test.dart -d windows
+```
+
+The shots are deterministic: re-running on the same machine overwrites the PNGs
+with identical pixels (pages that show a real week, like the Showcase, reflect
+the current date). Commit any changes.
 
 ## Adding a test
 
