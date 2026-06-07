@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'controller.dart';
 import 'manager.dart';
 
-class ContextMenu extends StatefulWidget {
-  final Manager manager;
+class ContextMenu<T> extends StatefulWidget {
+  final Manager<T> manager;
 
-  const ContextMenu({Key? key, required this.manager}) : super(key: key);
+  const ContextMenu({super.key, required this.manager});
 
   @override
-  State<ContextMenu> createState() => _ContextMenuState();
+  State<ContextMenu<T>> createState() => _ContextMenuState<T>();
 }
 
-class _ContextMenuState extends State<ContextMenu> {
+class _ContextMenuState<T> extends State<ContextMenu<T>> {
   @override
   Widget build(BuildContext context) {
     return IntrinsicWidth(
@@ -33,7 +33,7 @@ class _ContextMenuState extends State<ContextMenu> {
         Expanded(
           child: TextButton(
               child: Text(
-                'Create Event',
+                widget.manager.config.contextMenuCreateLabel,
                 style: widget.manager.config.contextMenuTextStyle,
               ),
               onPressed: () {
@@ -51,14 +51,14 @@ class _ContextMenuState extends State<ContextMenu> {
         Expanded(
           child: TextButton(
             child: Text(
-              'Edit Event',
+              widget.manager.config.contextMenuEditLabel,
               style: widget.manager.config.contextMenuTextStyle,
             ),
             onPressed: () {
               if (widget.manager.config.onEntryEdit != null &&
-                  widget.manager.controller.menuEvent != null) {
+                  widget.manager.controller.menuEntry != null) {
                 widget.manager.config
-                    .onEntryEdit!(widget.manager.controller.menuEvent!.entry);
+                    .onEntryEdit!(widget.manager.controller.menuEntry!);
               }
               widget.manager.controller.hideMenu();
             },
@@ -69,12 +69,13 @@ class _ContextMenuState extends State<ContextMenu> {
       result.add(
         Expanded(
           child: TextButton(
-            child: Text('Delete Event',
+            child: Text(widget.manager.config.contextMenuDeleteLabel,
                 style: widget.manager.config.contextMenuDeleteTextStyle),
             onPressed: () {
-              if (widget.manager.config.onEntryDelete != null) {
+              if (widget.manager.config.onEntryDelete != null &&
+                  widget.manager.controller.menuEntry != null) {
                 widget.manager.config
-                    .onEntryDelete!(widget.manager.controller.menuEvent!.entry);
+                    .onEntryDelete!(widget.manager.controller.menuEntry!);
               }
               widget.manager.controller.hideMenu();
               setState(() {});

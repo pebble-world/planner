@@ -1,13 +1,46 @@
+// Vendored from the `positioned_tap_detector_2` package, version 1.0.4.
+// Source: https://pub.dev/packages/positioned_tap_detector_2
+//
+// MIT License
+//
+// Copyright (c) 2021 Ali Raghebi
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+// Local modifications relative to upstream 1.0.4:
+//   - Replaced the deprecated `hashValues` with `Object.hash`.
+//   - Modernized to satisfy this package's lints (generic function-type
+//     typedef, const/super-parameter constructor, public `createState` return
+//     type, `final` stream controller, `child` argument sorted last).
+//
+// See THIRD_PARTY_NOTICES.md for the full attribution.
+
 import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-typedef TapPositionCallback(TapPosition position);
+typedef TapPositionCallback = void Function(TapPosition position);
 
 class PositionedTapDetector2 extends StatefulWidget {
-  PositionedTapDetector2({
-    Key? key,
+  const PositionedTapDetector2({
+    super.key,
     this.child,
     this.onTap,
     this.onDoubleTap,
@@ -15,7 +48,7 @@ class PositionedTapDetector2 extends StatefulWidget {
     this.doubleTapDelay = _defaultDelay,
     this.behavior,
     this.controller,
-  }) : super(key: key);
+  });
 
   static const _defaultDelay = Duration(milliseconds: 250);
   static const _doubleTapMaxOffset = 48.0;
@@ -29,11 +62,11 @@ class PositionedTapDetector2 extends StatefulWidget {
   final PositionedTapController? controller;
 
   @override
-  _TapPositionDetectorState createState() => _TapPositionDetectorState();
+  State<PositionedTapDetector2> createState() => _TapPositionDetectorState();
 }
 
 class _TapPositionDetectorState extends State<PositionedTapDetector2> {
-  StreamController<TapDownDetails> _controller = StreamController();
+  final StreamController<TapDownDetails> _controller = StreamController();
 
   Stream<TapDownDetails> get _stream => _controller.stream;
 
@@ -162,7 +195,6 @@ class _TapPositionDetectorState extends State<PositionedTapDetector2> {
       }
     }
     return GestureDetector(
-      child: widget.child,
       behavior: (widget.behavior ??
           (widget.child == null
               ? HitTestBehavior.translucent
@@ -170,6 +202,7 @@ class _TapPositionDetectorState extends State<PositionedTapDetector2> {
       onTap: _onTapEvent,
       onLongPress: _onLongPressEvent,
       onTapDown: _onTapDownEvent,
+      child: widget.child,
     );
   }
 }

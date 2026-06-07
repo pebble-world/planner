@@ -1,95 +1,296 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import 'internal/all_day_band.dart';
+import 'internal/all_day_event.dart';
 import 'internal/context_menu.dart';
 import 'internal/controller.dart';
+import 'internal/event.dart';
 import 'internal/events_painter.dart';
 import 'internal/hour_column.dart';
 import 'internal/scroll_detector.dart';
 import 'internal/positioned_tap_detector_2.dart';
 import 'internal/date_row.dart';
 import 'internal/manager.dart';
+import 'planner_builders.dart';
+import 'planner_controller.dart';
 import 'planner_entry.dart';
 import 'planner_config.dart';
 
-class Planner extends StatefulWidget {
-  final List<PlannerEntry> entries;
-  final PlannerConfig config;
+/// What a single in-progress events-canvas gesture is doing. Decided when the
+/// unified [ScaleGestureRecognizer] starts — by hit-testing the press point on a
+/// precise pointer ([moveResize] on an event, [pan] on empty space) and always
+/// [pan] on touch — then refined to [zoom] as soon as a second pointer joins, so
+/// pan, zoom and move/resize no longer fight in the gesture arena (the old
+/// layout combined a horizontal-drag recognizer with scale and a long-press).
+enum _GestureMode { idle, pan, zoom, moveResize }
+
+class Planner<T> extends StatefulWidget {
+  final List<PlannerEntry<T>> entries;
+  final PlannerConfig<T> config;
+
+  /// Optional public handle for driving and observing zoom from outside the
+  /// widget (#76) — e.g. a host's own zoom toolbar. When supplied it attaches to
+  /// the planner's internal zoom/scroll controller for the life of this widget
+  /// (and across a controller swap); when `null`, zoom is driven only by the
+  /// built-in controls, pinch and Ctrl+wheel, exactly as before. Pair it with
+  /// `config.showZoomControls: false` to replace the on-canvas buttons.
+  final PlannerController? controller;
+
+  /// Optional builder for fully custom timed-event widgets (#78). When non-null
+  /// the planner layers a widget overlay over the events canvas and calls this
+  /// for every on-screen event, sizing/positioning the returned widget at the
+  /// event's current on-screen rect so it tracks scroll, zoom and drag in
+  /// lockstep with the grid; the canvas then skips painting the default event
+  /// bodies (the grid lines and accessibility semantics stay intact).
+  ///
+  /// The overlay is visual-only — wrapped in `IgnorePointer`/`ExcludeSemantics`
+  /// — so every gesture and accessibility action still falls through to the
+  /// built-in recognizers and fires the usual `config.onEntry*` callbacks. When
+  /// `null` (the default) events render exactly as before, painted on the canvas.
+  final PlannerEntryBuilder<T>? entryBuilder;
+
+  /// Optional builder for fully custom day/column header widgets (#79). When
+  /// non-null the planner replaces the painted `DateRow` text with a row of
+  /// host-built header widgets — one per `config.labels` entry — each sized to
+  /// the column's `blockWidth` and the date row's height, and offset by the live
+  /// horizontal scroll so the headers track the day-columns below as the user
+  /// pans (rebuilt on the same `triggerUpdate` the row repaints on).
+  ///
+  /// The header row is wrapped in `IgnorePointer`, so a horizontal drag across
+  /// it still pans the day axis through the same gesture detector as the painted
+  /// row — the builder decides appearance only. When `null` (the default) the
+  /// painted `DateRow` is shown exactly as before.
+  final PlannerDayHeaderBuilder? dayHeaderBuilder;
+
+  /// Optional builder for fully custom all-day chip widgets (#80) — the same
+  /// hybrid overlay as [entryBuilder], applied to the all-day band. When
+  /// non-null the planner layers a widget overlay over the band canvas and calls
+  /// this for every (on-screen) all-day chip, sizing/positioning the returned
+  /// widget at the chip's current on-screen rect so it tracks the band's
+  /// horizontal scroll; the band canvas then skips painting the default chip
+  /// bodies (the per-chip accessibility semantics stay intact).
+  ///
+  /// Reuses [PlannerEntryBuilder]: the supplied [PlannerEntryLayout] carries
+  /// `allDay: true`, so a host can wire one builder to both this and
+  /// [entryBuilder] and branch on `layout.allDay`. The overlay is visual-only —
+  /// wrapped in `IgnorePointer`/`ExcludeSemantics` — so every gesture
+  /// (double-tap edit/create, right-click menu, long-press) and accessibility
+  /// action still falls through to the band's recognizers. When `null` (the
+  /// default) chips render exactly as before, painted on the canvas.
+  final PlannerEntryBuilder<T>? allDayEntryBuilder;
 
   const Planner({
-    Key? key,
+    super.key,
     required this.config,
     required this.entries,
-  }) : super(key: key);
+    this.controller,
+    this.entryBuilder,
+    this.dayHeaderBuilder,
+    this.allDayEntryBuilder,
+  });
 
   @override
-  _PlannerState createState() => _PlannerState();
+  State<Planner<T>> createState() => _PlannerState<T>();
 }
 
-class _PlannerState extends State<Planner> {
+class _PlannerState<T> extends State<Planner<T>> {
   // Owned by the State so it survives parent rebuilds: building it in the widget
   // constructor recreated the Manager (every Event, every TextPainter, the whole
   // Grid) on every parent build and forced the Controller's scroll/zoom to be
   // static to survive that churn.
-  late Manager _data;
+  late Manager<T> _data;
+
+  // Drives the position-aware double-tap detector from the single events
+  // GestureDetector below. Nesting a second tap detector (the old layout) let
+  // the inner detector win the gesture arena, so the double-tap stream was
+  // never fed and onEntryEdit/onEntryCreate never fired (#40). Feeding the
+  // detector through its controller keeps one detector in the arena.
+  final PositionedTapController _tapController = PositionedTapController();
+
+  // What the current events-canvas drag is doing. Set when the unified scale
+  // recognizer starts and switched to zoom the moment a second pointer joins, so
+  // pan, zoom and move/resize can't all apply to the same gesture (the old
+  // detector ran horizontal-drag, scale and long-press at once).
+  _GestureMode _mode = _GestureMode.idle;
+
+  // The kind and local position of the most recent pointer-down, captured by the
+  // thin Listener below. The kind decides drag intent (precise pointer =>
+  // press-and-drag an event to move/resize; touch => one-finger drag pans), and
+  // the down position anchors a move/resize so the event follows the pointer
+  // with no dead zone (the scale recognizer only fires onStart after the pan
+  // slop, so anchoring on the recognizer's start would drop that slop distance).
+  PointerDeviceKind _lastPointerKind = PointerDeviceKind.touch;
+  Offset _pointerDownPos = Offset.zero;
+
+  // The desktop hover cursor over the events canvas: move over an event body,
+  // resizeUpDown over its top/bottom edge, basic otherwise. Held in a notifier
+  // so only the MouseRegion rebuilds on a hover change, not the whole Planner.
+  final ValueNotifier<MouseCursor> _cursor =
+      ValueNotifier<MouseCursor>(SystemMouseCursors.basic);
+
+  // Identifies the events-canvas RenderCustomPaint so a scroll/zoom can rebuild
+  // its accessibility semantics (#56). RenderCustomPaint wires the painter's
+  // `repaint` listenable to markNeedsPaint only — never markNeedsSemanticsUpdate
+  // — so a pan/zoom (which just ticks triggerUpdate) repaints the events but
+  // leaves their semantics nodes frozen at the rects they had when last built.
+  // We listen to that same notifier and poke this canvas to rebuild its
+  // semantics, so each event node's rect tracks the view (keeping touch-
+  // exploration hit-areas and the AT focus highlight correct as the user pans).
+  final GlobalKey _eventsCanvasKey = GlobalKey();
+
+  // The all-day band's RenderCustomPaint, poked on a day-axis pan to rebuild its
+  // chip semantics the same way as the event canvas (#72/#56): the band's chip
+  // rects track the horizontal scroll, and the `repaint` listenable only
+  // triggers markNeedsPaint, never markNeedsSemanticsUpdate. Null until (and
+  // unless) the band is mounted, so the poke is a no-op when there's no band.
+  final GlobalKey _allDayCanvasKey = GlobalKey();
+
+  // The local position of the most recent double-tap-down on the all-day band,
+  // captured so [_onAllDayDoubleTap] (which carries no position itself) knows
+  // which chip / empty column the double-tap landed on.
+  Offset _allDayDoubleTapPos = Offset.zero;
+
+  /// Whether [kind] is a precise pointer (a mouse) that gets the Outlook-style
+  /// immediate drag-move/resize. Touch keeps one-finger drag as pan; its
+  /// move/resize affordance is the long-press callback (the companion #66).
+  bool _isPrecise(PointerDeviceKind kind) => kind == PointerDeviceKind.mouse;
 
   @override
   void initState() {
     super.initState();
     _data = Manager(config: widget.config, entries: widget.entries);
+    // Rebuild the canvas semantics whenever the view changes (#56). The
+    // controller is preserved across rebuilds (Manager.update keeps it), so this
+    // listener stays valid for the life of the State.
+    _data.controller.triggerUpdate.addListener(_rebuildCanvasSemantics);
+    // Bind an external zoom controller (#76) to the same internal controller, so
+    // a host toolbar can drive/observe zoom. _data.controller is stable for the
+    // life of the State (Manager.update keeps it), so this single attach holds;
+    // only a controller *swap* needs re-attaching (didUpdateWidget).
+    widget.controller?.attach(_data.controller);
+  }
+
+  /// Rebuilds the events-canvas and all-day-band accessibility semantics so each
+  /// node's rect tracks the current scroll/zoom (#56/#72). Fired on every
+  /// controller update: RenderCustomPaint only repaints (not re-semantics) on
+  /// the `repaint` listenable, so without this poke a scrolled event/chip keeps
+  /// its stale node rect. A no-op for a canvas that isn't mounted
+  /// (`currentContext` is null — e.g. the band when it's disabled or empty).
+  void _rebuildCanvasSemantics() {
+    _eventsCanvasKey.currentContext
+        ?.findRenderObject()
+        ?.markNeedsSemanticsUpdate();
+    _allDayCanvasKey.currentContext
+        ?.findRenderObject()
+        ?.markNeedsSemanticsUpdate();
   }
 
   @override
-  void didUpdateWidget(covariant Planner oldWidget) {
+  void didUpdateWidget(covariant Planner<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.config, widget.config) ||
         !identical(oldWidget.entries, widget.entries)) {
       _data.update(config: widget.config, entries: widget.entries);
     }
+    // Re-bind on an external zoom controller swap (#76): detach the old, attach
+    // the new to the same (stable) internal controller, so no listener leaks and
+    // the new controller drives the live planner. A no-op when the same instance
+    // (or null) is passed across rebuilds.
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller?.detach();
+      widget.controller?.attach(_data.controller);
+    }
+  }
+
+  @override
+  void dispose() {
+    // Unbind the external zoom controller (#76) before the internal controller
+    // goes away, so its re-emit listener doesn't outlive this planner.
+    widget.controller?.detach();
+    _data.controller.triggerUpdate.removeListener(_rebuildCanvasSemantics);
+    _cursor.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       _data.controller.setSize(constraints.biggest);
-      return Column(
+      // The context menu overlay is lifted to a planner-wide Stack so it can
+      // sit over either the time grid or the all-day band (#72): the band is a
+      // thin strip above the grid in the Column, so a menu opened from it must
+      // be free to overflow downward over the grid — impossible while the menu
+      // lived inside the grid's own Stack (the grid paints over earlier Column
+      // children). menuPos is therefore planner-local; both surfaces convert
+      // their local hit position into this space.
+      return Stack(
         children: [
-          paintDates(),
-          Expanded(
-            child: Row(
-              children: [
-                paintHours(),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      PositionedTapDetector2(
-                        onDoubleTap: (position) {
-                          if (position.relative == null) {
-                            return;
-                          }
-                          var event = _data.getEventAtPos(position.relative!);
-                          if (event != null &&
-                              _data.config.onEntryEdit != null) {
-                            _data.config.onEntryEdit!(event.entry);
-                          } else if (event == null &&
-                              _data.config.onEntryCreate != null) {
-                            var time = _data.getTimeAtPos(position.relative!);
-                            _data.config.onEntryCreate!(time);
-                          }
-                        },
-                        child: paintEvents(),
+          Column(
+            children: [
+              paintDates(),
+              // The all-day band (#48) sits between the date row and the time
+              // grid. It self-sizes to its lanes and is omitted entirely (no
+              // widget, no reserved space) when the band is disabled
+              // (showAllDayBand) or there are no all-day events.
+              if (_data.allDayBandHeight > 0) paintAllDayBand(),
+              Expanded(
+                child: Row(
+                  children: [
+                    paintHours(),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          PositionedTapDetector2(
+                            controller: _tapController,
+                            onDoubleTap: (position) {
+                              if (position.relative == null) {
+                                return;
+                              }
+                              var event =
+                                  _data.getEventAtPos(position.relative!);
+                              if (event != null &&
+                                  _data.config.onEntryEdit != null) {
+                                _data.config.onEntryEdit!(event.entry);
+                              } else if (event == null &&
+                                  _data.config.onEntryCreate != null) {
+                                var time =
+                                    _data.getTimeAtPos(position.relative!);
+                                _data.config.onEntryCreate!(time);
+                              }
+                            },
+                            child: paintEvents(),
+                          ),
+                          // Custom-widget overlay for timed events (#78), above
+                          // the canvas (so widgets draw over the grid) and below
+                          // the zoom buttons (which stay on top and tappable).
+                          // Only present when a builder is supplied; otherwise
+                          // events stay canvas-painted exactly as before.
+                          paintEntryOverlay(),
+                          paintZoomButtons(context),
+                        ],
                       ),
-                      paintZoomButtons(context),
-                      ...paintMenu(),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          )
+              )
+            ],
+          ),
+          ...paintMenu(),
         ],
       );
     });
   }
+
+  /// The events canvas's top-left in planner-local coordinates: right of the
+  /// hour gutter and below the date row plus any all-day band. Used to map an
+  /// events-canvas-local hit position into the planner-local space the lifted
+  /// context menu is positioned in (#72).
+  Offset get _eventsCanvasOrigin => Offset(
+        _data.config.hourColumnWidth,
+        _data.config.dateRowHeight + _data.allDayBandHeight,
+      );
 
   List<Widget> paintMenu() {
     List<Widget> result = [];
@@ -128,108 +329,556 @@ class _PlannerState extends State<Planner> {
         child: Container(
           height: _data.config.dateRowHeight,
           color: _data.config.dateBackground,
-          child: CustomPaint(
-            painter: DateRow(
-              manager: _data,
-              repaint: _data.controller.triggerUpdate,
+          // With a dayHeaderBuilder (#79) the painted row is replaced by a row
+          // of host-built header widgets; otherwise the default DateRow paints.
+          // Either way the surrounding GestureDetector keeps the day-axis pan,
+          // and the ClipRect trims headers scrolled past the gutter/edge.
+          child: widget.dayHeaderBuilder == null
+              ? CustomPaint(
+                  painter: DateRow(
+                    manager: _data,
+                    repaint: _data.controller.triggerUpdate,
+                  ),
+                  child: Container(),
+                )
+              : paintDayHeaders(),
+        ),
+      ),
+    );
+  }
+
+  /// The custom day/column header row (#79). When the host supplies a
+  /// [Planner.dayHeaderBuilder] this builds one header widget per `config.labels`
+  /// entry, laid out as a [Row] of `blockWidth`-wide cells offset by the live
+  /// horizontal scroll (`hourColumnWidth + controller.x`) so each header sits
+  /// above its day-column and tracks a pan/scroll — it rebuilds on the same
+  /// `triggerUpdate` the painted [DateRow] repaints on.
+  ///
+  /// The row is wrapped in [IgnorePointer] so a horizontal drag across it falls
+  /// through to the surrounding day-axis pan [GestureDetector] (visual-only
+  /// builder); header widgets keep their natural semantics. An [OverflowBox]
+  /// gives the row unbounded width so the full-width column strip can extend past
+  /// the viewport without an overflow error (the enclosing [ClipRect] trims it),
+  /// while the date-row height passes through so each cell fills it via stretch.
+  Widget paintDayHeaders() {
+    final builder = widget.dayHeaderBuilder!;
+    return IgnorePointer(
+      child: ValueListenableBuilder<int>(
+        valueListenable: _data.controller.triggerUpdate,
+        builder: (context, _, __) {
+          final labels = _data.config.labels;
+          final blockWidth = _data.config.blockWidth.toDouble();
+          return Transform.translate(
+            offset: Offset(
+              _data.config.hourColumnWidth + _data.controller.x,
+              0,
             ),
-            child: Container(),
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              minWidth: 0,
+              maxWidth: double.infinity,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (int i = 0; i < labels.length; i++)
+                    SizedBox(
+                      width: blockWidth,
+                      child: builder(
+                        context,
+                        i,
+                        labels[i],
+                        i == _data.config.highlightedColumn,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// The all-day band (#48): a fixed strip of chips above the time grid for
+  /// events flagged [PlannerTime.allDay]. Like the date row directly above it,
+  /// it pans the day axis on a horizontal drag (so it isn't a dead zone) and
+  /// tracks the horizontal scroll, but it does not zoom or scroll with the time
+  /// axis. Only mounted when the band is enabled and there is at least one
+  /// all-day event.
+  ///
+  /// Its chips are interactive at parity with timed events (#72): double-tap a
+  /// chip to edit (or empty space to create), right-click for the edit/delete
+  /// (or create) context menu, and long-press a chip for [onEntryLongPress].
+  /// These coexist with the day-axis horizontal drag in one GestureDetector —
+  /// a moving press pans, a still tap/press resolves to the tap gestures.
+  Widget paintAllDayBand() {
+    return GestureDetector(
+      onHorizontalDragStart: (detail) =>
+          _data.controller.startHorizontalDrag(detail.globalPosition.dx),
+      onHorizontalDragUpdate: (detail) =>
+          _data.controller.updateHorizontalDrag(detail.globalPosition.dx),
+      // Double-tap carries no position, so capture it on the down event.
+      onDoubleTapDown: (detail) => _allDayDoubleTapPos = detail.localPosition,
+      onDoubleTap: _onAllDayDoubleTap,
+      onSecondaryTapDown: (detail) => _showAllDayMenu(detail.localPosition),
+      onLongPressStart: (detail) => _onAllDayLongPress(detail.localPosition),
+      child: ClipRect(
+        child: Container(
+          height: _data.allDayBandHeight,
+          color: _data.config.allDayBandBackground,
+          // A Stack so the custom-chip overlay (#80) can layer over the band
+          // canvas in the band's own coordinate space (the same space the chip
+          // screenRects are in). With no builder the overlay is an empty box and
+          // the canvas paints the chips exactly as before.
+          child: Stack(
+            children: [
+              CustomPaint(
+                key: _allDayCanvasKey,
+                painter: AllDayBand(
+                  manager: _data,
+                  repaint: _data.controller.triggerUpdate,
+                  // The widget overlay (#80) renders the chip bodies instead, so
+                  // the canvas skips its own body paint to avoid double-drawing
+                  // (semantics still come from here).
+                  drawChipBodies: widget.allDayEntryBuilder == null,
+                ),
+                child: Container(),
+              ),
+              paintAllDayOverlay(),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Row paintZoomButtons(BuildContext context) {
+  /// The custom-widget overlay for all-day chips (#80) — the all-day twin of
+  /// [paintEntryOverlay]. When the host supplies an [Planner.allDayEntryBuilder]
+  /// this layers, over the band canvas, one host-built widget per on-screen chip,
+  /// positioned and sized at the chip's live `screenRect` (the band's own
+  /// coordinate space) so it tracks the horizontal scroll in lockstep with the
+  /// canvas (it rebuilds on the same `triggerUpdate` the canvas repaints on).
+  ///
+  /// The overlay is purely visual: [IgnorePointer] lets every gesture fall
+  /// through to the band's recognizers (double-tap edit/create, right-click menu,
+  /// long-press all still fire the usual callbacks), and [ExcludeSemantics] keeps
+  /// the band's per-chip accessibility nodes the single source of truth.
+  /// Off-screen chips are culled from the overlay (visuals only — the canvas
+  /// keeps a semantics node for every chip). When no builder is supplied this is
+  /// an empty box, so the canvas paints chips as before.
+  Widget paintAllDayOverlay() {
+    final builder = widget.allDayEntryBuilder;
+    if (builder == null) return const SizedBox.shrink();
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: ExcludeSemantics(
+          child: ClipRect(
+            // The overlay fills the same box as the band canvas (both are
+            // non-positioned children of the band Stack), so its constraints are
+            // the band viewport — used to cull chips scrolled past its edges.
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final viewport = Offset.zero & constraints.biggest;
+                return ValueListenableBuilder<int>(
+                  valueListenable: _data.controller.triggerUpdate,
+                  builder: (context, _, __) {
+                    return Stack(
+                      children: [
+                        for (final chip in _data.allDayEvents)
+                          if (chip.screenRect.overlaps(viewport))
+                            Positioned.fromRect(
+                              rect: chip.screenRect,
+                              child: builder(
+                                  context, chip.entry, _allDayLayoutFor(chip)),
+                            ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The on-screen [PlannerEntryLayout] for an all-day [chip], handed to the
+  /// host's [Planner.allDayEntryBuilder] (#80). Its `size` is the live
+  /// `screenRect` size; it carries `allDay: true` so a shared builder can branch.
+  /// All-day chips don't sub-divide a column or drag, so the overlap/drag fields
+  /// are fixed (the chip's stacking lane is already baked into its position).
+  PlannerEntryLayout _allDayLayoutFor(AllDayEvent<T> chip) =>
+      PlannerEntryLayout(
+        size: chip.screenRect.size,
+        columnIndex: 0,
+        columnCount: 1,
+        isDragged: false,
+        dragType: DragType.none,
+        allDay: true,
+      );
+
+  /// Double-tap on the all-day band (#72): edit the chip under the press, or —
+  /// mirroring the grid's double-tap — create an all-day event on empty band
+  /// space (the position was captured by `onDoubleTapDown`).
+  void _onAllDayDoubleTap() {
+    final chip = _data.getAllDayEventAtPos(_allDayDoubleTapPos);
+    if (chip != null) {
+      _data.config.onEntryEdit?.call(chip.entry);
+    } else if (_data.config.onEntryCreate != null) {
+      _data
+          .config.onEntryCreate!(_data.getAllDayTimeAtPos(_allDayDoubleTapPos));
+    }
+  }
+
+  /// Right-click on the all-day band (#72): open the edit/delete menu for the
+  /// chip under [bandLocalPos], or the create menu on empty band space. The
+  /// band sits at planner-local `(0, dateRowHeight)`, so the band-local press
+  /// maps to planner-local by shifting down past the date row for the lifted
+  /// menu overlay.
+  void _showAllDayMenu(Offset bandLocalPos) {
+    final plannerPos = bandLocalPos + Offset(0, _data.config.dateRowHeight);
+    final chip = _data.getAllDayEventAtPos(bandLocalPos);
+    if (chip != null) {
+      _data.controller.showEventMenu(plannerPos, chip.entry, hideMenu);
+    } else {
+      _data.controller.showPlannerMenu(
+          plannerPos, _data.getAllDayTimeAtPos(bandLocalPos), hideMenu);
+    }
+    setState(() {});
+  }
+
+  /// Long-press on an all-day chip fires [PlannerConfig.onEntryLongPress] (#72),
+  /// the touch path to act on a chip — at parity with a long-press on a timed
+  /// event ([_onLongPress]). A press on empty band space, or with no callback
+  /// wired, is a no-op.
+  void _onAllDayLongPress(Offset bandLocalPos) {
+    final onLongPress = _data.config.onEntryLongPress;
+    if (onLongPress == null) return;
+    final chip = _data.getAllDayEventAtPos(bandLocalPos);
+    if (chip == null) return;
+    onLongPress(chip.entry);
+  }
+
+  /// The custom-widget overlay for timed events (#78). When the host supplies
+  /// an [Planner.entryBuilder] this layers, over the events canvas, one
+  /// host-built widget per on-screen event — positioned and sized at the event's
+  /// live `screenRect` so it tracks scroll, zoom and drag in lockstep with the
+  /// canvas (it rebuilds on the same `triggerUpdate` the canvas repaints on).
+  ///
+  /// The overlay is purely visual: [IgnorePointer] lets every gesture fall
+  /// through to the canvas's recognizers (tap/double-tap/drag/resize/long-press/
+  /// right-click all still fire the usual callbacks), and [ExcludeSemantics]
+  /// keeps the canvas's per-event accessibility nodes the single source of truth.
+  /// Off-screen events are culled from the overlay (visuals only — the canvas
+  /// keeps a semantics node for every event, on-screen or not). When no builder
+  /// is supplied this is an empty box, so the canvas paints events as before.
+  Widget paintEntryOverlay() {
+    final builder = widget.entryBuilder;
+    if (builder == null) return const SizedBox.shrink();
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: ExcludeSemantics(
+          child: ClipRect(
+            // The overlay fills the same box as the events canvas (both are
+            // non-positioned children of the inner Stack), so its constraints
+            // are the canvas viewport — used to cull off-screen events whose
+            // screenRect lies outside it.
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final viewport = Offset.zero & constraints.biggest;
+                return ValueListenableBuilder<int>(
+                  valueListenable: _data.controller.triggerUpdate,
+                  builder: (context, _, __) {
+                    return Stack(
+                      children: [
+                        for (final event in _data.events)
+                          if (event.screenRect.overlaps(viewport))
+                            Positioned.fromRect(
+                              rect: event.screenRect,
+                              child: builder(
+                                  context, event.entry, _layoutFor(event)),
+                            ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The on-screen [PlannerEntryLayout] for [event], handed to the host's
+  /// [Planner.entryBuilder] (#78). Its `size` is the live `screenRect` size
+  /// (overlap-narrowed width x `durationInHours * blockHeight * zoom` height),
+  /// and it carries the overlap sub-column and live drag state so the builder can
+  /// shed detail and reflect a move/resize.
+  PlannerEntryLayout _layoutFor(Event<T> event) => PlannerEntryLayout(
+        size: event.screenRect.size,
+        columnIndex: event.columnIndex,
+        columnCount: event.columnCount,
+        isDragged: event.dragType != DragType.none,
+        dragType: event.dragType,
+        allDay: false,
+      );
+
+  Widget paintZoomButtons(BuildContext context) {
+    // Hosts that drive zoom themselves (pinch, own chrome) can hide the built-in
+    // controls via config; an empty box keeps the Stack child list stable.
+    if (!_data.config.showZoomControls) {
+      return const SizedBox.shrink();
+    }
+
+    // Fall back to the previous hardcoded theme colour when no override is set.
+    final Color fillColor =
+        _data.config.zoomButtonColor ?? Theme.of(context).colorScheme.secondary;
+    final Color iconColor = _data.config.zoomButtonIconColor;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 8.0),
-          child: RawMaterialButton(
+          child: IconButton(
             onPressed: () {
               _data.controller.startZoom();
               _data.controller.updateZoom(0.9);
             },
-            elevation: 2.0,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            fillColor: Theme.of(context).colorScheme.secondary,
-            child: const Icon(
-              Icons.zoom_out,
-              size: 22.0,
-              color: Colors.white,
-            ),
+            iconSize: 22.0,
             padding: const EdgeInsets.all(4.0),
-            shape: const CircleBorder(),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            style: IconButton.styleFrom(
+              backgroundColor: fillColor,
+              elevation: 2.0,
+              shape: const CircleBorder(),
+            ),
+            icon: Icon(
+              Icons.zoom_out,
+              color: iconColor,
+            ),
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(top: 8.0),
-          child: RawMaterialButton(
+          child: IconButton(
             onPressed: () {
               _data.controller.startZoom();
               _data.controller.updateZoom(1.1);
             },
-            elevation: 2.0,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            fillColor: Theme.of(context).colorScheme.secondary,
-            child: const Icon(
-              Icons.zoom_in,
-              size: 22.0,
-              color: Colors.white,
-            ),
+            iconSize: 22.0,
             padding: const EdgeInsets.all(4.0),
-            shape: const CircleBorder(),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            style: IconButton.styleFrom(
+              backgroundColor: fillColor,
+              elevation: 2.0,
+              shape: const CircleBorder(),
+            ),
+            icon: Icon(
+              Icons.zoom_in,
+              color: iconColor,
+            ),
           ),
         ),
       ],
     );
   }
 
-  GestureDetector paintEvents() {
-    return GestureDetector(
-      onHorizontalDragStart: (detail) =>
-          _data.controller.startHorizontalDrag(detail.globalPosition.dx),
-      onHorizontalDragUpdate: (detail) =>
-          _data.controller.updateHorizontalDrag(detail.globalPosition.dx),
-      onScaleStart: ((details) => _data.controller.startZoom()),
-      onScaleUpdate: (details) =>
-          _data.controller.updateZoom(details.verticalScale),
-      onLongPressStart: (details) {
-        _data.startDrag(details.localPosition);
+  // --- Events-canvas gesture handlers ---------------------------------------
+  // One ScaleGestureRecognizer drives pan, zoom and (desktop) move/resize: a
+  // multi-finger pinch zooms; a one-finger drag pans, except on a precise
+  // pointer pressed on an event, where it moves the body or resizes the edge —
+  // the Outlook-style immediate drag, no long-press. This replaces the old
+  // horizontal-drag + scale + long-press combo that fought in the gesture arena.
+
+  void _onScaleStart(ScaleStartDetails details) {
+    // Decide intent from the press point captured at pointer-down. A precise
+    // pointer on an event grabs it (move on the body, resize on an edge); on
+    // empty space, or on touch, the gesture pans. startZoom captures the
+    // pre-gesture zoom so a pinch that begins mid-gesture stays continuous; the
+    // single->second-pointer switch to zoom happens in _onScaleUpdate.
+    _data.controller.startZoom();
+
+    if (_isPrecise(_lastPointerKind)) {
+      _data.startDrag(_pointerDownPos);
+      if (_data.draggedEvent != null) {
+        _mode = _GestureMode.moveResize;
+        return;
+      }
+    }
+
+    // Empty-area (and touch) drag pans both axes within the existing clamps,
+    // reusing the controller's per-axis drag handlers (the day axis is also
+    // panned by the date row, the time axis by the hour gutter).
+    _mode = _GestureMode.pan;
+    _data.controller.startHorizontalDrag(details.focalPoint.dx);
+    _data.controller.startVerticalDrag(details.focalPoint.dy);
+  }
+
+  void _onScaleUpdate(ScaleUpdateDetails details) {
+    // A move/resize is single-pointer on a mouse, so it never coexists with a
+    // pinch; keep following the pointer.
+    if (_mode == _GestureMode.moveResize) {
+      _data.updateDrag(details.localFocalPoint);
+    } else if (details.pointerCount >= 2) {
+      _mode = _GestureMode.zoom;
+      _data.controller.updateZoom(details.verticalScale);
+    } else if (_mode == _GestureMode.pan) {
+      _data.controller.updateHorizontalDrag(details.focalPoint.dx);
+      _data.controller.updateVerticalDrag(details.focalPoint.dy);
+    }
+  }
+
+  void _onScaleEnd(ScaleEndDetails details) {
+    if (_mode == _GestureMode.moveResize) {
+      _data.endDrag();
+    }
+    _mode = _GestureMode.idle;
+  }
+
+  /// Fires [PlannerConfig.onEntryLongPress] when a long-press lands on an event
+  /// (#66) — the freed-up touch gesture for acting on one (touch has no
+  /// right-click, and a one-finger drag now pans); a desktop long-press fires it
+  /// too. The widget takes no action itself: the host decides the response. A
+  /// long-press on empty space, or one with no callback wired, is a no-op.
+  void _onLongPress(LongPressStartDetails details) {
+    final onLongPress = _data.config.onEntryLongPress;
+    if (onLongPress == null) return;
+    final event = _data.getEventAtPos(details.localPosition);
+    if (event == null) return;
+    onLongPress(event.entry);
+  }
+
+  /// Routes a mouse-wheel notch by keyboard modifier (#65): plain wheel scrolls
+  /// the time axis (unchanged), Shift+wheel scrolls the day axis, Ctrl+wheel
+  /// zooms (clamped to `minZoom`/`maxZoom` by the controller). The vertical
+  /// `dy > 0` sign drives all three so they agree on notch direction; a notch
+  /// with no vertical delta (e.g. a pure horizontal trackpad scroll) is ignored.
+  void _handleWheel(PointerScrollEvent event) {
+    final dy = event.scrollDelta.dy;
+    if (dy == 0) return;
+    final keys = HardwareKeyboard.instance;
+    if (keys.isControlPressed) {
+      _data.controller.startZoom();
+      _data.controller.updateZoom(dy < 0 ? 1.1 : 0.9);
+    } else if (keys.isShiftPressed) {
+      _data.controller.horizontalScroll(dy > 0);
+    } else {
+      _data.controller.verticalScroll(dy > 0);
+    }
+  }
+
+  /// Maps a hover [position] (events-canvas-local) to the cursor that signals
+  /// what a press there would do: move over an event body, resizeUpDown over its
+  /// top/bottom edge, basic over empty space — the desktop discoverability cue.
+  void _updateHoverCursor(Offset position) {
+    final cursor = switch (_data.dragTypeAt(position)) {
+      DragType.body => SystemMouseCursors.move,
+      DragType.topHandle ||
+      DragType.bottomHandle =>
+        SystemMouseCursors.resizeUpDown,
+      DragType.none => SystemMouseCursors.basic,
+    };
+    _cursor.value = cursor;
+  }
+
+  Widget paintEvents() {
+    // The outer Listener records the kind and position of each pointer-down (a
+    // thin pass-through, it claims nothing) so the scale recognizer can tell a
+    // mouse from a finger and anchor a move/resize at the true press point.
+    return Listener(
+      onPointerDown: (event) {
+        _lastPointerKind = event.kind;
+        _pointerDownPos = event.localPosition;
       },
-      onLongPressMoveUpdate: (details) {
-        _data.updateDrag(details.localPosition);
-      },
-      onLongPressEnd: (details) {
-        _data.endDrag();
-      },
-      onTap: () {
-        _data.controller.hideMenu();
-      },
-      onSecondaryTapDown: (details) {
-        showMenu(details);
-      },
-      child: ClipRect(
-          child: ScrollDetector(
-        onPointerScroll: (event) {
-          if (event.scrollDelta.dy > 0) {
-            _data.controller.verticalScroll(true);
-          } else {
-            _data.controller.verticalScroll(false);
-          }
+      child: RawGestureDetector(
+        gestures: <Type, GestureRecognizerFactory>{
+          // Pan (one finger) + zoom (pinch) + desktop move/resize, all in one
+          // recognizer so they share an arena instead of fighting in it.
+          ScaleGestureRecognizer:
+              GestureRecognizerFactoryWithHandlers<ScaleGestureRecognizer>(
+            () => ScaleGestureRecognizer(),
+            (ScaleGestureRecognizer instance) {
+              instance
+                ..onStart = _onScaleStart
+                ..onUpdate = _onScaleUpdate
+                ..onEnd = _onScaleEnd;
+            },
+          ),
+          // Tap / double-tap / right-click. Taps are fed to the double-tap
+          // detector via its controller (see _tapController): onTapDown records
+          // the pending tap, onTap confirms it. hideMenu stays on the immediate
+          // tap so dismissing the menu isn't held back by the double-tap window.
+          TapGestureRecognizer:
+              GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+            () => TapGestureRecognizer(),
+            (TapGestureRecognizer instance) {
+              instance
+                ..onTapDown = (d) {
+                  _tapController.onTapDown(d);
+                }
+                ..onTap = () {
+                  _data.controller.hideMenu();
+                  _tapController.onTap();
+                }
+                ..onSecondaryTapDown = (d) {
+                  showMenu(d);
+                };
+            },
+          ),
+          // Long-press -> onEntryLongPress (#66). Shares this arena with the
+          // scale and tap recognizers: a still press past the long-press timeout
+          // wins here, while a press that moves past the pan slop lets the scale
+          // recognizer take the gesture, so long-press never steals a pan or a
+          // desktop drag (this is the same arena the old layout ran a long-press
+          // in). Always registered; with no callback wired it's an inert no-op.
+          LongPressGestureRecognizer:
+              GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+            () => LongPressGestureRecognizer(),
+            (LongPressGestureRecognizer instance) {
+              instance.onLongPressStart = _onLongPress;
+            },
+          ),
         },
-        child: Container(
-            color: _data.config.plannerBackground,
-            child: CustomPaint(
-              painter: EventsPainter(
-                manager: _data,
-                repaint: _data.controller.triggerUpdate,
-              ),
-              child: Container(),
-            )),
-      )),
+        // Hover cursor (desktop discoverability): the MouseRegion rebuilds on a
+        // cursor change via the notifier; the canvas below is passed as `child`
+        // so it isn't rebuilt with it.
+        child: ValueListenableBuilder<MouseCursor>(
+          valueListenable: _cursor,
+          child: ClipRect(
+            child: ScrollDetector(
+              onPointerScroll: _handleWheel,
+              child: Container(
+                  color: _data.config.plannerBackground,
+                  child: CustomPaint(
+                    key: _eventsCanvasKey,
+                    painter: EventsPainter(
+                      manager: _data,
+                      repaint: _data.controller.triggerUpdate,
+                      // A custom-widget overlay (#78) renders the event bodies
+                      // instead, so the canvas skips its own body paint to avoid
+                      // double-drawing (grid + semantics still come from here).
+                      drawEventBodies: widget.entryBuilder == null,
+                    ),
+                    child: Container(),
+                  )),
+            ),
+          ),
+          builder: (context, cursor, child) {
+            return MouseRegion(
+              cursor: cursor,
+              onHover: (event) => _updateHoverCursor(event.localPosition),
+              onExit: (_) => _cursor.value = SystemMouseCursors.basic,
+              child: child,
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -241,13 +890,7 @@ class _PlannerState extends State<Planner> {
           _data.controller.updateVerticalDrag(details.globalPosition.dy)),
       child: ClipRect(
         child: ScrollDetector(
-          onPointerScroll: (event) {
-            if (event.scrollDelta.dy > 0) {
-              _data.controller.verticalScroll(true);
-            } else {
-              _data.controller.verticalScroll(false);
-            }
-          },
+          onPointerScroll: _handleWheel,
           child: Container(
             width: _data.config.hourColumnWidth,
             color: _data.config.hourBackground,
@@ -269,12 +912,16 @@ class _PlannerState extends State<Planner> {
   }
 
   void showMenu(TapDownDetails details) {
-    var event = _data.getEventAtPos(details.localPosition);
+    // Hit-testing uses the events-canvas-local position; the menu is positioned
+    // in planner-local space (the lifted overlay), so shift by the canvas origin.
+    final local = details.localPosition;
+    final plannerPos = local + _eventsCanvasOrigin;
+    var event = _data.getEventAtPos(local);
     if (event != null) {
-      _data.controller.showEventMenu(details.localPosition, event, hideMenu);
+      _data.controller.showEventMenu(plannerPos, event.entry, hideMenu);
     } else {
-      var time = _data.getTimeAtPos(details.localPosition);
-      _data.controller.showPlannerMenu(details.localPosition, time, hideMenu);
+      var time = _data.getTimeAtPos(local);
+      _data.controller.showPlannerMenu(plannerPos, time, hideMenu);
     }
 
     setState(() {});

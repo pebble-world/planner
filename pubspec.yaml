@@ -2,7 +2,7 @@ name: planner
 description: >-
   A scrollable, zoomable day-grid widget for showing and editing events across
   labelled columns, with drag-to-move, drag-to-resize, and context-menu actions.
-version: 0.2.0
+version: 0.3.0
 homepage: https://github.com/pebble-world/planner
 repository: https://github.com/pebble-world/planner
 issue_tracker: https://github.com/pebble-world/planner/issues
@@ -21,11 +21,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Used only by the optional, non-core calendar helpers (lib/calendar.dart) for
+  # the default date-label formatting; a wide range so it co-resolves with apps
+  # that pin intl via flutter_localizations.
+  intl: ">=0.18.0 <0.21.0"
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^1.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

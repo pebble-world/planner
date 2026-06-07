@@ -29,5 +29,10 @@
 build/
 
 # --- package-specific exclusions ---
-# Internal quality-audit / orientation doc — kept in the repo, not shipped.
-PROJECT_OVERVIEW.md
+# Internal architecture decision records — kept in the repo, not shipped.
+doc/decisions/
+
+# Documentation screenshots — kept in the repo for the README/docs, but big and
+# binary, so not shipped. pub.dev rewrites README's relative image links to the
+# `repository` URL (GitHub raw), so they still render on the package page.
+doc/screenshots/

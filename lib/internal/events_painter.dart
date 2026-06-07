@@ -1,29 +1,124 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
 import 'event.dart';
 import 'grid.dart';
 import 'manager.dart';
 
-class EventsPainter extends CustomPainter {
+// Generic over the entry payload [T] (#77). It must be — its semanticsBuilder
+// reads the now-generic entry callbacks (`config.onEntryEdit` et al., typed
+// `void Function(PlannerEntry<T>)`). Held through a covariant `Manager`
+// (`Manager<dynamic>`) those reads would trip a runtime covariance check and
+// throw, so the painter carries `T` and holds a `Manager<T>` at its true type.
+class EventsPainter<T> extends CustomPainter {
   final Grid _grid;
-  final Manager manager;
+  final Manager<T> manager;
 
-  EventsPainter({required this.manager, required Listenable repaint})
-      : _grid = Grid(manager: manager),
+  // The manager's data revision when this delegate was built; compared in
+  // shouldRepaint so the canvas repaints (and its semantics rebuild) only when
+  // the event data changed, not on every unrelated parent rebuild (#25 / D6).
+  final int _revision;
+
+  // Whether to paint the event bodies on the canvas (#78). When a host supplies
+  // an `entryBuilder`, real widgets are layered over the canvas to render each
+  // event, so the canvas skips its own body paint to avoid drawing each event
+  // twice — but it still draws the grid and still exposes the per-event
+  // accessibility semantics (those stay canvas-owned; the overlay is
+  // ExcludeSemantics). Defaults to `true` — the canvas paints bodies itself.
+  final bool drawEventBodies;
+
+  EventsPainter({
+    required this.manager,
+    required Listenable repaint,
+    this.drawEventBodies = true,
+  })  : _grid = Grid(manager: manager),
+        _revision = manager.revision,
         super(repaint: repaint);
 
-  // Pure rendering only: draw the grid, then each event using its own drag
-  // state. Drag detection and the onEntryMove callback live in the widget layer
-  // (gesture handlers -> Manager.start/update/endDrag), never here — a painter
-  // must not mutate state or fire callbacks while painting.
+  // Pure rendering only: draw the grid, then (unless a widget overlay is taking
+  // over the bodies, #78) each event using its own drag state. Drag detection
+  // and the onEntryMove callback live in the widget layer (gesture handlers ->
+  // Manager.start/update/endDrag), never here — a painter must not mutate state
+  // or fire callbacks while painting.
   @override
   void paint(Canvas canvas, Size size) {
     _grid.draw(canvas);
+    if (!drawEventBodies) return;
     for (Event event in manager.events) {
       event.paint(canvas);
     }
   }
 
+  // Expose each event to assistive technology (#21). A CustomPaint canvas is one
+  // opaque semantics node, so screen readers can otherwise neither perceive
+  // events nor act on them. For *every* event — not just the on-screen ones — we
+  // emit one node carrying its description (title, time, duration) and the host's
+  // actions.
+  //
+  // We deliberately do NOT cull off-viewport events (#56): this canvas exposes no
+  // accessibility scroll-into-view action, so a screen-reader user can't scroll a
+  // culled event back in — culling would make it permanently unreachable. Off-
+  // canvas nodes are still reachable: a RenderCustomPaint's CustomPainterSemantics
+  // children are not subject to the ancestor ClipRect's semantic culling. The
+  // node's `rect` is the event's *live* on-screen rect; scrolling/zooming only
+  // bumps the paint-listenable (markNeedsPaint, never markNeedsSemanticsUpdate),
+  // so `_PlannerState` separately pokes this canvas to rebuild its semantics on
+  // pan/zoom (see `_rebuildEventSemantics`), keeping each rect tracking the view.
+  //
+  // The actions map onto first-class semantics actions, NOT customSemanticsActions:
+  // RenderCustomPaint forwards only the built-in SemanticsProperties callbacks to
+  // the node and silently drops customSemanticsActions, so custom actions never
+  // reach a screen reader through a painter. The built-ins are also the better
+  // fit — they're native AT gestures rather than an actions submenu:
+  //   * activate (onTap)            -> edit   (mirrors double-tap-to-edit)
+  //   * dismiss  (onDismiss)        -> delete (the standard "remove" gesture)
+  //   * increase/decrease           -> move later/earlier (a screen-reader user
+  //     (onIncrease/onDecrease)        can't drag, so the event reads as an
+  //                                     adjustable nudged in whole hours)
+  // Only the actions whose onEntry* callback the host wired are offered. Stable
+  // per-event keys (the entry id) keep node identity across the per-frame rebuilds.
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  SemanticsBuilderCallback get semanticsBuilder => _buildSemantics;
+
+  List<CustomPainterSemantics> _buildSemantics(Size size) {
+    final config = manager.config;
+    final nodes = <CustomPainterSemantics>[];
+
+    for (final event in manager.events) {
+      // A node per event regardless of scroll position (see semanticsBuilder):
+      // its rect is the live on-screen rect, even when that lies off-canvas.
+      final rect = event.screenRect;
+
+      final canEdit = config.onEntryEdit != null;
+      // Spanning events are read-only in this first cut (#47): they can't be
+      // dragged, so the accessibility move nudges (the keyboard equivalent of a
+      // drag-move) aren't offered for them either. Edit/delete stay available.
+      final canMove =
+          config.onEntryMove != null && !event.entry.time.spansColumns;
+
+      nodes.add(CustomPainterSemantics(
+        key: ValueKey(event.entry.id),
+        rect: rect,
+        properties: SemanticsProperties(
+          label: event.semanticsLabel,
+          textDirection: TextDirection.ltr,
+          button: canEdit,
+          enabled: true,
+          onTap: canEdit ? () => manager.editEvent(event) : null,
+          onDismiss: config.onEntryDelete != null
+              ? () => manager.deleteEvent(event)
+              : null,
+          onIncrease: canMove ? () => manager.nudgeEvent(event, 1) : null,
+          onDecrease: canMove ? () => manager.nudgeEvent(event, -1) : null,
+        ),
+      ));
+    }
+
+    return nodes;
+  }
+
+  @override
+  bool shouldRepaint(covariant EventsPainter oldDelegate) =>
+      _revision != oldDelegate._revision ||
+      drawEventBodies != oldDelegate.drawEventBodies;
 }

@@ -7,16 +7,25 @@ class DateRow extends CustomPainter {
   final List<DateLabel> _labels = <DateLabel>[];
   final Manager manager;
 
+  // The manager's data revision when this delegate was built; compared in
+  // shouldRepaint so the row repaints only when the data changed, not on every
+  // unrelated parent rebuild (#25 / D6).
+  final int _revision;
+
   DateRow({required this.manager, required Listenable repaint})
-      : super(repaint: repaint) {
-    int _pos = 60;
+      : _revision = manager.revision,
+        super(repaint: repaint) {
+    // The date row spans the full planner width (it sits above the hour column
+    // too), so the first day-column's left edge is offset by the hour column's
+    // width to line up with the event grid below — not a hardcoded `60` (#28).
+    double pos = manager.config.hourColumnWidth;
     for (String element in manager.config.labels) {
       _labels.add(DateLabel(
         label: element,
-        position: _pos,
+        position: pos,
         manager: manager,
       ));
-      _pos += manager.config.blockWidth;
+      pos += manager.config.blockWidth;
     }
   }
 
@@ -29,5 +38,6 @@ class DateRow extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant DateRow oldDelegate) =>
+      _revision != oldDelegate._revision;
 }

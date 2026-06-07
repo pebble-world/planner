@@ -13,7 +13,7 @@ body:
     id: audience
     attributes:
       label: Audience / location
-      description: Who is this for and where should it live (README, dartdoc, PROJECT_OVERVIEW, wiki)?
+      description: Who is this for and where should it live (README, dartdoc, CONTRIBUTING, wiki)?
   - type: textarea
     id: notes
     attributes:

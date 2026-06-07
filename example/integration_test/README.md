@@ -8,12 +8,20 @@ surface) can miss rendering/geometry bugs.
 |------|----------------|
 | [`app_test.dart`](app_test.dart) | The single entry point. Registers every scenario so the whole suite runs in **one** app launch (desktop can only launch one app per `flutter test` invocation). |
 | [`app_smoke_scenarios.dart`](app_smoke_scenarios.dart) | Boots the real example app; asserts a `Planner` renders and the real secondary-tap menu opens. |
-| [`drag_scenarios.dart`](drag_scenarios.dart) | Long-press-dragging an event moves it and fires `onEntryMove` with no paint-phase side effects (device-level counterpart of the #11 / D5 regression). |
+| [`drag_scenarios.dart`](drag_scenarios.dart) | Mouse-dragging an event body moves it, and dragging its top edge resizes it; both fire `onEntryMove` with no paint-phase side effects (device-level counterpart of the #11 / D5 regression). |
+| [`direct_manipulation_scenarios.dart`](direct_manipulation_scenarios.dart) | Outlook-style direct manipulation (#65): desktop hover cursors (move over a body, resize over an edge, basic over empty), and a one-finger touch drag pans rather than moving the event. |
+| [`pan_zoom_scenarios.dart`](pan_zoom_scenarios.dart) | 2D pan and wheel modifiers (#65): dragging empty canvas pans both axes; Shift+wheel scrolls the day axis; Ctrl+wheel zooms. |
+| [`long_press_scenarios.dart`](long_press_scenarios.dart) | A touch long-press on an event fires `onEntryLongPress` with that entry; a long-press on empty space is a no-op (#66). |
 | [`event_geometry_scenarios.dart`](event_geometry_scenarios.dart) | An event's hit-area derives from `config.blockHeight` with proportional minutes (#10 / D3 + D4). |
+| [`external_zoom_scenarios.dart`](external_zoom_scenarios.dart) | A host toolbar drives the real grid zoom through a public `PlannerController` with the on-canvas buttons hidden, and the controller and grid share one zoom (#76). |
+| [`entry_builder_scenarios.dart`](entry_builder_scenarios.dart) | A host `entryBuilder` renders fully custom widgets over the grid at each event's on-screen rect; a real double-tap / mouse drag on a widget falls through the `IgnorePointer` overlay to `onEntryEdit` / `onEntryMove`, and the widget sheds detail by pixel height as the grid zooms (#78). |
+| [`all_day_builder_scenarios.dart`](all_day_builder_scenarios.dart) | A host `allDayEntryBuilder` renders fully custom widgets over the all-day band at each chip's on-screen rect, with `layout.allDay == true`; a real double-tap / right-click / long-press on a chip falls through the `IgnorePointer` overlay to `onEntryEdit` / the context menu / `onEntryLongPress` (#80). |
 | [`hour_label_scenarios.dart`](hour_label_scenarios.dart) | The default `maxHour` (23) clamps a below-grid tap to hour 23, not the invalid 24 (#13 / D10). |
 | [`snapping_scenarios.dart`](snapping_scenarios.dart) | Create and drag snap event times to the single configurable `snapMinutes` interval, and agree (#14 / D8). |
+| [`span_scenarios.dart`](span_scenarios.dart) | A column-spanning event (`PlannerTime.endDay`) paints one box across its columns, hit-tests from any column it covers, and is read-only — dragging it doesn't move it (#47). |
 | [`multi_planner_scenarios.dart`](multi_planner_scenarios.dart) | Two planners on one screen keep independent scroll state (device-level counterpart of the #9 / D1 regression). |
-| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `longPressDrag`). |
+| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `mouseDrag`). |
+| [`screenshots_test.dart`](screenshots_test.dart) | **Not part of the suite.** A standalone capture target that renders each gallery page on a fixed surface and writes the documentation screenshots to `doc/screenshots/`. See [Regenerating screenshots](#regenerating-screenshots). |
 
 ## Running
 
@@ -21,9 +29,14 @@ Run from the `example/` directory.
 
 ### Windows (what CI runs)
 
+Target [`app_test.dart`](app_test.dart) explicitly — the single entry point —
+rather than the whole directory, so the standalone
+[`screenshots_test.dart`](screenshots_test.dart) capture target isn't picked up
+as a second test file (see [Regenerating screenshots](#regenerating-screenshots)).
+
 ```sh
 flutter config --enable-windows-desktop   # once, if not already enabled
-flutter test integration_test -d windows
+flutter test integration_test/app_test.dart -d windows
 ```
 
 ### Web (Chrome)
@@ -38,6 +51,23 @@ flutter drive \
   --target=integration_test/app_test.dart \
   -d chrome
 ```
+
+## Regenerating screenshots
+
+The README/docs images live in `doc/screenshots/`. [`screenshots_test.dart`](screenshots_test.dart)
+regenerates them by rendering each gallery page on a fixed surface (real Windows
+fonts, no Ahem distortion) and writing one PNG per page, named by its gallery
+`id` (`basic.png`, `showcase.png`, …). It is **not** registered in
+[`app_test.dart`](app_test.dart) — it pumps its own widget trees — so run it on
+its own, from `example/`:
+
+```sh
+flutter test integration_test/screenshots_test.dart -d windows
+```
+
+The shots are deterministic: re-running on the same machine overwrites the PNGs
+with identical pixels (pages that show a real week, like the Showcase, reflect
+the current date). Commit any changes.
 
 ## Adding a test
 

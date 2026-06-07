@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/planner.dart';
 
@@ -40,13 +41,14 @@ void main() {
     }
   }
 
-  // Press and hold past the long-press timeout (so the long-press recognizer
-  // wins the gesture arena over pan/scale, exactly as a real user dragging an
-  // event), then move and release.
-  Future<void> longPressDrag(
-      WidgetTester tester, Offset from, Offset delta) async {
-    final gesture = await tester.startGesture(from);
-    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+  // Press an event with a mouse and drag immediately (the Outlook-style desktop
+  // gesture: a precise pointer moves/resizes an event as soon as it drags, no
+  // long-press). The pointer-down position anchors the drag, so the committed
+  // move equals [delta].
+  Future<void> mouseDrag(WidgetTester tester, Offset from, Offset delta) async {
+    final gesture =
+        await tester.startGesture(from, kind: PointerDeviceKind.mouse);
+    await tester.pump();
     await gesture.moveBy(delta);
     await tester.pump();
     await gesture.up();
@@ -109,6 +111,7 @@ void main() {
     void Function(PlannerEntry)? onEdit,
     void Function(PlannerEntry)? onDelete,
     void Function(PlannerTime)? onCreate,
+    void Function(PlannerEntry)? onLongPress,
   }) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
@@ -121,6 +124,7 @@ void main() {
             onEntryEdit: onEdit,
             onEntryDelete: onDelete,
             onEntryCreate: onCreate,
+            onEntryLongPress: onLongPress,
           ),
           entries: [entry],
         ),
@@ -135,6 +139,18 @@ void main() {
     await tester.pump();
     await gesture.up();
     await tester.pump();
+  }
+
+  // Two quick taps at the same point, within the detector's 250ms double-tap
+  // window. PositionedTapDetector2 buffers the first tap on a stream and only
+  // resolves a double-tap once the second arrives in time, so the gap stays
+  // well under the window; the trailing pump past it flushes the (now no-op)
+  // timeout timer so none is left pending.
+  Future<void> doubleTapAt(WidgetTester tester, Offset at) async {
+    await tester.tapAt(at);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tapAt(at);
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   testWidgets('two planners keep independent scroll state (D1)',
@@ -263,10 +279,10 @@ void main() {
   // Regression for D5 (#11): drag detection and the onEntryMove callback used to
   // run *inside* EventsPainter.paint(). A host's onEntryMove almost always
   // updates app state (setState), and calling setState during paint throws
-  // "setState() called during build". Driving a real long-press drag whose
-  // handler rebuilds therefore crashes on the old paint-side-effect code and
-  // succeeds now that drag lives in the gesture layer.
-  testWidgets('long-press drag moves an event without painting side effects',
+  // "setState() called during build". Driving a real drag whose handler
+  // rebuilds therefore crashes on the old paint-side-effect code and succeeds
+  // now that drag lives in the gesture layer.
+  testWidgets('dragging an event moves it without painting side effects',
       (tester) async {
     const key = ValueKey('planner');
     final moved = <PlannerEntry>[];
@@ -308,12 +324,16 @@ void main() {
         tester.getRect(find.byKey(key)).topLeft + const Offset(150, 430);
 
     // Drag down exactly one block (40px == 1 hour).
-    await longPressDrag(tester, center, const Offset(0, 40));
+    await mouseDrag(tester, center, const Offset(0, 40));
 
     expect(tester.takeException(), isNull,
         reason: 'onEntryMove must not fire during paint');
     expect(moved, hasLength(1), reason: 'the drag committed exactly one move');
-    expect(entry.time.hour, 10, reason: 'a one-block drag advances one hour');
+    // Immutable models (#27): the drag reports a new entry instead of mutating
+    // the one we passed in, so read the moved hour off the reported instance.
+    expect(entry.time.hour, 9, reason: 'the original entry is untouched');
+    expect(moved.single.time.hour, 10,
+        reason: 'a one-block drag advances one hour');
   });
 
   // Regression for D9 (#12): getTimeAtPos returned an overshoot day/hour for a
@@ -490,4 +510,218 @@ void main() {
           reason: 'onEntryDelete receives the right-clicked entry');
     });
   });
+
+  // Regression for #40: the double-tap edit/create paths were dead. The
+  // PositionedTapDetector2 that owns onDoubleTap wrapped the paintEvents
+  // GestureDetector, whose own onTap won the gesture arena, so the parent's tap
+  // stream was never fed and onDoubleTap never resolved. The detector is now
+  // driven from the single events detector via its controller, so a real
+  // double-tap reaches onEntryEdit / onEntryCreate. These drive the real
+  // composed Planner with two genuine taps inside the double-tap window.
+  group('double-tap edit/create (#40)', () {
+    testWidgets('double-tapping an event fires onEntryEdit', (tester) async {
+      const key = ValueKey('planner');
+      final edited = <PlannerEntry>[];
+      final created = <PlannerTime>[];
+      final entry = eventAtHour9();
+      final rect = await pumpEntryPlanner(tester, key, entry,
+          onEdit: edited.add, onCreate: created.add);
+
+      // The event's centre is planner-local (150, 430) (see eventAtHour9).
+      await doubleTapAt(tester, rect.topLeft + const Offset(150, 430));
+
+      expect(edited, hasLength(1),
+          reason: 'double-tapping an event must fire onEntryEdit');
+      expect(identical(edited.single, entry), isTrue,
+          reason: 'onEntryEdit receives the double-tapped entry');
+      expect(created, isEmpty,
+          reason: 'a hit on an event edits it, it does not create');
+    });
+
+    testWidgets('double-tapping empty grid fires onEntryCreate',
+        (tester) async {
+      const key = ValueKey('planner');
+      final created = <PlannerTime>[];
+      final edited = <PlannerEntry>[];
+
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Planner(
+            key: key,
+            config: PlannerConfig(
+              labels: const ['c1', 'c2', 'c3'],
+              minHour: 0,
+              maxHour: 23,
+              onEntryEdit: edited.add,
+              onEntryCreate: created.add,
+            ),
+            entries: const [],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // events-local (100, 200) past the hour column (50) and date row (50):
+      // column 0, and y=200 in an unscrolled 40px grid maps to hour 5.
+      final rect = tester.getRect(find.byKey(key));
+      await doubleTapAt(
+          tester, rect.topLeft + const Offset(50 + 100, 50 + 200));
+
+      expect(created, hasLength(1),
+          reason: 'double-tapping empty grid must fire onEntryCreate');
+      expect(created.single.day, 0);
+      expect(created.single.hour, 5,
+          reason: 'the tapped point maps to day 0 / hour 5');
+      expect(edited, isEmpty,
+          reason: 'an empty-grid hit creates, it does not edit');
+    });
+  });
+
+  // Touch has no right-click and a one-finger drag now pans, so long-press is
+  // the freed-up gesture for acting on an event (#66). PlannerConfig exposes it
+  // as onEntryLongPress; the widget stays presentation-only and just hands the
+  // pressed entry to the host. These drive the real composed Planner through the
+  // long-press recognizer that shares the events arena with scale and tap.
+  group('long-press (#66)', () {
+    testWidgets('long-pressing an event fires onEntryLongPress with the entry',
+        (tester) async {
+      const key = ValueKey('planner');
+      final longPressed = <PlannerEntry>[];
+      final edited = <PlannerEntry>[];
+      final created = <PlannerTime>[];
+      final entry = eventAtHour9();
+      final rect = await pumpEntryPlanner(tester, key, entry,
+          onEdit: edited.add,
+          onCreate: created.add,
+          onLongPress: longPressed.add);
+
+      // The event's centre is planner-local (150, 430) (see eventAtHour9).
+      await tester.longPressAt(rect.topLeft + const Offset(150, 430));
+      await tester.pump();
+
+      expect(longPressed, hasLength(1),
+          reason: 'long-pressing an event must fire onEntryLongPress');
+      expect(identical(longPressed.single, entry), isTrue,
+          reason: 'onEntryLongPress receives the long-pressed entry');
+      expect(edited, isEmpty,
+          reason: 'long-press is its own gesture, it does not edit');
+      expect(created, isEmpty, reason: 'a hit on an event does not create');
+    });
+
+    testWidgets('long-pressing empty grid does not fire onEntryLongPress',
+        (tester) async {
+      const key = ValueKey('planner');
+      final longPressed = <PlannerEntry>[];
+      final entry = eventAtHour9();
+      final rect = await pumpEntryPlanner(tester, key, entry,
+          onLongPress: longPressed.add);
+
+      // events-local (100, 200) past the hour column (50) and date row (50):
+      // column 0, hour 5 in the unscrolled grid — clear of the hour-9 event.
+      await tester.longPressAt(rect.topLeft + const Offset(50 + 100, 50 + 200));
+      await tester.pump();
+
+      expect(longPressed, isEmpty,
+          reason: 'a long-press on empty space is a no-op (#66)');
+    });
+
+    testWidgets('with no callback wired, long-pressing an event is a no-op',
+        (tester) async {
+      const key = ValueKey('planner');
+      final entry = eventAtHour9();
+      // onLongPress intentionally omitted (null).
+      final rect = await pumpEntryPlanner(tester, key, entry);
+
+      await tester.longPressAt(rect.topLeft + const Offset(150, 430));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull,
+          reason: 'a null onEntryLongPress must not throw');
+      // No built-in selection/menu appears (the widget stays presentation-only).
+      expect(find.text('Edit Event'), findsNothing);
+      expect(find.text('Delete Event'), findsNothing);
+    });
+  });
+
+  // The event canvas is a single CustomPaint, opaque to screen readers (#21).
+  // EventsPainter now adds a semantics node per event. This drives the *real*
+  // composed Planner with semantics turned on — proof the semanticsBuilder is
+  // actually wired into the RenderCustomPaint (a unit test on the builder alone
+  // can't show that), and that activating/Edit/Delete/Move route to the host
+  // callbacks through the live semantics owner.
+  testWidgets('the event canvas exposes a labelled, actionable semantics node',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    final edited = <PlannerEntry>[];
+    final deleted = <PlannerEntry>[];
+    final moved = <PlannerEntry>[];
+    final entry = eventAtHour9(); // 'Meeting' at day 0 / 09:00 for 60 min
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Planner(
+          config: PlannerConfig(
+            labels: const ['Mon', 'Tue', 'Wed'],
+            minHour: 0,
+            maxHour: 23,
+            onEntryEdit: edited.add,
+            onEntryDelete: deleted.add,
+            onEntryMove: moved.add,
+          ),
+          entries: [entry],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final owner =
+        tester.renderObject(find.byType(Planner)).owner!.semanticsOwner!;
+    final node = findSemanticsByLabelPrefix(owner, 'Meeting');
+    final data = node.getSemanticsData();
+    expect(data.label, 'Meeting, Mon, 09:00 to 10:00, 1 hour');
+    expect(data.flagsCollection.isButton, isTrue);
+
+    // Activate -> edit (mirrors double-tap-to-edit on the canvas).
+    owner.performAction(node.id, SemanticsAction.tap);
+    await tester.pump();
+    expect(edited.single.id, entry.id);
+
+    // Dismiss -> delete (the standard "remove" gesture).
+    owner.performAction(node.id, SemanticsAction.dismiss);
+    await tester.pump();
+    expect(deleted.single.id, entry.id);
+
+    // Increase -> move one hour later and fire onEntryMove (a screen reader
+    // can't drag, so the event reads as an adjustable nudged in whole hours).
+    owner.performAction(node.id, SemanticsAction.increase);
+    await tester.pump();
+    // Immutable models (#27): the nudge reports a new entry rather than mutating
+    // the one we constructed, so read the moved hour off the reported instance.
+    expect(moved.single.id, entry.id);
+    expect(moved.single.time.hour, 10);
+
+    handle.dispose();
+  });
+}
+
+/// Walks the live semantics tree under [owner] and returns the first node whose
+/// label starts with [prefix]. CustomPaint semantics are raw `SemanticsNode`s
+/// (not widgets), so a widget finder like `find.bySemanticsLabel` can't reach
+/// them.
+SemanticsNode findSemanticsByLabelPrefix(SemanticsOwner owner, String prefix) {
+  SemanticsNode? found;
+  void visit(SemanticsNode node) {
+    if (found == null && node.getSemanticsData().label.startsWith(prefix)) {
+      found = node;
+    }
+    node.visitChildren((child) {
+      visit(child);
+      return found == null;
+    });
+  }
+
+  visit(owner.rootSemanticsNode!);
+  expect(found, isNotNull,
+      reason: 'no semantics node labelled "$prefix…" was found');
+  return found!;
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../planner.dart';
-import 'event.dart';
 
 enum MenuType {
   planner,
@@ -9,7 +8,7 @@ enum MenuType {
   none,
 }
 
-class Controller {
+class Controller<T> {
   final triggerUpdate = ValueNotifier<int>(0);
 
   double _x = 0;
@@ -44,13 +43,28 @@ class Controller {
   double _canvasWidth = 0;
   double _canvasHeight = 0;
 
+  // Vertical chrome reserved above the time grid besides the date row — the
+  // all-day band's height (#48), or 0 when no band is shown. Subtracted from the
+  // grid viewport when computing the time-axis scroll clamp so the grid can't
+  // over-scroll by the band's height.
+  double _reservedHeight = 0;
+
   MenuType menuType = MenuType.none;
+
+  /// The menu's top-left position in **planner-local** coordinates (the whole
+  /// widget's box), so the single overlay can sit over either the time grid or
+  /// the all-day band (#72). The widget layer converts each surface's local hit
+  /// position into this space before calling [showEventMenu]/[showPlannerMenu].
   Offset? menuPos;
-  Event? menuEvent;
+
+  /// The entry the entry-menu (edit/delete) acts on. A [PlannerEntry] rather
+  /// than an [Event] so the same menu serves both timed events and all-day chips
+  /// (#72) — both carry a [PlannerEntry], which is all edit/delete need.
+  PlannerEntry<T>? menuEntry;
   PlannerTime? menuTime;
   Function? _onCloseMenu;
 
-  PlannerConfig config;
+  PlannerConfig<T> config;
 
   Controller(this.config) {
     _calculateOffsets();
@@ -59,7 +73,7 @@ class Controller {
   /// Adopts a new [config] (e.g. when the host `Planner` is rebuilt with
   /// different settings) and recomputes the scroll bounds, while leaving the
   /// current scroll/zoom position untouched.
-  void updateConfig(PlannerConfig config) {
+  void updateConfig(PlannerConfig<T> config) {
     this.config = config;
     _calculateOffsets();
   }
@@ -73,6 +87,15 @@ class Controller {
     }
   }
 
+  /// Records the height of the chrome reserved above the time grid besides the
+  /// date row — the all-day band (#48). Recomputes the scroll clamp so the grid
+  /// viewport excludes the band. A no-op when the height is unchanged.
+  void setReservedHeight(double height) {
+    if (height == _reservedHeight) return;
+    _reservedHeight = height;
+    _calculateOffsets();
+  }
+
   void _calculateOffsets() {
     _minXOffset = 0;
     _maxXOffset =
@@ -80,7 +103,10 @@ class Controller {
     _minYOffset = 0;
     _maxYOffset = 0 -
         (((config.blockHeight * zoom) * (config.maxHour - config.minHour + 1) -
-            (_canvasHeight - config.dateRowHeight)));
+            (_canvasHeight - config.dateRowHeight - _reservedHeight)));
+    if (_maxXOffset > 0) {
+      _maxXOffset = 0;
+    }
     if (_maxYOffset > 0) {
       _maxYOffset = 0;
     }
@@ -120,11 +146,33 @@ class Controller {
   }
 
   void verticalScroll(bool up) {
-    y += up ? -20 : 20;
+    // Scale the step by the current zoom so one wheel notch always moves the
+    // same amount of *time*: each hour-row is `blockHeight * zoom` px tall, so a
+    // fixed pixel step (the old hardcoded 20) moved progressively less time the
+    // further you zoomed in. `step / (blockHeight * zoom)` hours is now constant.
+    final step = config.scrollStep * zoom;
+    y += up ? -step : step;
     if (y > _minYOffset) {
       y = _minYOffset;
     } else if (y < (_maxYOffset)) {
       y = _maxYOffset;
+    }
+  }
+
+  /// Scrolls the day-axis by one wheel notch — the Shift+wheel horizontal scroll
+  /// (#65). [forward] (a wheel-down notch) reveals later columns by decreasing
+  /// [x]; the reverse reveals earlier ones. The step is the flat
+  /// [PlannerConfig.scrollStep]: unlike the time axis, columns are a fixed
+  /// [PlannerConfig.blockWidth] wide and don't scale with zoom, so a notch always
+  /// moves the same distance. Clamped to the same `[_maxXOffset, _minXOffset]`
+  /// bounds as a horizontal drag, so it can't reveal past the grid edges.
+  void horizontalScroll(bool forward) {
+    final step = config.scrollStep;
+    x += forward ? -step : step;
+    if (x > _minXOffset) {
+      x = _minXOffset;
+    } else if (x < _maxXOffset) {
+      x = _maxXOffset;
     }
   }
 
@@ -140,10 +188,13 @@ class Controller {
     triggerUpdate.value++;
   }
 
-  void showEventMenu(Offset pos, Event? event, Function onClose) {
+  /// Opens the entry menu (edit/delete) for [entry] at planner-local [pos]. The
+  /// caller (timed grid or all-day band) passes the chip's/event's
+  /// [PlannerEntry], so the same menu serves both surfaces (#72).
+  void showEventMenu(Offset pos, PlannerEntry<T> entry, Function onClose) {
     menuPos = pos;
     menuType = MenuType.entry;
-    menuEvent = event;
+    menuEntry = entry;
     menuTime = null;
     _onCloseMenu = onClose;
   }
@@ -151,13 +202,17 @@ class Controller {
   void showPlannerMenu(Offset pos, PlannerTime time, Function onClose) {
     menuPos = pos;
     menuType = MenuType.planner;
-    menuEvent = null;
+    menuEntry = null;
     menuTime = time;
+    // Wire the close callback here too (it was previously only set for the entry
+    // menu), so dismissing the create menu rebuilds the host like the entry menu
+    // does — needed now that the all-day band also opens the create menu (#72).
+    _onCloseMenu = onClose;
   }
 
   void hideMenu() {
     menuType = MenuType.none;
-    menuEvent = null;
+    menuEntry = null;
     menuTime = null;
     if (_onCloseMenu != null) {
       _onCloseMenu!();

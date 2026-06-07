@@ -23,16 +23,26 @@ class HourColumn extends CustomPainter {
   final List<HourLabel> _labels = <HourLabel>[];
   final Manager manager;
 
+  // The manager's data revision when this delegate was built; compared in
+  // shouldRepaint so the column repaints only when the data changed, not on
+  // every unrelated parent rebuild (#25 / D6).
+  final int _revision;
+
   HourColumn({required this.manager, required Listenable repaint})
-      : super(repaint: repaint) {
-    int _pos = 15;
+      : _revision = manager.revision,
+        super(repaint: repaint) {
+    // Grid-space top of each hour-row: the first row starts at 0 (the grid top),
+    // each subsequent one a `blockHeight` below. HourLabel maps this through the
+    // current scroll/zoom and centers the text in the row — the old code baked a
+    // hardcoded `15` offset into the start instead (#28).
+    double pos = 0;
     for (final text in buildHourLabels(manager.config)) {
       _labels.add(HourLabel(
         label: text,
-        position: _pos,
+        position: pos,
         manager: manager,
       ));
-      _pos += manager.config.blockHeight;
+      pos += manager.config.blockHeight;
     }
   }
 
@@ -44,5 +54,6 @@ class HourColumn extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant HourColumn oldDelegate) =>
+      _revision != oldDelegate._revision;
 }

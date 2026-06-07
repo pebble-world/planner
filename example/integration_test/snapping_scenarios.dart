@@ -10,7 +10,7 @@ import 'planner_harness.dart';
 /// interval (`PlannerConfig.snapMinutes`).
 ///
 /// These drive the *real* composed widget (real layout, real fonts, real
-/// secondary-tap and long-press gestures). `blockHeight` is set to 60 so one
+/// secondary-tap and mouse drag gestures). `blockHeight` is set to 60 so one
 /// grid pixel equals one minute, making the snapped result read directly off the
 /// pixel offset. With `snapMinutes` at its default (15), a 23-minute offset must
 /// land on 15, not 23 — and create and drag must agree.
@@ -48,7 +48,7 @@ void snappingScenarios() {
         reason: '23 raw minutes snap down to the 15-min grid');
   });
 
-  testWidgets('long-press dragging snaps the moved start to the same grid',
+  testWidgets('dragging snaps the moved start to the same grid',
       (tester) async {
     final moved = <PlannerEntry>[];
 
@@ -82,7 +82,7 @@ void snappingScenarios() {
         const Offset(150, 320);
 
     // Drag down 23px == 23 minutes: top 4:00 -> 4:23, snapped down to 4:15.
-    await longPressDrag(tester, from, const Offset(0, 23));
+    await mouseDrag(tester, from, const Offset(0, 23));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

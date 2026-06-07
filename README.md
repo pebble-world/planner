@@ -1,27 +1,36 @@
 # planner
 
 A Flutter widget that renders a scrollable, zoomable day-grid of events on a
-custom-painted canvas. Show several labelled columns side by side, each split into
-hours, and let users pan, zoom, and drag events to move or resize them.
+custom-painted canvas. Show several labelled columns side by side, each split
+into hours, and let users pan, zoom, and drag events to move or resize them. It
+is **column-based, not date-based** — a "day" is an index into the `labels` you
+provide, so it works for days, rooms, machines or any lanes; optional
+[calendar helpers](doc/calendar.md) add real dates on top.
 
-> **Note on the model:** `planner` is column-based, not date-based. A "day" is an
-> *index* into the `labels` list you provide — there are no real calendar dates yet.
-> This makes it a flexible scheduler for any set of columns (days, rooms, machines,
-> lanes …). See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) for the roadmap toward
-> full `DateTime` support.
+<p align="center">
+  <img src="doc/screenshots/basic.png" alt="A basic planner with the default look" width="420">
+  <img src="doc/screenshots/showcase.png" alt="A customized planner with branded headers, custom event cards and an all-day band" width="420">
+</p>
 
-<!-- TODO: add a screenshot or GIF of the widget here, e.g. -->
-<!-- ![planner demo](doc/demo.gif) -->
+> Screenshots are generated from the example app; see [#93](https://github.com/pebble-world/planner/issues/93).
 
 ## Features
 
 - Multiple labelled columns with an hour grid drawn on a single `CustomPaint`.
-- Horizontal panning across columns; vertical pan + mouse-wheel scroll across hours.
-- Zoom the time axis with pinch gestures or the built-in +/- buttons; finer grid
-  lines fade in as you zoom.
-- Drag an event to move it, or drag its top/bottom handle to resize it.
-- Context menu (right-click or double-tap) to create, edit, and delete events.
-- Customizable colors and text styles for the grid, labels, events, and menu.
+- 2D panning, single-axis pan via the date row / hour gutter, and mouse-wheel
+  scroll with `Shift` / `Ctrl` modifiers ([interactions](doc/interactions.md)).
+- Zoom the time axis with pinch, `Ctrl`+wheel, or the built-in +/- buttons — or
+  drive it from your own chrome with a [`PlannerController`](doc/controller.md).
+- Desktop drag-to-edit (move a body, resize an edge) with hover cursors; touch
+  keeps one-finger drag for panning and exposes an `onEntryLongPress` hook.
+- Create / edit / delete via double-tap or a right-click context menu, with
+  per-event accessibility semantics for screen readers.
+- Customizable colors and text styles, a "today"-style
+  [column highlight](doc/interactions.md#highlighting-a-column-today-style), and
+  a localizable [context menu](doc/interactions.md#localizing-the-context-menu).
+- **Fully custom widgets** via opt-in [builders](doc/builders.md): branded
+  day/column headers, real-widget events that shed detail by pixel height, and
+  custom all-day chips — each reading a typed `PlannerEntry<T>.data` payload.
 
 ## Getting started
 
@@ -29,11 +38,8 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  planner:
-    git: https://github.com/pebble-world/planner.git
+  planner: ^0.3.0
 ```
-
-(Once published, this becomes `planner: ^<version>` from pub.dev.)
 
 Then import it:
 
@@ -93,34 +99,46 @@ class CalendarPage extends StatelessWidget {
 }
 ```
 
-A complete, runnable demo lives in [`example/`](example/lib/main.dart).
+Your callbacks own the data: update your own list of entries (and call
+`setState`) in response — the widget reports interactions but does not persist
+them.
 
-### Core types
+## Examples
 
-| Type | Purpose |
-|------|---------|
-| `Planner` | The widget. Takes a `config` and a list of `entries`. |
-| `PlannerConfig` | Sizing (`blockWidth`, `blockHeight`, `minHour`, `maxHour` — the inclusive last hour, default `23`, …), colors, text styles, an optional `hourLabelFormatter`, and the `onEntry*` callbacks. `labels` is required. |
-| `PlannerEntry` | One event: `id`, `time`, `title`, `content`, `color`, and optional text styles. |
-| `PlannerTime` | `day` (index into `labels`), `hour`, `minutes`, and `duration` (in minutes). |
+A gallery of runnable examples lives in [`example/`](example/lib/main.dart),
+ordered basic → advanced. Each page demonstrates one feature on its own; the
+final Showcase combines them all.
 
-### Callbacks
+| Preview | Example | What it shows |
+|---------|---------|---------------|
+| <img src="doc/screenshots/basic.png" alt="Basic" width="200"> | [Basic](example/lib/examples/basic_example.dart) | A minimal planner with the default look and `onEntry*` callbacks. |
+| <img src="doc/screenshots/typed-data.png" alt="Typed data" width="200"> | [Typed data + entryBuilder](example/lib/examples/typed_data_example.dart) | A typed `PlannerEntry<T>.data` payload read back in a custom event card. |
+| <img src="doc/screenshots/custom-headers.png" alt="Custom headers" width="200"> | [Custom headers](example/lib/examples/custom_headers_example.dart) | A `CalendarWindow` + `dayHeaderBuilder` with a "today" highlight. |
+| <img src="doc/screenshots/all-day.png" alt="All-day band" width="200"> | [All-day band](example/lib/examples/all_day_example.dart) | Enabling the all-day band and drawing custom chips. |
+| <img src="doc/screenshots/host-zoom.png" alt="Host zoom" width="200"> | [Host zoom toolbar](example/lib/examples/host_zoom_example.dart) | Driving zoom from your own chrome via a `PlannerController`. |
+| <img src="doc/screenshots/week-calendar.png" alt="Week calendar" width="200"> | [Week calendar](example/lib/examples/week_calendar_example.dart) | A real week with prev/next navigation built on `calendar.dart`. |
+| <img src="doc/screenshots/showcase.png" alt="Showcase" width="200"> | [Showcase](example/lib/examples/showcase_example.dart) | Every customization hook wired together on one screen. |
 
-| Callback | Fires when |
-|----------|-----------|
-| `onEntryCreate(PlannerTime)` | An empty slot is double-tapped or "Create Event" is chosen. |
-| `onEntryEdit(PlannerEntry)` | An event is double-tapped or "Edit Event" is chosen. |
-| `onEntryDelete(PlannerEntry)` | "Delete Event" is chosen from the context menu. |
-| `onEntryMove(PlannerEntry)` | A drag-move or handle-resize finishes; the entry's `time` is already updated. |
+The thumbnails are generated by the screenshot target ([#93](https://github.com/pebble-world/planner/issues/93)).
 
-> Your callbacks own the data. Update your own list of entries (and call
-> `setState`) in response — the widget reports interactions but does not persist them.
+## Documentation
+
+| Guide | Covers |
+|-------|--------|
+| [Core concepts](doc/core-concepts.md) | The column-based time model, the core types, and the `onEntry*` callbacks. |
+| [Builders](doc/builders.md) | Typed `PlannerEntry<T>.data`, and the `entryBuilder` / `dayHeaderBuilder` / `allDayEntryBuilder` widget hooks. |
+| [Calendar](doc/calendar.md) | A date-based week calendar with `CalendarWindow` from `package:planner/calendar.dart`. |
+| [Controller](doc/controller.md) | Driving and observing zoom from a host toolbar with `PlannerController`. |
+| [Interactions](doc/interactions.md) | The mouse / touch / accessibility map, context-menu localization, and column highlighting. |
 
 ## Additional information
 
-- **Roadmap & known issues:** [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
-- **Issues / contributions:** https://github.com/pebble-world/planner/issues — PRs welcome.
+- **Changelog:** [CHANGELOG.md](CHANGELOG.md).
+- **Issues / contributions:** <https://github.com/pebble-world/planner/issues> — PRs welcome.
 
 ## License
 
 [MIT](LICENSE) © yvan vander sanden
+
+This package vendors third-party source code under its own license; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

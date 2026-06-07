@@ -48,6 +48,21 @@ class PlannerSpec {
   final List<PlannerEntry> entries;
 }
 
+/// Navigates the gallery example app into the Showcase page (#90).
+///
+/// `main.dart` now boots a gallery home (a lazily-built list of example pages),
+/// so the app-level scenarios — which assert against the all-hooks Showcase —
+/// must open it first. Call right after `app.main()` and the initial
+/// `pumpAndSettle()`. The Showcase is the last row, so [scrollUntilVisible]
+/// scrolls it into view (and builds it) if the list is taller than the window,
+/// making this work at any device size.
+Future<void> openShowcase(WidgetTester tester) async {
+  final tile = find.byKey(const ValueKey('gallery-tile-showcase'));
+  await tester.scrollUntilVisible(tile, 120);
+  await tester.tap(tile);
+  await tester.pumpAndSettle();
+}
+
 /// A point inside a planner's event grid: skip the hour column (default 50) and
 /// the date row (default 50), then move +100px right / +[downFromGridTop] down
 /// so it lands cleanly in the grid. With the default `blockHeight` of 40, the
@@ -86,13 +101,16 @@ Future<void> wheelScroll(WidgetTester tester, Offset at, int notches) async {
   }
 }
 
-/// Drags an event the way a user does: press and hold at [from] until the
-/// long-press recognizer wins the gesture arena (over pan/scale), then move by
-/// [delta] and release.
-Future<void> longPressDrag(
-    WidgetTester tester, Offset from, Offset delta) async {
-  final gesture = await tester.startGesture(from);
-  await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+/// Drags an event the desktop way: press at [from] with a mouse and drag by
+/// [delta] immediately — a precise pointer on an event body moves it (or resizes
+/// from a top/bottom edge) as soon as it moves, no long-press. The pointer-down
+/// position anchors the drag, so the committed move equals [delta] (the scale
+/// recognizer's start fires only past the pan slop, but the anchor is the press
+/// point, so no slop distance is dropped).
+Future<void> mouseDrag(WidgetTester tester, Offset from, Offset delta) async {
+  final gesture =
+      await tester.startGesture(from, kind: PointerDeviceKind.mouse);
+  await tester.pump();
   await gesture.moveBy(delta);
   await tester.pump();
   await gesture.up();
