@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'internal/all_day_band.dart';
+import 'internal/all_day_event.dart';
 import 'internal/context_menu.dart';
 import 'internal/controller.dart';
 import 'internal/event.dart';
@@ -63,6 +64,23 @@ class Planner<T> extends StatefulWidget {
   /// painted `DateRow` is shown exactly as before.
   final PlannerDayHeaderBuilder? dayHeaderBuilder;
 
+  /// Optional builder for fully custom all-day chip widgets (#80) — the same
+  /// hybrid overlay as [entryBuilder], applied to the all-day band. When
+  /// non-null the planner layers a widget overlay over the band canvas and calls
+  /// this for every (on-screen) all-day chip, sizing/positioning the returned
+  /// widget at the chip's current on-screen rect so it tracks the band's
+  /// horizontal scroll; the band canvas then skips painting the default chip
+  /// bodies (the per-chip accessibility semantics stay intact).
+  ///
+  /// Reuses [PlannerEntryBuilder]: the supplied [PlannerEntryLayout] carries
+  /// `allDay: true`, so a host can wire one builder to both this and
+  /// [entryBuilder] and branch on `layout.allDay`. The overlay is visual-only —
+  /// wrapped in `IgnorePointer`/`ExcludeSemantics` — so every gesture
+  /// (double-tap edit/create, right-click menu, long-press) and accessibility
+  /// action still falls through to the band's recognizers. When `null` (the
+  /// default) chips render exactly as before, painted on the canvas.
+  final PlannerEntryBuilder<T>? allDayEntryBuilder;
+
   const Planner({
     super.key,
     required this.config,
@@ -70,6 +88,7 @@ class Planner<T> extends StatefulWidget {
     this.controller,
     this.entryBuilder,
     this.dayHeaderBuilder,
+    this.allDayEntryBuilder,
   });
 
   @override
@@ -407,18 +426,98 @@ class _PlannerState<T> extends State<Planner<T>> {
         child: Container(
           height: _data.allDayBandHeight,
           color: _data.config.allDayBandBackground,
-          child: CustomPaint(
-            key: _allDayCanvasKey,
-            painter: AllDayBand(
-              manager: _data,
-              repaint: _data.controller.triggerUpdate,
-            ),
-            child: Container(),
+          // A Stack so the custom-chip overlay (#80) can layer over the band
+          // canvas in the band's own coordinate space (the same space the chip
+          // screenRects are in). With no builder the overlay is an empty box and
+          // the canvas paints the chips exactly as before.
+          child: Stack(
+            children: [
+              CustomPaint(
+                key: _allDayCanvasKey,
+                painter: AllDayBand(
+                  manager: _data,
+                  repaint: _data.controller.triggerUpdate,
+                  // The widget overlay (#80) renders the chip bodies instead, so
+                  // the canvas skips its own body paint to avoid double-drawing
+                  // (semantics still come from here).
+                  drawChipBodies: widget.allDayEntryBuilder == null,
+                ),
+                child: Container(),
+              ),
+              paintAllDayOverlay(),
+            ],
           ),
         ),
       ),
     );
   }
+
+  /// The custom-widget overlay for all-day chips (#80) — the all-day twin of
+  /// [paintEntryOverlay]. When the host supplies an [Planner.allDayEntryBuilder]
+  /// this layers, over the band canvas, one host-built widget per on-screen chip,
+  /// positioned and sized at the chip's live `screenRect` (the band's own
+  /// coordinate space) so it tracks the horizontal scroll in lockstep with the
+  /// canvas (it rebuilds on the same `triggerUpdate` the canvas repaints on).
+  ///
+  /// The overlay is purely visual: [IgnorePointer] lets every gesture fall
+  /// through to the band's recognizers (double-tap edit/create, right-click menu,
+  /// long-press all still fire the usual callbacks), and [ExcludeSemantics] keeps
+  /// the band's per-chip accessibility nodes the single source of truth.
+  /// Off-screen chips are culled from the overlay (visuals only — the canvas
+  /// keeps a semantics node for every chip). When no builder is supplied this is
+  /// an empty box, so the canvas paints chips as before.
+  Widget paintAllDayOverlay() {
+    final builder = widget.allDayEntryBuilder;
+    if (builder == null) return const SizedBox.shrink();
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: ExcludeSemantics(
+          child: ClipRect(
+            // The overlay fills the same box as the band canvas (both are
+            // non-positioned children of the band Stack), so its constraints are
+            // the band viewport — used to cull chips scrolled past its edges.
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final viewport = Offset.zero & constraints.biggest;
+                return ValueListenableBuilder<int>(
+                  valueListenable: _data.controller.triggerUpdate,
+                  builder: (context, _, __) {
+                    return Stack(
+                      children: [
+                        for (final chip in _data.allDayEvents)
+                          if (chip.screenRect.overlaps(viewport))
+                            Positioned.fromRect(
+                              rect: chip.screenRect,
+                              child: builder(
+                                  context, chip.entry, _allDayLayoutFor(chip)),
+                            ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The on-screen [PlannerEntryLayout] for an all-day [chip], handed to the
+  /// host's [Planner.allDayEntryBuilder] (#80). Its `size` is the live
+  /// `screenRect` size; it carries `allDay: true` so a shared builder can branch.
+  /// All-day chips don't sub-divide a column or drag, so the overlap/drag fields
+  /// are fixed (the chip's stacking lane is already baked into its position).
+  PlannerEntryLayout _allDayLayoutFor(AllDayEvent<T> chip) =>
+      PlannerEntryLayout(
+        size: chip.screenRect.size,
+        columnIndex: 0,
+        columnCount: 1,
+        isDragged: false,
+        dragType: DragType.none,
+        allDay: true,
+      );
 
   /// Double-tap on the all-day band (#72): edit the chip under the press, or —
   /// mirroring the grid's double-tap — create an all-day event on empty band

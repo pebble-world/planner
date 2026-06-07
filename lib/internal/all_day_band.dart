@@ -26,12 +26,25 @@ class AllDayBand<T> extends CustomPainter {
   // unrelated parent rebuild (#25 / D6). Pan/zoom repaints come via `repaint`.
   final int _revision;
 
-  AllDayBand({required this.manager, required Listenable repaint})
-      : _revision = manager.revision,
+  // Whether to paint the chip bodies on the canvas (#80). When a host supplies
+  // an `allDayEntryBuilder`, real widgets are layered over the band to render
+  // each chip, so the canvas skips its own body paint to avoid drawing each chip
+  // twice — but it still exposes the per-chip accessibility semantics (those
+  // stay canvas-owned; the overlay is ExcludeSemantics). Mirrors
+  // `EventsPainter.drawEventBodies` (#78). Defaults to `true` — the canvas paints
+  // the chips itself.
+  final bool drawChipBodies;
+
+  AllDayBand({
+    required this.manager,
+    required Listenable repaint,
+    this.drawChipBodies = true,
+  })  : _revision = manager.revision,
         super(repaint: repaint);
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (!drawChipBodies) return;
     for (final AllDayEvent event in manager.allDayEvents) {
       event.paint(canvas);
     }
@@ -76,5 +89,6 @@ class AllDayBand<T> extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant AllDayBand oldDelegate) =>
-      _revision != oldDelegate._revision;
+      _revision != oldDelegate._revision ||
+      drawChipBodies != oldDelegate.drawChipBodies;
 }

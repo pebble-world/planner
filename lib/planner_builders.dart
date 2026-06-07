@@ -18,7 +18,8 @@ enum DragType {
   none,
 }
 
-/// Builds a fully custom widget for a single timed event (#78). Supplied to the
+/// Builds a fully custom widget for a single timed event (#78) — and, reused as
+/// `allDayEntryBuilder`, for a single all-day chip (#80). Supplied to the
 /// `Planner` as `entryBuilder`; when non-null the planner layers a widget
 /// overlay over the canvas and calls this for every (on-screen) event, sizing
 /// and positioning the returned widget at the event's current on-screen rect so
@@ -65,9 +66,14 @@ class PlannerEntryLayout {
   /// builder can reflect a move vs. a top/bottom resize.
   final DragType dragType;
 
-  /// Whether this widget is an all-day chip rather than a timed event. Always
-  /// `false` for the timed-event overlay (#78); reserved for the all-day chip
-  /// builder (#80) that will reuse this type.
+  /// Whether this widget is an all-day chip rather than a timed event: `false`
+  /// for the timed-event overlay (#78), `true` for the all-day-chip overlay
+  /// (#80). A host that wires one builder to both `entryBuilder` and
+  /// `allDayEntryBuilder` branches on this to render a chip vs. a timed card.
+  /// All-day chips don't sub-divide a column or drag, so their layout always
+  /// carries `columnIndex: 0`, `columnCount: 1`, `dragType: DragType.none` and
+  /// `isDragged: false`; the chip's stacking lane is already baked into [size]
+  /// and the widget's on-screen position.
   final bool allDay;
 
   const PlannerEntryLayout({
