@@ -19,18 +19,31 @@ class EventsPainter<T> extends CustomPainter {
   // the event data changed, not on every unrelated parent rebuild (#25 / D6).
   final int _revision;
 
-  EventsPainter({required this.manager, required Listenable repaint})
-      : _grid = Grid(manager: manager),
+  // Whether to paint the event bodies on the canvas (#78). When a host supplies
+  // an `entryBuilder`, real widgets are layered over the canvas to render each
+  // event, so the canvas skips its own body paint to avoid drawing each event
+  // twice — but it still draws the grid and still exposes the per-event
+  // accessibility semantics (those stay canvas-owned; the overlay is
+  // ExcludeSemantics). Defaults to `true` — the canvas paints bodies itself.
+  final bool drawEventBodies;
+
+  EventsPainter({
+    required this.manager,
+    required Listenable repaint,
+    this.drawEventBodies = true,
+  })  : _grid = Grid(manager: manager),
         _revision = manager.revision,
         super(repaint: repaint);
 
-  // Pure rendering only: draw the grid, then each event using its own drag
-  // state. Drag detection and the onEntryMove callback live in the widget layer
-  // (gesture handlers -> Manager.start/update/endDrag), never here — a painter
-  // must not mutate state or fire callbacks while painting.
+  // Pure rendering only: draw the grid, then (unless a widget overlay is taking
+  // over the bodies, #78) each event using its own drag state. Drag detection
+  // and the onEntryMove callback live in the widget layer (gesture handlers ->
+  // Manager.start/update/endDrag), never here — a painter must not mutate state
+  // or fire callbacks while painting.
   @override
   void paint(Canvas canvas, Size size) {
     _grid.draw(canvas);
+    if (!drawEventBodies) return;
     for (Event event in manager.events) {
       event.paint(canvas);
     }
@@ -106,5 +119,6 @@ class EventsPainter<T> extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant EventsPainter oldDelegate) =>
-      _revision != oldDelegate._revision;
+      _revision != oldDelegate._revision ||
+      drawEventBodies != oldDelegate.drawEventBodies;
 }

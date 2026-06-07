@@ -3,13 +3,6 @@ import 'package:flutter/material.dart';
 import '../planner.dart';
 import 'manager.dart';
 
-enum DragType {
-  body,
-  topHandle,
-  bottomHandle,
-  none,
-}
-
 class Event<T> {
   /// The entry this event draws. Reassigned (never mutated) when a drag/resize
   /// or nudge commits, since [PlannerEntry]/[PlannerTime] are immutable (#27):
@@ -203,6 +196,11 @@ class Event<T> {
   /// [paint] to draw it and by the accessibility layer to place the event's
   /// semantics node (#21).
   Rect get screenRect => _toScreen(_getCurrentRect());
+
+  /// The drag/resize this event is currently undergoing, or [DragType.none] when
+  /// idle. Exposed (#78) so the widget overlay can hand the live drag state to a
+  /// custom [PlannerEntryBuilder] (via [PlannerEntryLayout.dragType]).
+  DragType get dragType => _dragType;
 
   /// A screen-reader description of this event — its title, day-column label,
   /// time span and duration — so the otherwise-opaque `CustomPaint` canvas

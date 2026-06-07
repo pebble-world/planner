@@ -12,6 +12,7 @@ import 'internal/scroll_detector.dart';
 import 'internal/positioned_tap_detector_2.dart';
 import 'internal/date_row.dart';
 import 'internal/manager.dart';
+import 'planner_builders.dart';
 import 'planner_controller.dart';
 import 'planner_entry.dart';
 import 'planner_config.dart';
@@ -36,11 +37,25 @@ class Planner<T> extends StatefulWidget {
   /// `config.showZoomControls: false` to replace the on-canvas buttons.
   final PlannerController? controller;
 
+  /// Optional builder for fully custom timed-event widgets (#78). When non-null
+  /// the planner layers a widget overlay over the events canvas and calls this
+  /// for every on-screen event, sizing/positioning the returned widget at the
+  /// event's current on-screen rect so it tracks scroll, zoom and drag in
+  /// lockstep with the grid; the canvas then skips painting the default event
+  /// bodies (the grid lines and accessibility semantics stay intact).
+  ///
+  /// The overlay is visual-only — wrapped in `IgnorePointer`/`ExcludeSemantics`
+  /// — so every gesture and accessibility action still falls through to the
+  /// built-in recognizers and fires the usual `config.onEntry*` callbacks. When
+  /// `null` (the default) events render exactly as before, painted on the canvas.
+  final PlannerEntryBuilder<T>? entryBuilder;
+
   const Planner({
     super.key,
     required this.config,
     required this.entries,
     this.controller,
+    this.entryBuilder,
   });
 
   @override
@@ -214,6 +229,12 @@ class _PlannerState<T> extends State<Planner<T>> {
                             },
                             child: paintEvents(),
                           ),
+                          // Custom-widget overlay for timed events (#78), above
+                          // the canvas (so widgets draw over the grid) and below
+                          // the zoom buttons (which stay on top and tappable).
+                          // Only present when a builder is supplied; otherwise
+                          // events stay canvas-painted exactly as before.
+                          paintEntryOverlay(),
                           paintZoomButtons(context),
                         ],
                       ),
@@ -368,6 +389,72 @@ class _PlannerState<T> extends State<Planner<T>> {
     if (chip == null) return;
     onLongPress(chip.entry);
   }
+
+  /// The custom-widget overlay for timed events (#78). When the host supplies
+  /// an [Planner.entryBuilder] this layers, over the events canvas, one
+  /// host-built widget per on-screen event — positioned and sized at the event's
+  /// live `screenRect` so it tracks scroll, zoom and drag in lockstep with the
+  /// canvas (it rebuilds on the same `triggerUpdate` the canvas repaints on).
+  ///
+  /// The overlay is purely visual: [IgnorePointer] lets every gesture fall
+  /// through to the canvas's recognizers (tap/double-tap/drag/resize/long-press/
+  /// right-click all still fire the usual callbacks), and [ExcludeSemantics]
+  /// keeps the canvas's per-event accessibility nodes the single source of truth.
+  /// Off-screen events are culled from the overlay (visuals only — the canvas
+  /// keeps a semantics node for every event, on-screen or not). When no builder
+  /// is supplied this is an empty box, so the canvas paints events as before.
+  Widget paintEntryOverlay() {
+    final builder = widget.entryBuilder;
+    if (builder == null) return const SizedBox.shrink();
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: ExcludeSemantics(
+          child: ClipRect(
+            // The overlay fills the same box as the events canvas (both are
+            // non-positioned children of the inner Stack), so its constraints
+            // are the canvas viewport — used to cull off-screen events whose
+            // screenRect lies outside it.
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final viewport = Offset.zero & constraints.biggest;
+                return ValueListenableBuilder<int>(
+                  valueListenable: _data.controller.triggerUpdate,
+                  builder: (context, _, __) {
+                    return Stack(
+                      children: [
+                        for (final event in _data.events)
+                          if (event.screenRect.overlaps(viewport))
+                            Positioned.fromRect(
+                              rect: event.screenRect,
+                              child: builder(
+                                  context, event.entry, _layoutFor(event)),
+                            ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The on-screen [PlannerEntryLayout] for [event], handed to the host's
+  /// [Planner.entryBuilder] (#78). Its `size` is the live `screenRect` size
+  /// (overlap-narrowed width x `durationInHours * blockHeight * zoom` height),
+  /// and it carries the overlap sub-column and live drag state so the builder can
+  /// shed detail and reflect a move/resize.
+  PlannerEntryLayout _layoutFor(Event<T> event) => PlannerEntryLayout(
+        size: event.screenRect.size,
+        columnIndex: event.columnIndex,
+        columnCount: event.columnCount,
+        isDragged: event.dragType != DragType.none,
+        dragType: event.dragType,
+        allDay: false,
+      );
 
   Widget paintZoomButtons(BuildContext context) {
     // Hosts that drive zoom themselves (pinch, own chrome) can hide the built-in
@@ -602,6 +689,10 @@ class _PlannerState<T> extends State<Planner<T>> {
                     painter: EventsPainter(
                       manager: _data,
                       repaint: _data.controller.triggerUpdate,
+                      // A custom-widget overlay (#78) renders the event bodies
+                      // instead, so the canvas skips its own body paint to avoid
+                      // double-drawing (grid + semantics still come from here).
+                      drawEventBodies: widget.entryBuilder == null,
                     ),
                     child: Container(),
                   )),

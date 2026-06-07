@@ -1,0 +1,81 @@
+import 'package:flutter/widgets.dart';
+
+import 'planner_entry.dart';
+
+/// What a single in-progress events-canvas drag/resize is doing. A press within
+/// 8px of an event's top edge resizes from the top ([topHandle]), within 8px of
+/// the bottom resizes from the bottom ([bottomHandle]), anywhere else moves the
+/// whole event ([body]); [none] is the idle state (no drag in progress).
+///
+/// Public (#78) so a custom [PlannerEntryBuilder] can react to the live drag —
+/// e.g. emphasise the widget while it's being moved. It is carried on
+/// [PlannerEntryLayout.dragType] (and the package's own hover-cursor hit test
+/// reads it too).
+enum DragType {
+  body,
+  topHandle,
+  bottomHandle,
+  none,
+}
+
+/// Builds a fully custom widget for a single timed event (#78). Supplied to the
+/// `Planner` as `entryBuilder`; when non-null the planner layers a widget
+/// overlay over the canvas and calls this for every (on-screen) event, sizing
+/// and positioning the returned widget at the event's current on-screen rect so
+/// it tracks scroll, zoom and drag in lockstep with the grid.
+///
+/// The overlay is purely visual — it is wrapped in `IgnorePointer` /
+/// `ExcludeSemantics`, so every gesture (tap, double-tap, drag, resize,
+/// long-press, right-click) and all accessibility actions fall through to the
+/// package's existing recognizers and fire the usual `onEntry*` callbacks. The
+/// builder therefore decides *appearance* only; interaction stays package-owned.
+///
+/// [entry] is the typed entry being drawn (read `entry.data` for the host's
+/// metadata payload, #77); [layout] carries the on-screen [PlannerEntryLayout]
+/// facts (size, overlap column, drag state) the builder needs to shed detail or
+/// reflect the drag.
+typedef PlannerEntryBuilder<T> = Widget Function(
+  BuildContext context,
+  PlannerEntry<T> entry,
+  PlannerEntryLayout layout,
+);
+
+/// The on-screen layout facts handed to a [PlannerEntryBuilder] for one event
+/// (#78). Everything here is derived from the package's geometry for the current
+/// frame, so the builder can lay out responsively without recomputing it.
+class PlannerEntryLayout {
+  /// The widget's on-screen size — the event's `screenRect` size, i.e. its
+  /// (possibly overlap-narrowed) width and `durationInHours * blockHeight *
+  /// zoom` height. Detail-shedding builders key their thresholds on
+  /// `size.height` (e.g. show avatars only above 92px).
+  final Size size;
+
+  /// Which sub-column this event occupies within its day-column, and how many
+  /// sub-columns the day-column was split into for concurrent events (#20). A
+  /// non-overlapping event is `columnIndex: 0, columnCount: 1`; overlapping
+  /// events render side-by-side via these and the [size] width.
+  final int columnIndex;
+  final int columnCount;
+
+  /// Whether this event is the one currently being dragged or resized — a
+  /// convenience for `dragType != DragType.none`.
+  final bool isDragged;
+
+  /// The live drag this event is undergoing ([DragType.none] when idle), so a
+  /// builder can reflect a move vs. a top/bottom resize.
+  final DragType dragType;
+
+  /// Whether this widget is an all-day chip rather than a timed event. Always
+  /// `false` for the timed-event overlay (#78); reserved for the all-day chip
+  /// builder (#80) that will reuse this type.
+  final bool allDay;
+
+  const PlannerEntryLayout({
+    required this.size,
+    required this.columnIndex,
+    required this.columnCount,
+    required this.isDragged,
+    required this.dragType,
+    required this.allDay,
+  });
+}
