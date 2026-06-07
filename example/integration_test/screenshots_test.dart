@@ -91,7 +91,7 @@ Size _surfaceFor(int columns) {
 /// crisp image for the docs; the mostly flat-colour UI still compresses small.
 const double _pixelRatio = 2.0;
 
-/// Captures [widget] as a deterministic PNG at `../docs/screenshots/<name>.png`
+/// Captures [widget] as a deterministic PNG at `../doc/screenshots/<name>.png`
 /// (paths are relative to `example/`, the directory the suite runs from).
 ///
 /// Pins the surface to [size] at [_pixelRatio] (reset after the test via
@@ -123,7 +123,7 @@ Future<void> screenshotWidget(
   final image = await boundary.toImage(pixelRatio: _pixelRatio);
   try {
     final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    final file = File('../docs/screenshots/$name.png');
+    final file = File('../doc/screenshots/$name.png');
     await file.parent.create(recursive: true);
     await file.writeAsBytes(png!.buffer.asUint8List());
   } finally {

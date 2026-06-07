@@ -16,7 +16,7 @@ There are **no real calendar dates anywhere**. A "day" is an index into
 time-slots in N labelled columns* — useful for days, rooms, machines, or any
 lanes. The rationale for keeping this model (rather than migrating to
 `DateTime`) is recorded in
-[ADR 0001](docs/decisions/0001-time-model-day-index.md). Real dates are layered
+[ADR 0001](doc/decisions/0001-time-model-day-index.md). Real dates are layered
 on top in consumer code via the optional, non-core
 [`package:planner/calendar.dart`](lib/calendar.dart) helpers.
 
