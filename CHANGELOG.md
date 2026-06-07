@@ -1,7 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-06-08
 
+- Overhauled the documentation, examples, and screenshots ahead of this release:
+  a slim, screenshot-led `README.md` with the reference split into `doc/` pages,
+  the example app restructured into a gallery of progressive examples over richer
+  sample data, `CONTRIBUTING.md` carrying the architecture notes (retiring
+  `PROJECT_OVERVIEW.md`), and the README/docs screenshots generated reproducibly
+  from the example app via an integration test (#88, #89, #90, #91, #92, #93).
 - Added fully custom **widget builders**, so a host can own the visuals while the
   package stays the time-grid engine (geometry, scroll, zoom, hit-testing,
   overlap, accessibility). All opt-in and non-breaking — defaults are unchanged:

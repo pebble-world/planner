@@ -5,11 +5,11 @@ custom-painted canvas. Show several labelled columns side by side, each split
 into hours, and let users pan, zoom, and drag events to move or resize them. It
 is **column-based, not date-based** — a "day" is an index into the `labels` you
 provide, so it works for days, rooms, machines or any lanes; optional
-[calendar helpers](docs/calendar.md) add real dates on top.
+[calendar helpers](doc/calendar.md) add real dates on top.
 
 <p align="center">
-  <img src="docs/screenshots/basic.png" alt="A basic planner with the default look" width="420">
-  <img src="docs/screenshots/showcase.png" alt="A customized planner with branded headers, custom event cards and an all-day band" width="420">
+  <img src="doc/screenshots/basic.png" alt="A basic planner with the default look" width="420">
+  <img src="doc/screenshots/showcase.png" alt="A customized planner with branded headers, custom event cards and an all-day band" width="420">
 </p>
 
 > Screenshots are generated from the example app; see [#93](https://github.com/pebble-world/planner/issues/93).
@@ -18,17 +18,17 @@ provide, so it works for days, rooms, machines or any lanes; optional
 
 - Multiple labelled columns with an hour grid drawn on a single `CustomPaint`.
 - 2D panning, single-axis pan via the date row / hour gutter, and mouse-wheel
-  scroll with `Shift` / `Ctrl` modifiers ([interactions](docs/interactions.md)).
+  scroll with `Shift` / `Ctrl` modifiers ([interactions](doc/interactions.md)).
 - Zoom the time axis with pinch, `Ctrl`+wheel, or the built-in +/- buttons — or
-  drive it from your own chrome with a [`PlannerController`](docs/controller.md).
+  drive it from your own chrome with a [`PlannerController`](doc/controller.md).
 - Desktop drag-to-edit (move a body, resize an edge) with hover cursors; touch
   keeps one-finger drag for panning and exposes an `onEntryLongPress` hook.
 - Create / edit / delete via double-tap or a right-click context menu, with
   per-event accessibility semantics for screen readers.
 - Customizable colors and text styles, a "today"-style
-  [column highlight](docs/interactions.md#highlighting-a-column-today-style), and
-  a localizable [context menu](docs/interactions.md#localizing-the-context-menu).
-- **Fully custom widgets** via opt-in [builders](docs/builders.md): branded
+  [column highlight](doc/interactions.md#highlighting-a-column-today-style), and
+  a localizable [context menu](doc/interactions.md#localizing-the-context-menu).
+- **Fully custom widgets** via opt-in [builders](doc/builders.md): branded
   day/column headers, real-widget events that shed detail by pixel height, and
   custom all-day chips — each reading a typed `PlannerEntry<T>.data` payload.
 
@@ -111,13 +111,13 @@ final Showcase combines them all.
 
 | Preview | Example | What it shows |
 |---------|---------|---------------|
-| <img src="docs/screenshots/basic.png" alt="Basic" width="200"> | [Basic](example/lib/examples/basic_example.dart) | A minimal planner with the default look and `onEntry*` callbacks. |
-| <img src="docs/screenshots/typed-data.png" alt="Typed data" width="200"> | [Typed data + entryBuilder](example/lib/examples/typed_data_example.dart) | A typed `PlannerEntry<T>.data` payload read back in a custom event card. |
-| <img src="docs/screenshots/custom-headers.png" alt="Custom headers" width="200"> | [Custom headers](example/lib/examples/custom_headers_example.dart) | A `CalendarWindow` + `dayHeaderBuilder` with a "today" highlight. |
-| <img src="docs/screenshots/all-day.png" alt="All-day band" width="200"> | [All-day band](example/lib/examples/all_day_example.dart) | Enabling the all-day band and drawing custom chips. |
-| <img src="docs/screenshots/host-zoom.png" alt="Host zoom" width="200"> | [Host zoom toolbar](example/lib/examples/host_zoom_example.dart) | Driving zoom from your own chrome via a `PlannerController`. |
-| <img src="docs/screenshots/week-calendar.png" alt="Week calendar" width="200"> | [Week calendar](example/lib/examples/week_calendar_example.dart) | A real week with prev/next navigation built on `calendar.dart`. |
-| <img src="docs/screenshots/showcase.png" alt="Showcase" width="200"> | [Showcase](example/lib/examples/showcase_example.dart) | Every customization hook wired together on one screen. |
+| <img src="doc/screenshots/basic.png" alt="Basic" width="200"> | [Basic](example/lib/examples/basic_example.dart) | A minimal planner with the default look and `onEntry*` callbacks. |
+| <img src="doc/screenshots/typed-data.png" alt="Typed data" width="200"> | [Typed data + entryBuilder](example/lib/examples/typed_data_example.dart) | A typed `PlannerEntry<T>.data` payload read back in a custom event card. |
+| <img src="doc/screenshots/custom-headers.png" alt="Custom headers" width="200"> | [Custom headers](example/lib/examples/custom_headers_example.dart) | A `CalendarWindow` + `dayHeaderBuilder` with a "today" highlight. |
+| <img src="doc/screenshots/all-day.png" alt="All-day band" width="200"> | [All-day band](example/lib/examples/all_day_example.dart) | Enabling the all-day band and drawing custom chips. |
+| <img src="doc/screenshots/host-zoom.png" alt="Host zoom" width="200"> | [Host zoom toolbar](example/lib/examples/host_zoom_example.dart) | Driving zoom from your own chrome via a `PlannerController`. |
+| <img src="doc/screenshots/week-calendar.png" alt="Week calendar" width="200"> | [Week calendar](example/lib/examples/week_calendar_example.dart) | A real week with prev/next navigation built on `calendar.dart`. |
+| <img src="doc/screenshots/showcase.png" alt="Showcase" width="200"> | [Showcase](example/lib/examples/showcase_example.dart) | Every customization hook wired together on one screen. |
 
 The thumbnails are generated by the screenshot target ([#93](https://github.com/pebble-world/planner/issues/93)).
 
@@ -125,11 +125,11 @@ The thumbnails are generated by the screenshot target ([#93](https://github.com/
 
 | Guide | Covers |
 |-------|--------|
-| [Core concepts](docs/core-concepts.md) | The column-based time model, the core types, and the `onEntry*` callbacks. |
-| [Builders](docs/builders.md) | Typed `PlannerEntry<T>.data`, and the `entryBuilder` / `dayHeaderBuilder` / `allDayEntryBuilder` widget hooks. |
-| [Calendar](docs/calendar.md) | A date-based week calendar with `CalendarWindow` from `package:planner/calendar.dart`. |
-| [Controller](docs/controller.md) | Driving and observing zoom from a host toolbar with `PlannerController`. |
-| [Interactions](docs/interactions.md) | The mouse / touch / accessibility map, context-menu localization, and column highlighting. |
+| [Core concepts](doc/core-concepts.md) | The column-based time model, the core types, and the `onEntry*` callbacks. |
+| [Builders](doc/builders.md) | Typed `PlannerEntry<T>.data`, and the `entryBuilder` / `dayHeaderBuilder` / `allDayEntryBuilder` widget hooks. |
+| [Calendar](doc/calendar.md) | A date-based week calendar with `CalendarWindow` from `package:planner/calendar.dart`. |
+| [Controller](doc/controller.md) | Driving and observing zoom from a host toolbar with `PlannerController`. |
+| [Interactions](doc/interactions.md) | The mouse / touch / accessibility map, context-menu localization, and column highlighting. |
 
 ## Additional information
 

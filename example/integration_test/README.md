@@ -21,7 +21,7 @@ surface) can miss rendering/geometry bugs.
 | [`span_scenarios.dart`](span_scenarios.dart) | A column-spanning event (`PlannerTime.endDay`) paints one box across its columns, hit-tests from any column it covers, and is read-only — dragging it doesn't move it (#47). |
 | [`multi_planner_scenarios.dart`](multi_planner_scenarios.dart) | Two planners on one screen keep independent scroll state (device-level counterpart of the #9 / D1 regression). |
 | [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `mouseDrag`). |
-| [`screenshots_test.dart`](screenshots_test.dart) | **Not part of the suite.** A standalone capture target that renders each gallery page on a fixed surface and writes the documentation screenshots to `docs/screenshots/`. See [Regenerating screenshots](#regenerating-screenshots). |
+| [`screenshots_test.dart`](screenshots_test.dart) | **Not part of the suite.** A standalone capture target that renders each gallery page on a fixed surface and writes the documentation screenshots to `doc/screenshots/`. See [Regenerating screenshots](#regenerating-screenshots). |
 
 ## Running
 
@@ -54,7 +54,7 @@ flutter drive \
 
 ## Regenerating screenshots
 
-The README/docs images live in `docs/screenshots/`. [`screenshots_test.dart`](screenshots_test.dart)
+The README/docs images live in `doc/screenshots/`. [`screenshots_test.dart`](screenshots_test.dart)
 regenerates them by rendering each gallery page on a fixed surface (real Windows
 fonts, no Ahem distortion) and writing one PNG per page, named by its gallery
 `id` (`basic.png`, `showcase.png`, …). It is **not** registered in
