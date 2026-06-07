@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Added a public `PlannerController` for driving and observing the planner's zoom
+  from outside the widget — e.g. a host's own zoom toolbar. Construct one, pass it
+  to `Planner(controller: …)`, and call `zoomIn([factor])`, `zoomOut([factor])` or
+  `zoomTo(target)` (clamped to `minZoom`/`maxZoom`); read back `zoom`, `minZoom`,
+  `maxZoom`, `dayScroll`, `timeScroll` and `isAttached`. It is a `ChangeNotifier`,
+  so a toolbar can listen and rebuild (e.g. disable `+` at `maxZoom`). It attaches
+  to the planner's internal zoom/scroll state — the single source of truth, no
+  duplicated state — so the controller, pinch, `Ctrl`+wheel and the built-in
+  buttons all move the same zoom. Pair it with `showZoomControls: false` to replace
+  the on-canvas buttons. Optional and fully backward compatible: omit it and
+  nothing changes.
 - Added optional, **non-core** calendar helpers in `package:planner/calendar.dart`
   (a separate import — *not* part of the main `planner.dart` barrel) so building an
   ordinary date-based week calendar on top of the date-agnostic widget is a few

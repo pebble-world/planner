@@ -52,6 +52,7 @@ Public API (exported from [`lib/planner.dart`](lib/planner.dart)):
 | File | Role |
 |------|------|
 | [`planner_class.dart`](lib/planner_class.dart) | `Planner` widget; builds the layout, wires gestures, hosts the painters. |
+| [`planner_controller.dart`](lib/planner_controller.dart) | `PlannerController` — optional public handle that attaches to the internal `Controller` to drive/observe zoom (and read scroll) from outside the widget (#76). |
 | [`planner_config.dart`](lib/planner_config.dart) | `PlannerConfig` — all sizing, colors, text styles, and callbacks. |
 | [`planner_entry.dart`](lib/planner_entry.dart) | `PlannerEntry` — a single event (id, time, title, content, color, styles). |
 | [`planner_time.dart`](lib/planner_time.dart) | `PlannerTime` — the day/hour/minute/duration value (⚠️ **not** re-exported). |

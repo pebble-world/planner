@@ -21,7 +21,8 @@ hours, and let users pan, zoom, and drag events to move or resize them.
 - 2D panning (drag the empty canvas) plus single-axis pan via the date row / hour
   gutter, and mouse-wheel scroll with `Shift` / `Ctrl` modifiers.
 - Zoom the time axis with pinch, `Ctrl`+wheel, or the built-in +/- buttons; finer
-  grid lines fade in as you zoom.
+  grid lines fade in as you zoom. Drive and observe zoom from your own chrome with
+  a `PlannerController` (see [Driving zoom from a host toolbar](#driving-zoom-from-a-host-toolbar)).
 - Desktop drag-to-edit: press an event to move it or drag its top/bottom edge to
   resize, with hover cursors as cues. Touch keeps one-finger drag for panning and
   exposes a long-press hook (`onEntryLongPress`) for host-defined event actions.
@@ -107,8 +108,9 @@ A complete, runnable demo lives in [`example/`](example/lib/main.dart).
 
 | Type | Purpose |
 |------|---------|
-| `Planner` | The widget. Takes a `config` and a list of `entries`. |
+| `Planner` | The widget. Takes a `config`, a list of `entries`, and an optional `controller`. |
 | `PlannerConfig` | Sizing (`blockWidth`, `blockHeight`, `minHour`, `maxHour` — the inclusive last hour, default `23`, …), colors, text styles, an optional `hourLabelFormatter`, the optional column highlight (`highlightedColumn`, `highlightColumnColor`), the zoom controls (`showZoomControls`, `zoomButtonColor`, `zoomButtonIconColor`), the wheel `scrollStep`, and the `onEntry*` callbacks. `labels` is required. |
+| `PlannerController` | Optional handle to drive/observe zoom from outside the widget (e.g. your own toolbar) — see [Driving zoom from a host toolbar](#driving-zoom-from-a-host-toolbar). |
 | `PlannerEntry` | One event: `id`, `time`, `title`, `content`, `color`, and optional text styles. |
 | `PlannerTime` | `day` (index into `labels`), `hour`, `minutes`, and `duration` (in minutes). |
 
@@ -124,6 +126,88 @@ A complete, runnable demo lives in [`example/`](example/lib/main.dart).
 
 > Your callbacks own the data. Update your own list of entries (and call
 > `setState`) in response — the widget reports interactions but does not persist them.
+
+### Driving zoom from a host toolbar
+
+By default zoom lives entirely inside the widget (pinch, `Ctrl`+wheel, the
+built-in +/- buttons). To drive it from your own chrome — a toolbar, a slider,
+keyboard shortcuts — construct a `PlannerController`, hand it to the `Planner`,
+and (usually) hide the on-canvas buttons with `showZoomControls: false`:
+
+```dart
+class ZoomablePlanner extends StatefulWidget {
+  const ZoomablePlanner({super.key});
+  @override
+  State<ZoomablePlanner> createState() => _ZoomablePlannerState();
+}
+
+class _ZoomablePlannerState extends State<ZoomablePlanner> {
+  final _zoom = PlannerController();
+
+  @override
+  void dispose() {
+    _zoom.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // A host toolbar that listens to the controller so it can disable
+        // a button once the zoom hits a bound.
+        AnimatedBuilder(
+          animation: _zoom,
+          builder: (context, _) => Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.remove),
+                onPressed: !_zoom.isAttached || _zoom.zoom <= _zoom.minZoom
+                    ? null
+                    : _zoom.zoomOut,
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: !_zoom.isAttached || _zoom.zoom >= _zoom.maxZoom
+                    ? null
+                    : _zoom.zoomIn,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Planner(
+            controller: _zoom,
+            config: PlannerConfig(
+              labels: const ['Mon', 'Tue', 'Wed'],
+              showZoomControls: false, // the host owns the controls now
+            ),
+            entries: const [],
+          ),
+        ),
+      ],
+    );
+  }
+}
+```
+
+`PlannerController` is a `ChangeNotifier` and deals only with zoom (plus scroll
+read-back):
+
+| Member | Purpose |
+|--------|---------|
+| `zoomIn([factor = 1.1])` / `zoomOut([factor = 0.9])` | Multiply the current zoom; clamped to `minZoom`/`maxZoom`. |
+| `zoomTo(target)` | Set an absolute zoom; clamped to `minZoom`/`maxZoom`. |
+| `zoom`, `minZoom`, `maxZoom` | Read the current zoom and its bounds. |
+| `dayScroll`, `timeScroll` | Read the current day-axis / time-axis scroll offset. |
+| `isAttached` | Whether it's bound to a mounted `Planner`. |
+
+It attaches to the planner's internal zoom/scroll state — the single source of
+truth — so the controller, pinch, `Ctrl`+wheel and the built-in buttons all move
+the *same* zoom; there's no duplicated state to keep in sync. The read getters
+throw while not `isAttached` (before the `Planner` mounts or after it's gone), so
+read them in response to a notification or guard with `isAttached`; the zoom
+methods are no-ops then. Dispose the controller like any other `ChangeNotifier`.
 
 ### Localizing the context menu
 
