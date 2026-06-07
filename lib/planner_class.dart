@@ -12,6 +12,7 @@ import 'internal/scroll_detector.dart';
 import 'internal/positioned_tap_detector_2.dart';
 import 'internal/date_row.dart';
 import 'internal/manager.dart';
+import 'planner_controller.dart';
 import 'planner_entry.dart';
 import 'planner_config.dart';
 
@@ -27,10 +28,19 @@ class Planner extends StatefulWidget {
   final List<PlannerEntry> entries;
   final PlannerConfig config;
 
+  /// Optional public handle for driving and observing zoom from outside the
+  /// widget (#76) — e.g. a host's own zoom toolbar. When supplied it attaches to
+  /// the planner's internal zoom/scroll controller for the life of this widget
+  /// (and across a controller swap); when `null`, zoom is driven only by the
+  /// built-in controls, pinch and Ctrl+wheel, exactly as before. Pair it with
+  /// `config.showZoomControls: false` to replace the on-canvas buttons.
+  final PlannerController? controller;
+
   const Planner({
     super.key,
     required this.config,
     required this.entries,
+    this.controller,
   });
 
   @override
@@ -107,6 +117,11 @@ class _PlannerState extends State<Planner> {
     // controller is preserved across rebuilds (Manager.update keeps it), so this
     // listener stays valid for the life of the State.
     _data.controller.triggerUpdate.addListener(_rebuildCanvasSemantics);
+    // Bind an external zoom controller (#76) to the same internal controller, so
+    // a host toolbar can drive/observe zoom. _data.controller is stable for the
+    // life of the State (Manager.update keeps it), so this single attach holds;
+    // only a controller *swap* needs re-attaching (didUpdateWidget).
+    widget.controller?.attach(_data.controller);
   }
 
   /// Rebuilds the events-canvas and all-day-band accessibility semantics so each
@@ -131,10 +146,21 @@ class _PlannerState extends State<Planner> {
         !identical(oldWidget.entries, widget.entries)) {
       _data.update(config: widget.config, entries: widget.entries);
     }
+    // Re-bind on an external zoom controller swap (#76): detach the old, attach
+    // the new to the same (stable) internal controller, so no listener leaks and
+    // the new controller drives the live planner. A no-op when the same instance
+    // (or null) is passed across rebuilds.
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller?.detach();
+      widget.controller?.attach(_data.controller);
+    }
   }
 
   @override
   void dispose() {
+    // Unbind the external zoom controller (#76) before the internal controller
+    // goes away, so its re-emit listener doesn't outlive this planner.
+    widget.controller?.detach();
     _data.controller.triggerUpdate.removeListener(_rebuildCanvasSemantics);
     _cursor.dispose();
     super.dispose();
