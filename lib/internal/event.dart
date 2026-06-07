@@ -42,7 +42,7 @@ class Event<T> {
   /// Which sub-column this event occupies within its day-column, and how many
   /// sub-columns the day-column is split into. They default to a single
   /// full-width column; [Manager] overwrites them with the day's overlap layout
-  /// (#20 / PROJECT_OVERVIEW D11) and then calls [relayout].
+  /// (#20) and then calls [relayout].
   int columnIndex = 0;
   int columnCount = 1;
 

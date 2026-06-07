@@ -5,7 +5,7 @@ import 'package:planner/planner.dart';
 
 import 'planner_harness.dart';
 
-/// End-to-end guard for event geometry (#10 / PROJECT_OVERVIEW D3 + D4): an
+/// End-to-end guard for event geometry (#10): an
 /// event's painted rectangle — and therefore where it hit-tests — must derive
 /// from `config.blockHeight` and place minutes proportionally. The buggy code
 /// hardcoded a 40px block and snapped the minute offset to the 15-min grid, so

@@ -143,8 +143,8 @@ class Manager<T> {
     }
   }
 
-  /// Splits each day-column among events that overlap in time (#20 /
-  /// PROJECT_OVERVIEW D11). Without this, concurrent events all paint at full
+  /// Splits each day-column among events that overlap in time (#20).
+  /// Without this, concurrent events all paint at full
   /// column width and stack unreadably. Per day we greedily pack events into the
   /// fewest sub-columns (a first-fit interval-graph colouring, so non-overlapping
   /// events reuse a column), then every event in a connected overlap cluster is

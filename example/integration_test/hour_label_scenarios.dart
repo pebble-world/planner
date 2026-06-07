@@ -3,7 +3,7 @@ import 'package:planner/planner.dart';
 
 import 'planner_harness.dart';
 
-/// End-to-end guard for the hour-row off-by-one (#13 / PROJECT_OVERVIEW D10):
+/// End-to-end guard for the hour-row off-by-one (#13):
 /// `maxHour` defaulted to 24, so the *default* planner painted a spurious 25th
 /// row ("24") and a below-grid tap could create an event at the invalid hour 24.
 /// The default is now 23.

@@ -6,7 +6,7 @@ import 'planner_harness.dart';
 /// End-to-end demonstration of the multi-planner harness on a real device:
 /// two Planners on one screen must keep independent scroll positions. This is
 /// the device-level counterpart of the widget-harness regression for the former
-/// static controller state (#9 / PROJECT_OVERVIEW D1).
+/// static controller state (#9).
 ///
 /// Registered from [app_test.dart]; not a standalone entry point (desktop can
 /// only launch one app per `flutter test` invocation).

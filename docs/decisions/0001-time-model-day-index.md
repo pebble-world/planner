@@ -3,7 +3,6 @@
 - **Status:** Accepted
 - **Date:** 2026-06-06
 - **Issue:** [#19](https://github.com/pebble-world/planner/issues/19)
-- **Supersedes / relates to:** PROJECT_OVERVIEW.md §4 "the key design fork"
 
 ## Context
 
@@ -17,7 +16,7 @@ an **index into `config.labels`** — there are no real calendar dates anywhere.
    change needing a migration guide and major version bump.
 3. **Middle path** — keep columns, let each column *optionally* carry a `DateTime`.
 
-The PROJECT_OVERVIEW listed week navigation, "today" highlighting, multi-day/all-day
+Issue #19 listed week navigation, "today" highlighting, multi-day/all-day
 events, time zones/DST, and `intl` formatting as features "blocked" by the index
 model. We re-examined that claim against the actual code before deciding.
 
@@ -104,4 +103,4 @@ These are tracked as follow-up issues spun out of #19.
 ## Notes
 
 This ADR is an internal decision record and is excluded from the published pub.dev
-archive (see `.pubignore`), mirroring how `PROJECT_OVERVIEW.md` is handled.
+archive (see `.pubignore`).

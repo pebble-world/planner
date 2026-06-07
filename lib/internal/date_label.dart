@@ -7,7 +7,7 @@ import 'manager.dart';
 /// [blockWidth] (its left edge at [columnLeft], shifted by the current
 /// horizontal scroll [scrollX]) and vertically within the [rowHeight]-tall date
 /// row. Kept as a pure function so the centering math is unit-testable without a
-/// canvas (#28 / PROJECT_OVERVIEW D12 — labels previously used a hardcoded `60`
+/// canvas (#28 — labels previously used a hardcoded `60`
 /// left offset and a hardcoded `20` top offset and were not centered).
 Offset centeredDateLabelOffset({
   required double scrollX,

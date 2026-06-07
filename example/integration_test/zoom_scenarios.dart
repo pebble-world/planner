@@ -5,7 +5,7 @@ import 'package:planner/planner.dart';
 import 'planner_harness.dart';
 
 /// End-to-end guards for the configurable zoom controls and zoom-aware scrolling
-/// (#28 / PROJECT_OVERVIEW D12), driving the *real* composed widget.
+/// (#28), driving the *real* composed widget.
 ///
 /// Registered from [app_test.dart]; not a standalone entry point (desktop can
 /// only launch one app per `flutter test` invocation).
