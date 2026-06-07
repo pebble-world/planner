@@ -40,5 +40,55 @@ void main() {
       expect(config, isA<PlannerConfig>());
       expect(Planner.new, isA<Function>());
     });
+
+    test('PlannerController is reachable (#76)', () {
+      final controller = PlannerController();
+      addTearDown(controller.dispose);
+      // A freshly built controller isn't bound to any Planner yet.
+      expect(controller.isAttached, isFalse);
+      expect(controller, isA<ChangeNotifier>());
+    });
+
+    test('PlannerEntry<T>.data carries a typed payload (#77)', () {
+      final entry = PlannerEntry<int>(
+        id: 'a1',
+        time: PlannerTime(day: 0, hour: 8),
+        title: 'Stand-up',
+        content: '',
+        color: const Color(0xFF00FF00),
+        data: 42,
+      );
+      // `data` is typed `int?`, reachable with no cast.
+      expect(entry.data, 42);
+      expect(entry.copyWith(data: 7).data, 7);
+    });
+
+    test('the builder hook types are reachable (#78/#79/#80)', () {
+      // PlannerEntryLayout + DragType (#78).
+      const layout = PlannerEntryLayout(
+        size: Size(120, 40),
+        columnIndex: 0,
+        columnCount: 1,
+        isDragged: false,
+        dragType: DragType.none,
+        allDay: false,
+      );
+      expect(layout.size.height, 40);
+      expect(layout.allDay, isFalse);
+      expect(DragType.values, contains(DragType.body));
+
+      // The builder typedefs (#78/#80 share PlannerEntryBuilder; #79 has its own).
+      Widget entryBuilder(BuildContext context, PlannerEntry<int> entry,
+              PlannerEntryLayout l) =>
+          const SizedBox.shrink();
+      Widget headerBuilder(BuildContext context, int columnIndex, String label,
+              bool isHighlighted) =>
+          const SizedBox.shrink();
+      expect(entryBuilder, isA<PlannerEntryBuilder<int>>());
+      expect(headerBuilder, isA<PlannerDayHeaderBuilder>());
+
+      // The generic Planner constructor accepts the typed payload.
+      expect(Planner<int>.new, isA<Function>());
+    });
   });
 }

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/planner.dart';
 
+import 'package:example/data.dart';
 import 'package:example/main.dart';
 
 void main() {
@@ -16,8 +17,8 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
-    // The demo renders a single Planner inside a 'Planner Demo' scaffold.
-    expect(find.byType(Planner), findsOneWidget);
+    // The demo renders a single typed Planner inside a 'Planner Demo' scaffold.
+    expect(find.byType(Planner<ActivityMeta>), findsOneWidget);
     expect(find.text('Planner Demo'), findsOneWidget);
 
     // Guard against the old counter template creeping back in.
