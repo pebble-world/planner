@@ -27,9 +27,9 @@ const double allDayChipInset = 2.0;
 /// to/from a timed event is out of scope (#72). Geometry tracks only the
 /// horizontal scroll ([Controller.offset]'s `dx`) — the band is a fixed header
 /// strip, so it neither zooms nor scrolls with the time axis.
-class AllDayEvent {
-  final PlannerEntry entry;
-  final Manager manager;
+class AllDayEvent<T> {
+  final PlannerEntry<T> entry;
+  final Manager<T> manager;
 
   /// Which stacked lane (row) within the band this chip occupies. Lane 0 is the
   /// topmost; [Manager] assigns it by first-fit packing on the column axis.

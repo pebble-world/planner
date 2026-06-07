@@ -13,8 +13,13 @@ import 'manager.dart';
 /// draws the [AllDayEvent] chips. Like [DateRow] it repaints on the controller's
 /// update listenable (so a day-axis pan re-lays the chips) and otherwise only
 /// when the event data revision changes.
-class AllDayBand extends CustomPainter {
-  final Manager manager;
+// Generic over the entry payload [T] (#77), for the same reason as
+// [EventsPainter]: its semanticsBuilder reads the now-generic entry callbacks
+// (`config.onEntryEdit`/`onEntryDelete`, typed `void Function(PlannerEntry<T>)`),
+// which would trip a runtime covariance check if read through a covariant
+// `Manager<dynamic>`. So it carries `T` and holds a `Manager<T>`.
+class AllDayBand<T> extends CustomPainter {
+  final Manager<T> manager;
 
   // The manager's data revision when this delegate was built; compared in
   // shouldRepaint so the band repaints only when the data changed, not on every
@@ -53,7 +58,7 @@ class AllDayBand extends CustomPainter {
     final canDelete = config.onEntryDelete != null;
 
     return [
-      for (final AllDayEvent chip in manager.allDayEvents)
+      for (final AllDayEvent<T> chip in manager.allDayEvents)
         CustomPainterSemantics(
           key: ValueKey(chip.entry.id),
           rect: chip.screenRect,

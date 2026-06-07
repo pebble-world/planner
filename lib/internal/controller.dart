@@ -8,7 +8,7 @@ enum MenuType {
   none,
 }
 
-class Controller {
+class Controller<T> {
   final triggerUpdate = ValueNotifier<int>(0);
 
   double _x = 0;
@@ -60,11 +60,11 @@ class Controller {
   /// The entry the entry-menu (edit/delete) acts on. A [PlannerEntry] rather
   /// than an [Event] so the same menu serves both timed events and all-day chips
   /// (#72) — both carry a [PlannerEntry], which is all edit/delete need.
-  PlannerEntry? menuEntry;
+  PlannerEntry<T>? menuEntry;
   PlannerTime? menuTime;
   Function? _onCloseMenu;
 
-  PlannerConfig config;
+  PlannerConfig<T> config;
 
   Controller(this.config) {
     _calculateOffsets();
@@ -73,7 +73,7 @@ class Controller {
   /// Adopts a new [config] (e.g. when the host `Planner` is rebuilt with
   /// different settings) and recomputes the scroll bounds, while leaving the
   /// current scroll/zoom position untouched.
-  void updateConfig(PlannerConfig config) {
+  void updateConfig(PlannerConfig<T> config) {
     this.config = config;
     _calculateOffsets();
   }
@@ -191,7 +191,7 @@ class Controller {
   /// Opens the entry menu (edit/delete) for [entry] at planner-local [pos]. The
   /// caller (timed grid or all-day band) passes the chip's/event's
   /// [PlannerEntry], so the same menu serves both surfaces (#72).
-  void showEventMenu(Offset pos, PlannerEntry entry, Function onClose) {
+  void showEventMenu(Offset pos, PlannerEntry<T> entry, Function onClose) {
     menuPos = pos;
     menuType = MenuType.entry;
     menuEntry = entry;

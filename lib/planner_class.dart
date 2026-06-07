@@ -24,9 +24,9 @@ import 'planner_config.dart';
 /// layout combined a horizontal-drag recognizer with scale and a long-press).
 enum _GestureMode { idle, pan, zoom, moveResize }
 
-class Planner extends StatefulWidget {
-  final List<PlannerEntry> entries;
-  final PlannerConfig config;
+class Planner<T> extends StatefulWidget {
+  final List<PlannerEntry<T>> entries;
+  final PlannerConfig<T> config;
 
   /// Optional public handle for driving and observing zoom from outside the
   /// widget (#76) — e.g. a host's own zoom toolbar. When supplied it attaches to
@@ -44,15 +44,15 @@ class Planner extends StatefulWidget {
   });
 
   @override
-  State<Planner> createState() => _PlannerState();
+  State<Planner<T>> createState() => _PlannerState<T>();
 }
 
-class _PlannerState extends State<Planner> {
+class _PlannerState<T> extends State<Planner<T>> {
   // Owned by the State so it survives parent rebuilds: building it in the widget
   // constructor recreated the Manager (every Event, every TextPainter, the whole
   // Grid) on every parent build and forced the Controller's scroll/zoom to be
   // static to survive that churn.
-  late Manager _data;
+  late Manager<T> _data;
 
   // Drives the position-aware double-tap detector from the single events
   // GestureDetector below. Nesting a second tap detector (the old layout) let
@@ -140,7 +140,7 @@ class _PlannerState extends State<Planner> {
   }
 
   @override
-  void didUpdateWidget(covariant Planner oldWidget) {
+  void didUpdateWidget(covariant Planner<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.config, widget.config) ||
         !identical(oldWidget.entries, widget.entries)) {

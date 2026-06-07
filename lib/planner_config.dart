@@ -21,7 +21,7 @@ enum SpanOverlap {
   split,
 }
 
-class PlannerConfig {
+class PlannerConfig<T> {
   List<String> labels;
 
   int minHour;
@@ -158,9 +158,9 @@ class PlannerConfig {
   double scrollStep;
 
   Function(PlannerTime time)? onEntryCreate;
-  Function(PlannerEntry)? onEntryEdit;
-  Function(PlannerEntry)? onEntryDelete;
-  Function(PlannerEntry)? onEntryMove;
+  void Function(PlannerEntry<T> entry)? onEntryEdit;
+  void Function(PlannerEntry<T> entry)? onEntryDelete;
+  void Function(PlannerEntry<T> entry)? onEntryMove;
 
   /// Fired when the user long-presses an event, with the pressed [PlannerEntry].
   /// This is the primary way to act on an event by **touch**: touch has no
@@ -174,7 +174,7 @@ class PlannerConfig {
   ///
   /// When `null` (the default) a long-press is a no-op. A long-press on empty
   /// space is always a no-op — create stays on double-tap / right-click.
-  Function(PlannerEntry)? onEntryLongPress;
+  void Function(PlannerEntry<T> entry)? onEntryLongPress;
 
   PlannerConfig({
     required this.labels,
