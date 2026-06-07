@@ -50,12 +50,26 @@ class Planner<T> extends StatefulWidget {
   /// `null` (the default) events render exactly as before, painted on the canvas.
   final PlannerEntryBuilder<T>? entryBuilder;
 
+  /// Optional builder for fully custom day/column header widgets (#79). When
+  /// non-null the planner replaces the painted `DateRow` text with a row of
+  /// host-built header widgets — one per `config.labels` entry — each sized to
+  /// the column's `blockWidth` and the date row's height, and offset by the live
+  /// horizontal scroll so the headers track the day-columns below as the user
+  /// pans (rebuilt on the same `triggerUpdate` the row repaints on).
+  ///
+  /// The header row is wrapped in `IgnorePointer`, so a horizontal drag across
+  /// it still pans the day axis through the same gesture detector as the painted
+  /// row — the builder decides appearance only. When `null` (the default) the
+  /// painted `DateRow` is shown exactly as before.
+  final PlannerDayHeaderBuilder? dayHeaderBuilder;
+
   const Planner({
     super.key,
     required this.config,
     required this.entries,
     this.controller,
     this.entryBuilder,
+    this.dayHeaderBuilder,
   });
 
   @override
@@ -296,14 +310,72 @@ class _PlannerState<T> extends State<Planner<T>> {
         child: Container(
           height: _data.config.dateRowHeight,
           color: _data.config.dateBackground,
-          child: CustomPaint(
-            painter: DateRow(
-              manager: _data,
-              repaint: _data.controller.triggerUpdate,
-            ),
-            child: Container(),
-          ),
+          // With a dayHeaderBuilder (#79) the painted row is replaced by a row
+          // of host-built header widgets; otherwise the default DateRow paints.
+          // Either way the surrounding GestureDetector keeps the day-axis pan,
+          // and the ClipRect trims headers scrolled past the gutter/edge.
+          child: widget.dayHeaderBuilder == null
+              ? CustomPaint(
+                  painter: DateRow(
+                    manager: _data,
+                    repaint: _data.controller.triggerUpdate,
+                  ),
+                  child: Container(),
+                )
+              : paintDayHeaders(),
         ),
+      ),
+    );
+  }
+
+  /// The custom day/column header row (#79). When the host supplies a
+  /// [Planner.dayHeaderBuilder] this builds one header widget per `config.labels`
+  /// entry, laid out as a [Row] of `blockWidth`-wide cells offset by the live
+  /// horizontal scroll (`hourColumnWidth + controller.x`) so each header sits
+  /// above its day-column and tracks a pan/scroll — it rebuilds on the same
+  /// `triggerUpdate` the painted [DateRow] repaints on.
+  ///
+  /// The row is wrapped in [IgnorePointer] so a horizontal drag across it falls
+  /// through to the surrounding day-axis pan [GestureDetector] (visual-only
+  /// builder); header widgets keep their natural semantics. An [OverflowBox]
+  /// gives the row unbounded width so the full-width column strip can extend past
+  /// the viewport without an overflow error (the enclosing [ClipRect] trims it),
+  /// while the date-row height passes through so each cell fills it via stretch.
+  Widget paintDayHeaders() {
+    final builder = widget.dayHeaderBuilder!;
+    return IgnorePointer(
+      child: ValueListenableBuilder<int>(
+        valueListenable: _data.controller.triggerUpdate,
+        builder: (context, _, __) {
+          final labels = _data.config.labels;
+          final blockWidth = _data.config.blockWidth.toDouble();
+          return Transform.translate(
+            offset: Offset(
+              _data.config.hourColumnWidth + _data.controller.x,
+              0,
+            ),
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              minWidth: 0,
+              maxWidth: double.infinity,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (int i = 0; i < labels.length; i++)
+                    SizedBox(
+                      width: blockWidth,
+                      child: builder(
+                        context,
+                        i,
+                        labels[i],
+                        i == _data.config.highlightedColumn,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

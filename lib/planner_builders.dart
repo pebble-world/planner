@@ -79,3 +79,31 @@ class PlannerEntryLayout {
     required this.allDay,
   });
 }
+
+/// Builds a fully custom widget for a single day/column header (#79). Supplied
+/// to the `Planner` as `dayHeaderBuilder`; when non-null the planner replaces
+/// the painted `DateRow` text with a row of host-built header widgets — one per
+/// column label — each sized to the column's `blockWidth` and the date row's
+/// height, and offset by the live horizontal scroll so the headers stay aligned
+/// with the day-columns below as the user pans (it rebuilds on the same
+/// `triggerUpdate` the row repaints on).
+///
+/// The header row is wrapped in `IgnorePointer`, so a horizontal drag across it
+/// still pans the day axis through the package's own gesture detector — the
+/// builder decides *appearance* only. Header widgets keep their natural
+/// semantics, so a `Text` header is read by assistive technology (unlike the
+/// painted default, which exposes none).
+///
+/// [columnIndex] is the column's index into `config.labels`; [label] is that
+/// label string (the same text the painted `DateRow` would show); [isHighlighted]
+/// is `columnIndex == config.highlightedColumn`, for emphasising e.g. "today".
+///
+/// No `DateTime` enters the signature (ADR-0001 keeps the core date-agnostic): a
+/// consumer using `lib/calendar.dart` closes over their `CalendarWindow` and
+/// calls `window.dateAt(columnIndex)` inside the builder to recover the date.
+typedef PlannerDayHeaderBuilder = Widget Function(
+  BuildContext context,
+  int columnIndex,
+  String label,
+  bool isHighlighted,
+);
