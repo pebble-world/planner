@@ -10,12 +10,12 @@ enum DragType {
   none,
 }
 
-class Event {
+class Event<T> {
   /// The entry this event draws. Reassigned (never mutated) when a drag/resize
   /// or nudge commits, since [PlannerEntry]/[PlannerTime] are immutable (#27):
   /// the new instance is what flows on to [PlannerConfig.onEntryMove].
-  PlannerEntry entry;
-  final Manager manager;
+  PlannerEntry<T> entry;
+  final Manager<T> manager;
 
   /// The event's bounding rectangle in grid space — for a single-column event
   /// this is its drawn rect; for a spanning event it is the bounding box of all
@@ -57,6 +57,9 @@ class Event {
     _createPaints();
     relayout();
   }
+
+  // Note: this class is generic only to carry the entry's typed payload (#77).
+  // Its geometry/painting read only the entry's strings and time, never `data`.
 
   /// Recomputes the geometry and text wrapping after [columnIndex]/[columnCount]
   /// (or, for a spanning event, its [_spanColumns] placement) change. [Manager]

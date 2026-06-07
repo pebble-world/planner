@@ -5,9 +5,14 @@ import 'event.dart';
 import 'grid.dart';
 import 'manager.dart';
 
-class EventsPainter extends CustomPainter {
+// Generic over the entry payload [T] (#77). It must be — its semanticsBuilder
+// reads the now-generic entry callbacks (`config.onEntryEdit` et al., typed
+// `void Function(PlannerEntry<T>)`). Held through a covariant `Manager`
+// (`Manager<dynamic>`) those reads would trip a runtime covariance check and
+// throw, so the painter carries `T` and holds a `Manager<T>` at its true type.
+class EventsPainter<T> extends CustomPainter {
   final Grid _grid;
-  final Manager manager;
+  final Manager<T> manager;
 
   // The manager's data revision when this delegate was built; compared in
   // shouldRepaint so the canvas repaints (and its semantics rebuild) only when

@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'controller.dart';
 import 'manager.dart';
 
-class ContextMenu extends StatefulWidget {
-  final Manager manager;
+class ContextMenu<T> extends StatefulWidget {
+  final Manager<T> manager;
 
   const ContextMenu({super.key, required this.manager});
 
   @override
-  State<ContextMenu> createState() => _ContextMenuState();
+  State<ContextMenu<T>> createState() => _ContextMenuState<T>();
 }
 
-class _ContextMenuState extends State<ContextMenu> {
+class _ContextMenuState<T> extends State<ContextMenu<T>> {
   @override
   Widget build(BuildContext context) {
     return IntrinsicWidth(

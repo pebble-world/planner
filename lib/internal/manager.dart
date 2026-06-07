@@ -5,18 +5,18 @@ import 'all_day_event.dart';
 import 'controller.dart';
 import 'event.dart';
 
-class Manager {
-  PlannerConfig config;
-  List<PlannerEntry> entries;
-  final Controller controller;
-  final List<Event> events = [];
+class Manager<T> {
+  PlannerConfig<T> config;
+  List<PlannerEntry<T>> entries;
+  final Controller<T> controller;
+  final List<Event<T>> events = [];
 
   /// The all-day events (#48), packed into stacked lanes for the all-day band.
   /// Built from entries whose [PlannerTime.allDay] is set; those are kept out of
   /// [events] (the hour-positioned grid) entirely. Empty — so the band is
   /// omitted and [allDayBandHeight] is zero — when none are all-day or the band
   /// is disabled ([PlannerConfig.showAllDayBand] is `false`, the default).
-  final List<AllDayEvent> allDayEvents = [];
+  final List<AllDayEvent<T>> allDayEvents = [];
 
   /// How many stacked lanes the all-day band needs — the height of the busiest
   /// overlap of all-day events. Zero when there are no all-day events.
@@ -35,12 +35,12 @@ class Manager {
   // (#25): an event's rect lies entirely within its own day-column, so no other
   // bucket can contain the point. Rebuilt only when the event set or an event's
   // day can have changed — never per frame or per tap.
-  final Map<int, List<Event>> _eventsByDay = {};
+  final Map<int, List<Event<T>>> _eventsByDay = {};
 
   Manager({
     required this.config,
     required this.entries,
-  }) : controller = Controller(config) {
+  }) : controller = Controller<T>(config) {
     _buildEvents();
   }
 
@@ -49,8 +49,8 @@ class Manager {
   /// the current scroll/zoom position survives the rebuild instead of being
   /// reset — which is what the previous `static` controller state hacked around.
   void update({
-    required PlannerConfig config,
-    required List<PlannerEntry> entries,
+    required PlannerConfig<T> config,
+    required List<PlannerEntry<T>> entries,
   }) {
     this.config = config;
     this.entries = entries;
@@ -60,8 +60,8 @@ class Manager {
 
   void _buildEvents() {
     events.clear();
-    final allDayInputs = <PlannerEntry>[];
-    for (PlannerEntry entry in entries) {
+    final allDayInputs = <PlannerEntry<T>>[];
+    for (PlannerEntry<T> entry in entries) {
       // All-day entries render in the band, not the hour grid, so they're kept
       // out of `events` (and thus out of overlap layout, hit-testing and drag).
       // The band is opt-in (#72): when [PlannerConfig.showAllDayBand] is off,
@@ -70,7 +70,7 @@ class Manager {
       if (entry.time.allDay) {
         if (config.showAllDayBand) allDayInputs.add(entry);
       } else {
-        events.add(Event(entry: entry, manager: this));
+        events.add(Event<T>(entry: entry, manager: this));
       }
     }
     _layoutOverlaps();
@@ -89,7 +89,7 @@ class Manager {
   /// column — must not share a lane. First-fit on the column axis (sorted by
   /// start column, then end) gives the standard side-by-side stacking with the
   /// fewest lanes, mirroring the per-column time packing in [_layoutDayColumn].
-  void _layoutAllDay(List<PlannerEntry> allDayInputs) {
+  void _layoutAllDay(List<PlannerEntry<T>> allDayInputs) {
     allDayEvents.clear();
 
     final sorted = [...allDayInputs]..sort((a, b) {
@@ -112,7 +112,7 @@ class Manager {
       } else {
         laneLastColumn[lane] = end;
       }
-      allDayEvents.add(AllDayEvent(entry: entry, manager: this, lane: lane));
+      allDayEvents.add(AllDayEvent<T>(entry: entry, manager: this, lane: lane));
     }
 
     allDayLaneCount = laneLastColumn.length;
@@ -135,7 +135,7 @@ class Manager {
   /// hit-tests from any of them, not just its start column.
   void _rebuildDayIndex() {
     _eventsByDay.clear();
-    for (final Event event in events) {
+    for (final Event<T> event in events) {
       final time = event.entry.time;
       for (int day = time.day; day <= time.lastDay; day++) {
         _eventsByDay.putIfAbsent(day, () => []).add(event);
@@ -159,7 +159,7 @@ class Manager {
   /// closes).
   void _layoutOverlaps() {
     final split = config.spanOverlap == SpanOverlap.split;
-    final byDay = <int, List<Event>>{};
+    final byDay = <int, List<Event<T>>>{};
     for (final event in events) {
       final time = event.entry.time;
       if (time.spansColumns) {
@@ -184,9 +184,9 @@ class Manager {
     }
   }
 
-  void _layoutDayColumn(int day, List<Event> dayEvents) {
-    int startOf(Event e) => e.entry.time.hour * 60 + e.entry.time.minutes;
-    int endOf(Event e) => startOf(e) + e.entry.time.duration;
+  void _layoutDayColumn(int day, List<Event<T>> dayEvents) {
+    int startOf(Event<T> e) => e.entry.time.hour * 60 + e.entry.time.minutes;
+    int endOf(Event<T> e) => startOf(e) + e.entry.time.duration;
 
     // Sort by start, then by end: first-fit packing assumes ascending starts.
     dayEvents.sort((a, b) {
@@ -199,9 +199,9 @@ class Manager {
     // landed in, and the cluster's latest end. The sub-column is kept in a local
     // map rather than on the Event, since a spanning event is packed once per
     // column it crosses and must not clobber its other columns' placements.
-    final cluster = <Event>[];
+    final cluster = <Event<T>>[];
     final columnEnds = <int>[];
-    final columnOf = <Event, int>{};
+    final columnOf = <Event<T>, int>{};
     int clusterEnd = -1;
 
     void closeCluster() {
@@ -242,7 +242,7 @@ class Manager {
   /// single-column event stores it directly and relays out now; a spanning event
   /// records it per column (relayout is deferred to [_layoutOverlaps] once all
   /// its columns are packed).
-  void _assignColumn(Event event, int day, int index, int count) {
+  void _assignColumn(Event<T> event, int day, int index, int count) {
     if (event.entry.time.spansColumns) {
       event.setSpanColumn(day, index, count);
     } else {
@@ -252,10 +252,10 @@ class Manager {
     }
   }
 
-  Event? _draggedEvent;
+  Event<T>? _draggedEvent;
 
   /// The event currently being dragged, or `null` when no drag is in progress.
-  Event? get draggedEvent => _draggedEvent;
+  Event<T>? get draggedEvent => _draggedEvent;
 
   /// Translates a pointer position in the planner's local coordinates into the
   /// grid's own coordinate space (undoing the current scroll offset and zoom).
@@ -308,23 +308,23 @@ class Manager {
 
   /// Fires [PlannerConfig.onEntryEdit] for [event] — the accessibility "Edit"
   /// action, mirroring the context menu's "Edit Event".
-  void editEvent(Event event) => config.onEntryEdit?.call(event.entry);
+  void editEvent(Event<T> event) => config.onEntryEdit?.call(event.entry);
 
   /// Fires [PlannerConfig.onEntryDelete] for [event] — the accessibility
   /// "Delete" action, mirroring the context menu's "Delete Event".
-  void deleteEvent(Event event) => config.onEntryDelete?.call(event.entry);
+  void deleteEvent(Event<T> event) => config.onEntryDelete?.call(event.entry);
 
   /// Fires [PlannerConfig.onEntryEdit] for an all-day [chip] — the band's
   /// counterpart to [editEvent], reached by double-tap, the context menu, or the
   /// chip's a11y "activate" action (#72). All-day chips have no time axis, so
   /// (unlike timed events) they expose no move/nudge — only edit and delete.
-  void editAllDayEvent(AllDayEvent chip) =>
+  void editAllDayEvent(AllDayEvent<T> chip) =>
       config.onEntryEdit?.call(chip.entry);
 
   /// Fires [PlannerConfig.onEntryDelete] for an all-day [chip] — the band's
   /// counterpart to [deleteEvent], reached by the context menu or the chip's
   /// a11y "dismiss" action (#72).
-  void deleteAllDayEvent(AllDayEvent chip) =>
+  void deleteAllDayEvent(AllDayEvent<T> chip) =>
       config.onEntryDelete?.call(chip.entry);
 
   /// Shifts [event] by [hourDelta] whole hours, clamped to
@@ -333,7 +333,7 @@ class Manager {
   /// the accessibility layer exposes "Move earlier"/"Move later" nudges — the
   /// keyboard-friendly equivalent of a drag-move. A nudge that would leave the
   /// hour unchanged (already at the bound) is a no-op and fires nothing.
-  void nudgeEvent(Event event, int hourDelta) {
+  void nudgeEvent(Event<T> event, int hourDelta) {
     final time = event.entry.time;
     final newHour =
         (time.hour + hourDelta).clamp(config.minHour, config.maxHour);
@@ -358,17 +358,17 @@ class Manager {
     return event.dragTypeForGridPoint(_toGridPos(localPos));
   }
 
-  Event? getEventAtPos(Offset pos) {
+  Event<T>? getEventAtPos(Offset pos) {
     final Offset realPos = _toGridPos(pos);
 
     // Only events in the tapped day-column can contain the point, so scan that
     // one bucket instead of every event (#25). A tap outside the grid maps to
     // an absent bucket and simply finds nothing.
     final int day = (realPos.dx / config.blockWidth).floor();
-    final List<Event>? candidates = _eventsByDay[day];
+    final List<Event<T>>? candidates = _eventsByDay[day];
     if (candidates == null) return null;
 
-    for (final Event event in candidates) {
+    for (final Event<T> event in candidates) {
       if (event.containsGridPoint(realPos)) {
         return event;
       }
@@ -415,8 +415,8 @@ class Manager {
   /// width, horizontal scroll already applied) — so a chip is hit when its
   /// on-screen rect contains the point. A linear scan: all-day chips are few and
   /// aren't day-bucketed like the timed [events].
-  AllDayEvent? getAllDayEventAtPos(Offset bandLocalPos) {
-    for (final AllDayEvent chip in allDayEvents) {
+  AllDayEvent<T>? getAllDayEventAtPos(Offset bandLocalPos) {
+    for (final AllDayEvent<T> chip in allDayEvents) {
       if (chip.screenRect.contains(bandLocalPos)) return chip;
     }
     return null;
