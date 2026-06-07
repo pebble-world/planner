@@ -11,6 +11,7 @@ import 'double_tap_scenarios.dart';
 import 'drag_scenarios.dart';
 import 'entry_builder_scenarios.dart';
 import 'event_geometry_scenarios.dart';
+import 'example_hooks_scenarios.dart';
 import 'external_zoom_scenarios.dart';
 import 'highlight_column_scenarios.dart';
 import 'hour_label_scenarios.dart';
@@ -43,6 +44,7 @@ void main() {
   dragScenarios();
   entryBuilderScenarios();
   eventGeometryScenarios();
+  exampleHooksScenarios();
   externalZoomScenarios();
   highlightColumnScenarios();
   hourLabelScenarios();

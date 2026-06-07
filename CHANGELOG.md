@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- Added fully custom **widget builders**, so a host can own the visuals while the
+  package stays the time-grid engine (geometry, scroll, zoom, hit-testing,
+  overlap, accessibility). All opt-in and non-breaking — defaults are unchanged:
+  - `Planner.dayHeaderBuilder` — a custom widget per day/column header (#79). The
+    signature carries no `DateTime` (the core stays date-agnostic, ADR 0001);
+    close over a `CalendarWindow` to recover the date. Headers track day-axis
+    pan, and a drag across them still pans.
+  - `Planner.entryBuilder` — a custom widget per timed event, layered over the
+    canvas at the event's live on-screen rect so it tracks scroll/zoom/drag (#78).
+    `PlannerEntryLayout.size` lets a widget **shed detail by pixel height**.
+  - `Planner.allDayEntryBuilder` — the same for all-day chips, with
+    `PlannerEntryLayout.allDay == true` (#80).
+  - The overlays are visual-only (`IgnorePointer` / `ExcludeSemantics`), so every
+    gesture and accessibility action still falls through to the canvas and fires
+    the usual `onEntry*` callbacks.
+- Made `PlannerEntry` generic: `PlannerEntry<T>` adds an optional typed `data`
+  payload for your own per-event metadata (#77). `T` threads through `Planner<T>`,
+  `PlannerConfig<T>` and the `onEntry*` callbacks, so a builder reads `entry.data`
+  already typed — no cast, no side-map keyed by `id`. An untyped `PlannerEntry(...)`
+  infers `T == dynamic` and is unchanged, so this is backward compatible.
 - Added a public `PlannerController` for driving and observing the planner's zoom
   from outside the widget — e.g. a host's own zoom toolbar. Construct one, pass it
   to `Planner(controller: …)`, and call `zoomIn([factor])`, `zoomOut([factor])` or

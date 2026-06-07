@@ -8,7 +8,7 @@
 - **Version:** 0.0.4
 - **Repo:** https://github.com/pebble-world/planner
 - **Status:** internal-only (`publish_to: none`); goal is pub.dev + cross-project reuse.
-- **Last reviewed:** 2026-06-06
+- **Last reviewed:** 2026-06-07
 
 ---
 
@@ -53,8 +53,9 @@ Public API (exported from [`lib/planner.dart`](lib/planner.dart)):
 |------|------|
 | [`planner_class.dart`](lib/planner_class.dart) | `Planner` widget; builds the layout, wires gestures, hosts the painters. |
 | [`planner_controller.dart`](lib/planner_controller.dart) | `PlannerController` — optional public handle that attaches to the internal `Controller` to drive/observe zoom (and read scroll) from outside the widget (#76). |
-| [`planner_config.dart`](lib/planner_config.dart) | `PlannerConfig` — all sizing, colors, text styles, and callbacks. |
-| [`planner_entry.dart`](lib/planner_entry.dart) | `PlannerEntry` — a single event (id, time, title, content, color, styles). |
+| [`planner_builders.dart`](lib/planner_builders.dart) | The custom-widget builder surface (#78/#79/#80): `PlannerEntryBuilder<T>` + `PlannerEntryLayout` (timed events & all-day chips), `PlannerDayHeaderBuilder`, and the public `DragType` enum. |
+| [`planner_config.dart`](lib/planner_config.dart) | `PlannerConfig<T>` — all sizing, colors, text styles, and callbacks. |
+| [`planner_entry.dart`](lib/planner_entry.dart) | `PlannerEntry<T>` — a single event (id, time, title, content, color, styles) plus an optional typed `data` payload (#77). |
 | [`planner_time.dart`](lib/planner_time.dart) | `PlannerTime` — the day/hour/minute/duration value (⚠️ **not** re-exported). |
 
 Internals ([`lib/internal/`](lib/internal/)):
@@ -190,6 +191,12 @@ Severity: 🔴 blocker/bug · 🟠 important · 🟡 polish.
   `date ↔ index` consumer helpers (#49 — `CalendarWindow` in the non-core
   `lib/calendar.dart`).
 - **D11** overlap/column layout. Accessibility (`Semantics`), localization of menu strings.
+- ✅ **Deep customization (#75):** the package is the time-grid engine while a host
+  owns the visuals — ✅ external zoom (`PlannerController`, #76), ✅ typed
+  `PlannerEntry<T>.data` (#77), ✅ `entryBuilder` (#78), ✅ `dayHeaderBuilder` (#79),
+  ✅ `allDayEntryBuilder` (#80), ✅ example + docs showcasing all four (#81). Hybrid
+  render model: canvas keeps grid/gutter, builders layer `IgnorePointer` widget
+  overlays positioned by the existing geometry — all opt-in, defaults unchanged.
 
 ### P3 — Polish & tooling
 - **B2** bump `flutter_lints`; **E1/E2** CI + stricter analysis; **D6/D7** repaint &
