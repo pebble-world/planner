@@ -14,6 +14,7 @@ surface) can miss rendering/geometry bugs.
 | [`long_press_scenarios.dart`](long_press_scenarios.dart) | A touch long-press on an event fires `onEntryLongPress` with that entry; a long-press on empty space is a no-op (#66). |
 | [`event_geometry_scenarios.dart`](event_geometry_scenarios.dart) | An event's hit-area derives from `config.blockHeight` with proportional minutes (#10 / D3 + D4). |
 | [`external_zoom_scenarios.dart`](external_zoom_scenarios.dart) | A host toolbar drives the real grid zoom through a public `PlannerController` with the on-canvas buttons hidden, and the controller and grid share one zoom (#76). |
+| [`entry_builder_scenarios.dart`](entry_builder_scenarios.dart) | A host `entryBuilder` renders fully custom widgets over the grid at each event's on-screen rect; a real double-tap / mouse drag on a widget falls through the `IgnorePointer` overlay to `onEntryEdit` / `onEntryMove`, and the widget sheds detail by pixel height as the grid zooms (#78). |
 | [`hour_label_scenarios.dart`](hour_label_scenarios.dart) | The default `maxHour` (23) clamps a below-grid tap to hour 23, not the invalid 24 (#13 / D10). |
 | [`snapping_scenarios.dart`](snapping_scenarios.dart) | Create and drag snap event times to the single configurable `snapMinutes` interval, and agree (#14 / D8). |
 | [`span_scenarios.dart`](span_scenarios.dart) | A column-spanning event (`PlannerTime.endDay`) paints one box across its columns, hit-tests from any column it covers, and is read-only — dragging it doesn't move it (#47). |

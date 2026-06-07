@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:planner/internal/event.dart';
 import 'package:planner/internal/manager.dart';
 import 'package:planner/planner.dart';
 

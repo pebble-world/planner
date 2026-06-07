@@ -8,6 +8,7 @@ import 'context_menu_scenarios.dart';
 import 'direct_manipulation_scenarios.dart';
 import 'double_tap_scenarios.dart';
 import 'drag_scenarios.dart';
+import 'entry_builder_scenarios.dart';
 import 'event_geometry_scenarios.dart';
 import 'external_zoom_scenarios.dart';
 import 'highlight_column_scenarios.dart';
@@ -38,6 +39,7 @@ void main() {
   directManipulationScenarios();
   doubleTapScenarios();
   dragScenarios();
+  entryBuilderScenarios();
   eventGeometryScenarios();
   externalZoomScenarios();
   highlightColumnScenarios();
