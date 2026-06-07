@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 - 2026-06-08
+
+- Fixed the README screenshots not rendering on the pub.dev package page. They
+  were raw HTML `<img>` tags with **relative** `src` paths, and pub.dev's README
+  sanitizer strips relative `src` from raw HTML images (it only rewrites relative
+  URLs in Markdown links), so every screenshot showed as bracketed alt text. The
+  `<img>` tags now use absolute `raw.githubusercontent.com` URLs. Docs/packaging
+  only — no code or API change.
+
 ## 0.3.0 - 2026-06-08
 
 - Overhauled the documentation, examples, and screenshots ahead of this release:
