@@ -5,10 +5,13 @@ import 'package:planner/planner.dart';
 
 import 'package:example/main.dart' as app;
 
+import 'planner_harness.dart';
+
 /// End-to-end verification that the *example app* wires all four customization
 /// hooks together (#81) — the integration check the docs/example issue exists
-/// for. It drives the **real** entrypoint (`app.main()`), so it exercises the
-/// hooks in real composition: a `dayHeaderBuilder` row above an all-day band of
+/// for. It drives the **real** entrypoint (`app.main()`) and opens the Showcase
+/// page (#90) via [openShowcase], so it exercises the hooks in real
+/// composition: a `dayHeaderBuilder` row above an all-day band of
 /// `allDayEntryBuilder` chips above the `entryBuilder` overlay, with zoom driven
 /// from the host's own `PlannerController` toolbar (the built-in controls
 /// hidden). Event titles/labels are real widgets here (the builders render real
@@ -21,6 +24,7 @@ void exampleHooksScenarios() {
       (tester) async {
     app.main();
     await tester.pumpAndSettle();
+    await openShowcase(tester);
 
     // The typed Planner<ActivityMeta> proves the generic payload (#77) is in use.
     expect(find.byType(Planner<ActivityMeta>), findsOneWidget);
@@ -47,6 +51,7 @@ void exampleHooksScenarios() {
       'height (#81)', (tester) async {
     app.main();
     await tester.pumpAndSettle();
+    await openShowcase(tester);
 
     // The 01:00 column-0 event ('Coffee & planning') stays near the top as the
     // grid zooms, so it visibly grows from a bare title to the full card.

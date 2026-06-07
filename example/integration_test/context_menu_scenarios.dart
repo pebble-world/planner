@@ -5,11 +5,14 @@ import 'package:planner/planner.dart';
 import 'package:example/data.dart';
 import 'package:example/main.dart' as app;
 
+import 'planner_harness.dart';
+
 /// Drives the *real* example app end-to-end to cover the **entry** context menu
 /// (right-clicking an existing event), which the create-event smoke
-/// ([app_smoke_scenarios.dart]) does not exercise. The "Edit Event" /
-/// "Delete Event" items are real Text widgets, so the menu itself is assertable
-/// even though event titles are painted on the canvas.
+/// ([app_smoke_scenarios.dart]) does not exercise. `main.dart` boots a gallery
+/// home (#90), so it opens the Showcase page first via [openShowcase]. The
+/// "Edit Event" / "Delete Event" items are real Text widgets, so the menu itself
+/// is assertable even though event titles are painted on the canvas.
 ///
 /// Registered from [app_test.dart]; not a standalone entry point (desktop can
 /// only launch one app per `flutter test` invocation).
@@ -18,6 +21,7 @@ void contextMenuScenarios() {
       (tester) async {
     app.main();
     await tester.pumpAndSettle();
+    await openShowcase(tester);
 
     // The sample data's 'Stand-up' entry sits at day 0 / 08:00 for 60 min
     // (sampleEntries). With the default 200x40 grid that is grid rect

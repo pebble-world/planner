@@ -48,6 +48,21 @@ class PlannerSpec {
   final List<PlannerEntry> entries;
 }
 
+/// Navigates the gallery example app into the Showcase page (#90).
+///
+/// `main.dart` now boots a gallery home (a lazily-built list of example pages),
+/// so the app-level scenarios — which assert against the all-hooks Showcase —
+/// must open it first. Call right after `app.main()` and the initial
+/// `pumpAndSettle()`. The Showcase is the last row, so [scrollUntilVisible]
+/// scrolls it into view (and builds it) if the list is taller than the window,
+/// making this work at any device size.
+Future<void> openShowcase(WidgetTester tester) async {
+  final tile = find.byKey(const ValueKey('gallery-tile-showcase'));
+  await tester.scrollUntilVisible(tile, 120);
+  await tester.tap(tile);
+  await tester.pumpAndSettle();
+}
+
 /// A point inside a planner's event grid: skip the hour column (default 50) and
 /// the date row (default 50), then move +100px right / +[downFromGridTop] down
 /// so it lands cleanly in the grid. With the default `blockHeight` of 40, the
