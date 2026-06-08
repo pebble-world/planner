@@ -1,0 +1,54 @@
+name: Publish to pub.dev
+
+# Automated publishing via pub.dev's GitHub Actions OIDC integration (no stored
+# tokens/secrets). The release signal is a pushed version tag on `main`, not a
+# PR or a `main` merge: a merge to `main` is not necessarily a release, whereas
+# a deliberate `vX.Y.Z` tag is the explicit "publish this version" intent. See
+# issue #106.
+#
+# One-time setup on pub.dev (owner action, outside this repo):
+#   pub.dev -> planner -> Admin -> Automated publishing -> enable GitHub Actions,
+#   repository `pebble-world/planner`, tag pattern `v{{version}}`.
+# pub.dev validates the tag matches the pubspec version, so a mismatched or
+# accidental tag will not publish.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    environment: pub.dev
+    permissions:
+      # Required for pub.dev OIDC: the pub client exchanges this token for a
+      # short-lived publishing credential. No secrets are stored in the repo.
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Safety net before the upload (issue #106 acceptance criterion). The
+      # publish step re-runs package validation itself, but failing fast on a
+      # broken analyze/test surfaces the problem before anything is uploaded.
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Publish to pub.dev
+        # --force skips the interactive confirmation; OIDC credentials are
+        # auto-detected from the `id-token: write` permission above.
+        run: flutter pub publish --force
