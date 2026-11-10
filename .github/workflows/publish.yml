@@ -9,8 +9,19 @@ name: Publish to pub.dev
 # One-time setup on pub.dev (owner action, outside this repo):
 #   pub.dev -> planner -> Admin -> Automated publishing -> enable GitHub Actions,
 #   repository `pebble-world/planner`, tag pattern `v{{version}}`.
+#   If "Require GitHub Actions environment" is set there, its value must be
+#   exactly `pub.dev` (the `environment:` of the job below), or pub.dev rejects
+#   the token. Leaving it unset also works; the job still runs in the `pub.dev`
+#   GitHub environment so protection rules can be added on the GitHub side.
 # pub.dev validates the tag matches the pubspec version, so a mismatched or
 # accidental tag will not publish.
+#
+# The pub client does NOT pick up the GitHub OIDC token by itself: without a
+# registered credential, `pub publish` falls back to the interactive Google
+# OAuth prompt and waits for a browser that never comes (issue #129, run
+# 42908218633 hung on "Pub needs your authorization..."). The "pub.dev
+# credentials" step below does the exchange explicitly, and the timeouts make
+# a credential problem fail in minutes instead of hanging for 6h.
 
 on:
   push:
@@ -22,9 +33,12 @@ jobs:
     name: publish
     runs-on: ubuntu-latest
     environment: pub.dev
+    # A normal run takes ~1-2 min (Flutter setup, analyze, tests, upload).
+    timeout-minutes: 15
     permissions:
-      # Required for pub.dev OIDC: the pub client exchanges this token for a
-      # short-lived publishing credential. No secrets are stored in the repo.
+      # Required for pub.dev OIDC: lets the job request a GitHub ID token, which
+      # the "pub.dev credentials" step hands to pub as its upload credential.
+      # No secrets are stored in the repo.
       id-token: write
     steps:
       - name: Checkout
@@ -48,7 +62,39 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      # Request a GitHub OIDC token with audience `https://pub.dev` and register
+      # it with pub via the PUB_TOKEN env var. This mirrors what
+      # dart-lang/setup-dart does (v1.8.1, lib/main.dart, createPubOIDCToken():
+      # `core.getIDToken('https://pub.dev')`, `exportVariable('PUB_TOKEN', ...)`,
+      # then `dart pub token add https://pub.dev --env-var PUB_TOKEN`), and the
+      # request matches @actions/core's OidcClient.getIDToken():
+      # GET $ACTIONS_ID_TOKEN_REQUEST_URL&audience=<urlencoded audience> with
+      # `Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN`, token in `.value`.
+      # Done by hand rather than with setup-dart so there is only one SDK on
+      # PATH (Flutter's) and setup-dart's PUB_CACHE export cannot clash with
+      # flutter-action's cache. Placed right before the upload because the ID
+      # token is short-lived.
+      - name: pub.dev credentials (GitHub OIDC)
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          token="$(curl --fail --silent --show-error --max-time 30 --retry 3 \
+            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https%3A%2F%2Fpub.dev" \
+            | jq -r '.value // empty')"
+          if [ -z "$token" ]; then
+            echo "::error::No OIDC token returned; is 'id-token: write' granted?"
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "PUB_TOKEN=$token" >> "$GITHUB_ENV"
+          PUB_TOKEN="$token" flutter pub token add https://pub.dev --env-var PUB_TOKEN
+
       - name: Publish to pub.dev
-        # --force skips the interactive confirmation; OIDC credentials are
-        # auto-detected from the `id-token: write` permission above.
+        # --force skips the "Do you want to publish?" confirmation; the
+        # credential comes from the step above. If pub ever prints "Pub needs
+        # your authorization", the credential was not picked up and the step
+        # would wait forever for a browser; the timeout turns that into a
+        # failure. A real upload finishes well within it.
+        timeout-minutes: 5
         run: flutter pub publish --force
