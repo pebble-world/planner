@@ -21,7 +21,7 @@ surface) can miss rendering/geometry bugs.
 | [`snapping_scenarios.dart`](snapping_scenarios.dart) | Create and drag snap event times to the single configurable `snapMinutes` interval, and agree (#14 / D8). |
 | [`span_scenarios.dart`](span_scenarios.dart) | A column-spanning event (`PlannerTime.endDay`) paints one box across its columns, hit-tests from any column it covers, and is read-only — dragging it doesn't move it (#47). |
 | [`multi_planner_scenarios.dart`](multi_planner_scenarios.dart) | Two planners on one screen keep independent scroll state (device-level counterpart of the #9 / D1 regression). |
-| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `mouseDrag`). |
+| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `mouseDrag`) and `pinDesktopSurface`, which pins a scenario to a 1280×720 surface when its fixed-pixel gestures assume a desktop window (#115). |
 | [`screenshots_test.dart`](screenshots_test.dart) | **Not part of the suite.** A standalone capture target that renders each gallery page on a fixed surface and writes the documentation screenshots to `doc/screenshots/`. See [Regenerating screenshots](#regenerating-screenshots). |
 
 ## Running

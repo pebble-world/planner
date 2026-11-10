@@ -22,6 +22,9 @@ import 'planner_harness.dart';
 void exampleHooksScenarios() {
   testWidgets('the example wires all four customization hooks together (#81)',
       (tester) async {
+    // The day-2 all-day chip is asserted without scrolling, so the window must
+    // be wide enough to show day 2's column (#115).
+    pinDesktopSurface(tester);
     app.main();
     await tester.pumpAndSettle();
     await openShowcase(tester);

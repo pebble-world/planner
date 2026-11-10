@@ -131,6 +131,9 @@ void accessibilityScenarios() {
     // own, so without the widget-layer poke an event node keeps the rect it had
     // when last built. Scroll the time axis and confirm the node's rect actually
     // moves up — proof the semantics were rebuilt against the new scroll offset.
+    // The desktop surface leaves the 24h × 40px grid well over 100px of scroll
+    // room; a 914px-tall phone would clamp the five notches at ~96px (#115).
+    pinDesktopSurface(tester);
     final handle = tester.ensureSemantics();
 
     await tester.pumpWidget(MaterialApp(
