@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Added `PlannerConfig.initialHour` and `PlannerConfig.initialZoom` to open a
+  planner at a chosen hour and zoom instead of the top of the grid at `1.0`
+  (#111). `initialHour` (default `null` = `minHour`) is clamped to
+  `[minHour, maxHour]` and to the grid's scroll range, so a late hour never
+  over-scrolls; `initialZoom` (default `1.0`) is clamped to
+  `[minZoom, maxZoom]`. Both apply once, on first layout, and are never
+  re-applied on later rebuilds or config updates. Defaults are unchanged.
+
 ## 0.3.1 - 2026-06-08
 
 - Fixed the README screenshots not rendering on the pub.dev package page. They
