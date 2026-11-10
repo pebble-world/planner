@@ -62,6 +62,28 @@ class PlannerConfig<T> {
   double minZoom;
   double maxZoom;
 
+  /// The hour shown at the top of the time grid when the planner first lays
+  /// out, e.g. `8` to open scrolled to 08:00 instead of [minHour] (#111).
+  /// Fractional hours are allowed (`8.5` opens at 08:30). When `null` (the
+  /// default) the grid opens at [minHour], as before.
+  ///
+  /// Clamped to `[minHour, maxHour]`, and further to the furthest the grid can
+  /// scroll, so a late hour (or a viewport taller than the remaining rows)
+  /// opens with the last hour at the bottom rather than over-scrolled past the
+  /// end of the grid.
+  ///
+  /// Applied **once**, on the planner's first layout, together with
+  /// [initialZoom]. Later rebuilds — including passing a new config with a
+  /// different [initialHour] — never re-apply it, so the view doesn't jump
+  /// back while the user is scrolling.
+  double? initialHour;
+
+  /// The zoom factor the planner opens at, clamped to `[minZoom, maxZoom]`
+  /// (#111). Defaults to `1.0`, the previous behaviour. Like [initialHour] it is
+  /// applied once, on the first layout, and never again on later rebuilds; a
+  /// host changes the zoom afterwards through a `PlannerController`.
+  double initialZoom;
+
   double dateRowHeight;
   double hourColumnWidth;
 
@@ -187,6 +209,8 @@ class PlannerConfig<T> {
     this.snapMinutesForZoom,
     this.minZoom = 0.5,
     this.maxZoom = 4.0,
+    this.initialHour,
+    this.initialZoom = 1.0,
     this.hourLabelStyle = const TextStyle(color: Colors.black),
     this.dateLabelStyle = const TextStyle(color: Colors.black),
     this.contextMenuTextStyle = const TextStyle(color: Colors.blue),

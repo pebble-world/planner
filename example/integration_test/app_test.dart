@@ -15,6 +15,7 @@ import 'example_hooks_scenarios.dart';
 import 'external_zoom_scenarios.dart';
 import 'highlight_column_scenarios.dart';
 import 'hour_label_scenarios.dart';
+import 'initial_view_scenarios.dart';
 import 'long_press_scenarios.dart';
 import 'multi_planner_scenarios.dart';
 import 'overlap_scenarios.dart';
@@ -48,6 +49,7 @@ void main() {
   externalZoomScenarios();
   highlightColumnScenarios();
   hourLabelScenarios();
+  initialViewScenarios();
   longPressScenarios();
   multiPlannerScenarios();
   overlapScenarios();

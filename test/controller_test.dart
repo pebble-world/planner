@@ -228,4 +228,131 @@ void main() {
       expect(controller.x, 0, reason: 'grid fully visible — nothing to scroll');
     });
   });
+
+  // #111: PlannerConfig.initialHour / initialZoom are applied once, on the first
+  // setSize with a real canvas height. An 800x600 canvas with the default
+  // dateRowHeight (50) leaves a 550px grid viewport; the default 0..23 grid is
+  // 24 * 40 = 960px tall at zoom 1, so the time axis bottoms out at y = -410.
+  group('initial hour and zoom (#111)', () {
+    const canvas = Size(800, 600);
+
+    Controller laidOut(PlannerConfig config) {
+      final c = Controller(config);
+      c.setSize(canvas);
+      return c;
+    }
+
+    test('defaults are unchanged: top of the grid at zoom 1', () {
+      final c = laidOut(PlannerConfig(labels: const ['A']));
+      expect(c.y, 0);
+      expect(c.zoom, 1.0);
+    });
+
+    test('initialHour scrolls that hour to the top of the grid', () {
+      final c = laidOut(PlannerConfig(labels: const ['A'], initialHour: 8));
+      expect(c.y, -8 * 40);
+      expect(c.zoom, 1.0);
+    });
+
+    test('initialHour is relative to minHour', () {
+      final c = laidOut(
+          PlannerConfig(labels: const ['A'], minHour: 6, initialHour: 8));
+      expect(c.y, -2 * 40);
+    });
+
+    test('a fractional initialHour scrolls to the part-hour', () {
+      final c = laidOut(PlannerConfig(labels: const ['A'], initialHour: 8.5));
+      expect(c.y, -8.5 * 40);
+    });
+
+    test('a late initialHour clamps to the bottom of the grid', () {
+      // Hour 23 would put y at -920, over-scrolling 510px past the grid's end;
+      // it clamps to the furthest scroll, the last hour at the bottom.
+      final c = laidOut(PlannerConfig(labels: const ['A'], initialHour: 23));
+      expect(c.y, -410);
+    });
+
+    test('initialHour beyond maxHour clamps the same way', () {
+      final c = laidOut(PlannerConfig(labels: const ['A'], initialHour: 40));
+      expect(c.y, -410);
+    });
+
+    test('initialHour before minHour clamps to the top', () {
+      final c = laidOut(
+          PlannerConfig(labels: const ['A'], minHour: 6, initialHour: 2));
+      expect(c.y, 0);
+    });
+
+    test('initialZoom is applied and clamped to [minZoom, maxZoom]', () {
+      expect(laidOut(PlannerConfig(labels: const ['A'], initialZoom: 2)).zoom,
+          2.0);
+      expect(laidOut(PlannerConfig(labels: const ['A'], initialZoom: 10)).zoom,
+          4.0);
+      expect(laidOut(PlannerConfig(labels: const ['A'], initialZoom: 0.1)).zoom,
+          0.5);
+    });
+
+    test('initialZoom scales the initialHour offset and the bottom clamp', () {
+      // At zoom 2 an hour row is 80px: hour 8 sits 640px down (well within the
+      // 1920 - 550 = 1370px of scroll), and hour 23 clamps to -1370.
+      final c = laidOut(
+          PlannerConfig(labels: const ['A'], initialHour: 8, initialZoom: 2));
+      expect(c.zoom, 2.0);
+      expect(c.y, -8 * 80);
+
+      final late = laidOut(
+          PlannerConfig(labels: const ['A'], initialHour: 23, initialZoom: 2));
+      expect(late.y, -1370);
+    });
+
+    test('a zoomed-out grid that fits the viewport stays at the top', () {
+      // 24 * 40 * 0.5 = 480px < 550px viewport: nothing to scroll.
+      final c = laidOut(PlannerConfig(
+          labels: const ['A'], initialHour: 20, initialZoom: 0.5));
+      expect(c.zoom, 0.5);
+      expect(c.y, 0);
+    });
+
+    test('a later zoom gesture starts from initialZoom', () {
+      final c = laidOut(PlannerConfig(labels: const ['A'], initialZoom: 2));
+      c.startZoom();
+      c.updateZoom(1.5);
+      expect(c.zoom, 3.0);
+    });
+
+    test('is not applied before the canvas has a real height', () {
+      final c = Controller(
+          PlannerConfig(labels: const ['A'], initialHour: 8, initialZoom: 2));
+      expect(c.y, 0);
+      expect(c.zoom, 1.0);
+      expect(c.setSize(null), isFalse);
+      expect(c.setSize(const Size(800, 0)), isFalse);
+      expect(c.y, 0);
+      expect(c.zoom, 1.0);
+
+      expect(c.setSize(canvas), isTrue);
+      expect(c.y, -8 * 80);
+      expect(c.zoom, 2.0);
+    });
+
+    test('is applied once: later resizes and config updates never re-apply',
+        () {
+      final c = Controller(PlannerConfig(labels: const ['A'], initialHour: 8));
+      expect(c.setSize(canvas), isTrue);
+      expect(c.y, -320);
+
+      // The user scrolls and zooms away from the initial view.
+      c.y = -100;
+      c.startZoom();
+      c.updateZoom(1.5);
+
+      expect(c.setSize(const Size(900, 700)), isFalse);
+      c.updateConfig(
+          PlannerConfig(labels: const ['A'], initialHour: 2, initialZoom: 3));
+      expect(c.setSize(canvas), isFalse);
+
+      expect(c.y, -100, reason: 'a rebuild must not jump the scroll back');
+      expect(c.zoom, 1.5, reason: 'a rebuild must not reset the zoom');
+    });
+  });
 }
