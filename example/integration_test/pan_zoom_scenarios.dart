@@ -40,6 +40,9 @@ void panZoomScenarios() {
 
   testWidgets('dragging empty canvas pans both the day and time axes',
       (tester) async {
+    // The drag starts 550px into the planner, so it needs a desktop-wide
+    // surface to land on the canvas at all (#115).
+    pinDesktopSurface(tester);
     PlannerTime? created;
     await tester.pumpWidget(
         PlannerHarness(planners: [bigGrid(onEntryCreate: (t) => created = t)]));

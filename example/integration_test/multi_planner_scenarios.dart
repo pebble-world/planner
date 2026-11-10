@@ -12,6 +12,9 @@ import 'planner_harness.dart';
 /// only launch one app per `flutter test` invocation).
 void multiPlannerScenarios() {
   testWidgets('two planners keep independent scroll state', (tester) async {
+    // Two side-by-side planners each need room for the grid point
+    // ([gridPointFor] is 150px in) plus the context menu that opens there (#115).
+    pinDesktopSurface(tester);
     PlannerTime? createdA;
     PlannerTime? createdB;
 
