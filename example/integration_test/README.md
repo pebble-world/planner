@@ -33,6 +33,11 @@ Android phone emulator on every push to `develop`, on the `develop → main`
 release PR, and on manual `workflow_dispatch`. Pull requests into `develop`
 don't run it.
 
+The iOS leg runs on Codemagic, not GitHub: the `ios-integration` workflow in
+[`codemagic.yaml`](../../codemagic.yaml) runs on every push to `develop` and
+can be started by hand (Codemagic UI or API) on any branch. See
+[iOS (simulator)](#ios-simulator).
+
 ### Windows
 
 Target [`app_test.dart`](app_test.dart) explicitly — the single entry point —
@@ -54,6 +59,27 @@ running locally:
 ```sh
 flutter test integration_test/app_test.dart -d emulator-5554
 ```
+
+### iOS (simulator)
+
+Needs macOS with Xcode. Boot an iPhone simulator, then pass its name or UDID:
+
+```sh
+xcrun simctl list devices available     # pick an iPhone, note its UDID
+xcrun simctl boot <udid>
+flutter test integration_test/app_test.dart -d <udid>
+```
+
+Codemagic's `ios-integration` workflow ([`codemagic.yaml`](../../codemagic.yaml))
+does the same on a `mac_mini_m2` with `xcode: latest`: `flutter pub get` (plus
+`pod install` when the iOS project has a Podfile), `flutter build ios
+--simulator --debug`, then it boots the newest iPhone on the newest iOS runtime
+(the base model when there are several variants, for the smallest viewport) and
+runs `app_test.dart` on it. It needs no signing. Failures email the repo owner.
+
+One-time setup, in the Codemagic UI: add the `pebble-world/planner` repository
+as an app in the pebble-world team and set it to read `codemagic.yaml`. No code
+signing identities, integrations or environment variable groups are needed.
 
 ### Web (Chrome)
 
