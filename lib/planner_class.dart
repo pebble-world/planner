@@ -316,10 +316,14 @@ class _PlannerState<T> extends State<Planner<T>> {
         ),
       );
 
+      // Laid out against the whole planner so the menu is kept inside its
+      // bounds, flipping left/up from the click point near an edge (#123).
       result.add(
-        Transform.translate(
-          offset: _data.controller.menuPos!,
-          child: ContextMenu(manager: _data),
+        Positioned.fill(
+          child: CustomSingleChildLayout(
+            delegate: ContextMenuLayout(_data.controller.menuPos!),
+            child: ContextMenu(manager: _data),
+          ),
         ),
       );
     }

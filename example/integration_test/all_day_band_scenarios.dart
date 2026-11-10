@@ -195,12 +195,6 @@ void allDayBandScenarios() {
 
   testWidgets('right-clicking a chip opens edit/delete; Edit fires onEntryEdit',
       (tester) async {
-    // A mouse right-click at the column-1 chip (planner-local x 350) opens the
-    // menu unclamped at the click point, so "Edit Event" lands ~60px further
-    // right: about x 409. That is on a 411-wide Android phone but off a
-    // 402-wide iPhone, so pin the desktop surface the gesture belongs to (#122;
-    // clamping the menu itself is #123).
-    pinDesktopSurface(tester);
     final edited = <PlannerEntry>[];
     await tester.pumpWidget(PlannerHarness(planners: [
       wired(
