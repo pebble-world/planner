@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.2 - 2026-11-10
 
 - Added `PlannerConfig.initialHour` and `PlannerConfig.initialZoom` to open a
   planner at a chosen hour and zoom instead of the top of the grid at `1.0`
