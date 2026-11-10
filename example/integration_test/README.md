@@ -28,7 +28,12 @@ surface) can miss rendering/geometry bugs.
 
 Run from the `example/` directory.
 
-### Windows (what CI runs)
+CI (`.github/workflows/ci.yml`) runs `app_test.dart` on both Windows and an
+Android phone emulator on every push to `develop`, on the `develop → main`
+release PR, and on manual `workflow_dispatch`. Pull requests into `develop`
+don't run it.
+
+### Windows
 
 Target [`app_test.dart`](app_test.dart) explicitly — the single entry point —
 rather than the whole directory, so the standalone
@@ -38,6 +43,16 @@ as a second test file (see [Regenerating screenshots](#regenerating-screenshots)
 ```sh
 flutter config --enable-windows-desktop   # once, if not already enabled
 flutter test integration_test/app_test.dart -d windows
+```
+
+### Android (phone emulator)
+
+CI uses an API 35, `pixel_6`-profile, x86_64 `google_apis` emulator in
+portrait, with JDK 17 (the example's Gradle/AGP need it). With an emulator
+running locally:
+
+```sh
+flutter test integration_test/app_test.dart -d emulator-5554
 ```
 
 ### Web (Chrome)

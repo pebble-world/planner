@@ -114,14 +114,19 @@ gh pr create --base main --head develop \
   --body "<summary + the changelog section for X.Y.Z>"
 ```
 
-Two CI checks gate this PR, both from [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml):
+Three CI checks gate this PR, all from [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml):
 - **`verify`** — format check, `flutter analyze`, `flutter test` (runs on every PR).
-- **`integration (windows)`** — the full Windows integration suite
-  (`example/integration_test/app_test.dart`). This job is gated to run **only**
-  on a PR whose base is `main`, i.e. exactly this release PR, so it will not have
-  run on the feature PRs into `develop`.
+- **`integration (windows)`** — the full integration suite
+  (`example/integration_test/app_test.dart`) on Windows desktop.
+- **`integration (android)`** — the same suite on an API 35 phone emulator
+  (portrait).
 
-Wait for **both** green before merging:
+The two integration jobs run on every push to `develop`, on PRs into `main`
+(this release PR) and on manual dispatch — not on the feature PRs into
+`develop`. A red integration run on the latest `develop` push is a warning to
+fix before promoting.
+
+Wait for **all three** green before merging:
 ```
 gh pr checks <PR-number> --watch
 ```

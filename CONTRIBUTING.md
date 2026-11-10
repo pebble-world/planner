@@ -106,18 +106,24 @@ directory:
 
 ```sh
 flutter config --enable-windows-desktop   # once, if not already enabled
-flutter test integration_test -d windows  # what CI runs
+flutter test integration_test/app_test.dart -d windows
 ```
 
-A web (Chrome) path via `flutter drive` is also available — see
-[`example/integration_test/README.md`](example/integration_test/README.md) for
-the full setup, the per-scenario map, and how to add a test.
+CI runs the full suite on Windows desktop and on an API 35 phone emulator
+(Android, portrait) on every push to `develop`, on the `develop → main` release
+PR, and on manual dispatch (Actions → CI → Run workflow — use it to sweep a
+branch before it merges). Pull requests into `develop` run only `verify`.
+
+The Android and web (Chrome) recipes, the per-scenario map, and how to add a
+test are in
+[`example/integration_test/README.md`](example/integration_test/README.md).
 
 ## Branching workflow
 
 - Branch off `develop` and open pull requests **into `develop`**.
-- A release is a separate `develop → main` pull request — the only place the
-  Windows integration CI job runs.
+- A release is a separate `develop → main` pull request. The integration CI
+  jobs (Windows + Android) run on it and after every merge into `develop`, not
+  on PRs into `develop`.
 - Reference the issue in commits (`(#N)`) so GitHub auto-links them.
 - Run `dart format` before every commit.
 
@@ -137,8 +143,8 @@ The flow:
 
 1. Finalize the version on `develop`: bump `version:` in
    [`pubspec.yaml`](pubspec.yaml) and date the matching `CHANGELOG.md` entry.
-2. Open the `develop → main` release PR and merge it once `verify` and
-   `integration-windows` are green.
+2. Open the `develop → main` release PR and merge it once `verify`,
+   `integration-windows` and `integration-android` are green.
 3. Sync local `main`, then tag the merge commit and push the tag:
 
    ```sh
