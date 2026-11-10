@@ -63,6 +63,42 @@ Future<void> openShowcase(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// The logical size [pinDesktopSurface] lays a scenario out at: the example's
+/// default Windows window (`windows/runner/main.cpp`, 1280×720), the size CI
+/// runs the suite at.
+const Size kDesktopSurface = Size(1280, 720);
+
+/// Pins the test surface to the desktop-sized [kDesktopSurface] for the rest of
+/// the current test, keeping the device's own pixel ratio (and so its real font
+/// rasterisation). Resets on teardown.
+///
+/// For scenarios whose gestures and expectations are fixed pixel offsets that
+/// assume a desktop window: a drag that starts 550px into the grid, two planners
+/// side by side each wide enough for a context menu, a scroll extent of at least
+/// 100px, a second day column in view. On a phone (411×914 logical in
+/// portrait) those fall off-screen or clamp, so without a pin the same scenario
+/// tests something different on every device (#115). Call it before pumping the
+/// app.
+void pinDesktopSurface(WidgetTester tester) =>
+    _pinSurface(tester, kDesktopSurface);
+
+/// The logical size [pinPhoneSurface] lays a scenario out at: the narrowest
+/// device CI runs the suite on, the Codemagic iPhone simulator in portrait
+/// (#122).
+const Size kPhoneSurface = Size(402, 874);
+
+/// Pins the test surface to the phone-sized [kPhoneSurface] for the rest of the
+/// current test, so a scenario about narrow-screen behaviour (a context menu
+/// opened near the right edge, #123) tests the same thing on the Windows and
+/// Android legs as on the iPhone. Keeps the device's pixel ratio; resets on
+/// teardown. Call it before pumping the app.
+void pinPhoneSurface(WidgetTester tester) => _pinSurface(tester, kPhoneSurface);
+
+void _pinSurface(WidgetTester tester, Size logical) {
+  tester.view.physicalSize = logical * tester.view.devicePixelRatio;
+  addTearDown(tester.view.resetPhysicalSize);
+}
+
 /// A point inside a planner's event grid: skip the hour column (default 50) and
 /// the date row (default 50), then move +100px right / +[downFromGridTop] down
 /// so it lands cleanly in the grid. With the default `blockHeight` of 40, the

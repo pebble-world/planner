@@ -16,18 +16,30 @@ surface) can miss rendering/geometry bugs.
 | [`external_zoom_scenarios.dart`](external_zoom_scenarios.dart) | A host toolbar drives the real grid zoom through a public `PlannerController` with the on-canvas buttons hidden, and the controller and grid share one zoom (#76). |
 | [`entry_builder_scenarios.dart`](entry_builder_scenarios.dart) | A host `entryBuilder` renders fully custom widgets over the grid at each event's on-screen rect; a real double-tap / mouse drag on a widget falls through the `IgnorePointer` overlay to `onEntryEdit` / `onEntryMove`, and the widget sheds detail by pixel height as the grid zooms (#78). |
 | [`all_day_builder_scenarios.dart`](all_day_builder_scenarios.dart) | A host `allDayEntryBuilder` renders fully custom widgets over the all-day band at each chip's on-screen rect, with `layout.allDay == true`; a real double-tap / right-click / long-press on a chip falls through the `IgnorePointer` overlay to `onEntryEdit` / the context menu / `onEntryLongPress` (#80). |
+| [`initial_view_scenarios.dart`](initial_view_scenarios.dart) | `PlannerConfig.initialHour` / `initialZoom` open the grid at the configured hour and zoom on first layout, and a late hour clamps to the bottom of the grid instead of over-scrolling (#111). |
+| [`context_menu_scenarios.dart`](context_menu_scenarios.dart) | Right-clicking an event in the real app opens the edit/delete menu; on a phone-width planner a menu opened near the right edge or bottom-right corner flips to stay on-screen, and its item is tappable (#123). |
 | [`hour_label_scenarios.dart`](hour_label_scenarios.dart) | The default `maxHour` (23) clamps a below-grid tap to hour 23, not the invalid 24 (#13 / D10). |
 | [`snapping_scenarios.dart`](snapping_scenarios.dart) | Create and drag snap event times to the single configurable `snapMinutes` interval, and agree (#14 / D8). |
 | [`span_scenarios.dart`](span_scenarios.dart) | A column-spanning event (`PlannerTime.endDay`) paints one box across its columns, hit-tests from any column it covers, and is read-only — dragging it doesn't move it (#47). |
 | [`multi_planner_scenarios.dart`](multi_planner_scenarios.dart) | Two planners on one screen keep independent scroll state (device-level counterpart of the #9 / D1 regression). |
-| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `mouseDrag`). |
+| [`planner_harness.dart`](planner_harness.dart) | Reusable `PlannerHarness` for multi-planner / multi-config flows, plus shared gesture helpers (`gridPointFor`, `createViaMenu`, `wheelScroll`, `mouseDrag`) `pinDesktopSurface`, which pins a scenario to a 1280×720 surface when its fixed-pixel gestures assume a desktop window (#115), and `pinPhoneSurface`, which pins it to the iPhone's 402×874 when it tests narrow-screen behaviour (#123). |
 | [`screenshots_test.dart`](screenshots_test.dart) | **Not part of the suite.** A standalone capture target that renders each gallery page on a fixed surface and writes the documentation screenshots to `doc/screenshots/`. See [Regenerating screenshots](#regenerating-screenshots). |
 
 ## Running
 
 Run from the `example/` directory.
 
-### Windows (what CI runs)
+CI (`.github/workflows/ci.yml`) runs `app_test.dart` on both Windows and an
+Android phone emulator on every push to `develop`, on the `develop → main`
+release PR, and on manual `workflow_dispatch`. Pull requests into `develop`
+don't run it.
+
+The iOS leg runs on Codemagic, not GitHub: the `ios-integration` workflow in
+[`codemagic.yaml`](../../codemagic.yaml) runs on every push to `develop` and
+can be started by hand (Codemagic UI or API) on any branch. See
+[iOS (simulator)](#ios-simulator).
+
+### Windows
 
 Target [`app_test.dart`](app_test.dart) explicitly — the single entry point —
 rather than the whole directory, so the standalone
@@ -38,6 +50,37 @@ as a second test file (see [Regenerating screenshots](#regenerating-screenshots)
 flutter config --enable-windows-desktop   # once, if not already enabled
 flutter test integration_test/app_test.dart -d windows
 ```
+
+### Android (phone emulator)
+
+CI uses an API 35, `pixel_6`-profile, x86_64 `google_apis` emulator in
+portrait, with JDK 17 (the example's Gradle/AGP need it). With an emulator
+running locally:
+
+```sh
+flutter test integration_test/app_test.dart -d emulator-5554
+```
+
+### iOS (simulator)
+
+Needs macOS with Xcode. Boot an iPhone simulator, then pass its name or UDID:
+
+```sh
+xcrun simctl list devices available     # pick an iPhone, note its UDID
+xcrun simctl boot <udid>
+flutter test integration_test/app_test.dart -d <udid>
+```
+
+Codemagic's `ios-integration` workflow ([`codemagic.yaml`](../../codemagic.yaml))
+does the same on a `mac_mini_m2` with `xcode: latest`: `flutter pub get` (plus
+`pod install` when the iOS project has a Podfile), `flutter build ios
+--simulator --debug`, then it boots the newest iPhone on the newest iOS runtime
+(the base model when there are several variants, for the smallest viewport) and
+runs `app_test.dart` on it. It needs no signing. Failures email the repo owner.
+
+One-time setup, in the Codemagic UI: add the `pebble-world/planner` repository
+as an app in the pebble-world team and set it to read `codemagic.yaml`. No code
+signing identities, integrations or environment variable groups are needed.
 
 ### Web (Chrome)
 

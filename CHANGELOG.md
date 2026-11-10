@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.2 - 2026-11-10
+
+- Added `PlannerConfig.initialHour` and `PlannerConfig.initialZoom` to open a
+  planner at a chosen hour and zoom instead of the top of the grid at `1.0`
+  (#111). `initialHour` (default `null` = `minHour`) is clamped to
+  `[minHour, maxHour]` and to the grid's scroll range, so a late hour never
+  over-scrolls; `initialZoom` (default `1.0`) is clamped to
+  `[minZoom, maxZoom]`. Both apply once, on first layout, and are never
+  re-applied on later rebuilds or config updates. Defaults are unchanged.
+- Fixed the context menu overflowing the planner's right or bottom edge (#123).
+  It opened with its top-left at the click point, so a right-click near the
+  edge of a narrow (phone-width) planner, or in the rightmost column on
+  desktop, pushed part of the menu off-screen where its items couldn't be
+  tapped. The menu now flips to the left of / above the click point when it
+  would overflow, and is clamped inside the planner's bounds.
+
 ## 0.3.1 - 2026-06-08
 
 - Fixed the README screenshots not rendering on the pub.dev package page. They

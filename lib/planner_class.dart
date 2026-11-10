@@ -217,7 +217,14 @@ class _PlannerState<T> extends State<Planner<T>> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      _data.controller.setSize(constraints.biggest);
+      if (_data.controller.setSize(constraints.biggest)) {
+        // The configured initial zoom/scroll (#111) was just applied, silently,
+        // during layout. Announce it after the frame so an attached
+        // PlannerController's listeners (a host toolbar) see the opening view.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _data.controller.triggerUpdate.value++;
+        });
+      }
       // The context menu overlay is lifted to a planner-wide Stack so it can
       // sit over either the time grid or the all-day band (#72): the band is a
       // thin strip above the grid in the Column, so a menu opened from it must
@@ -309,10 +316,14 @@ class _PlannerState<T> extends State<Planner<T>> {
         ),
       );
 
+      // Laid out against the whole planner so the menu is kept inside its
+      // bounds, flipping left/up from the click point near an edge (#123).
       result.add(
-        Transform.translate(
-          offset: _data.controller.menuPos!,
-          child: ContextMenu(manager: _data),
+        Positioned.fill(
+          child: CustomSingleChildLayout(
+            delegate: ContextMenuLayout(_data.controller.menuPos!),
+            child: ContextMenu(manager: _data),
+          ),
         ),
       );
     }

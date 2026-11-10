@@ -66,13 +66,26 @@ Planner (StatefulWidget)
        └─ List<Event>                         ← TextPainters laid out here
   build():
     LayoutBuilder → controller.setSize()
-      Column[
-        DateRow painter,
-        AllDayBand painter,                    ← only when there are all-day events
-        Row[ HourColumn painter,
-             Stack[ EventsPainter (grid + events), zoom buttons, context menu ] ]
+      Stack[                                   ← planner-wide, so the menu can sit over any surface
+        Column[
+          DateRow painter,                     ← or dayHeaderBuilder widgets
+          Stack[ AllDayBand painter,           ← only when there are all-day events
+                 all-day chip overlay ],       ← allDayEntryBuilder widgets, if set
+          Row[ HourColumn painter,
+               Stack[ EventsPainter (grid + events),
+                      entry overlay,           ← entryBuilder widgets, if set
+                      zoom buttons ] ]
+        ],
+        dismiss layer,                         ← these two only while the menu is open
+        CustomSingleChildLayout(ContextMenuLayout → ContextMenu)
       ]
 ```
+
+The context menu is positioned in planner-local coordinates (`menuPos`), so the
+grid and the all-day band both convert their hit position into that space.
+`ContextMenuLayout` (`lib/internal/context_menu.dart`) opens the menu at the
+click point, flips it left of / above the point when it would overflow, and
+clamps it into the planner rect.
 
 Repaint is driven by `controller.triggerUpdate` (a `ValueNotifier<int>` bumped on
 every state change), passed as the painters' `repaint` listenable.
@@ -106,21 +119,84 @@ directory:
 
 ```sh
 flutter config --enable-windows-desktop   # once, if not already enabled
-flutter test integration_test -d windows  # what CI runs
+flutter test integration_test/app_test.dart -d windows
 ```
 
-A web (Chrome) path via `flutter drive` is also available — see
-[`example/integration_test/README.md`](example/integration_test/README.md) for
-the full setup, the per-scenario map, and how to add a test.
+CI runs the full suite on Windows desktop and on an API 35 phone emulator
+(Android, portrait) on every push to `develop`, on the `develop → main` release
+PR, and on manual dispatch (Actions → CI → Run workflow — use it to sweep a
+branch before it merges). Pull requests into `develop` run only `verify`.
+
+The Android, iOS and web (Chrome) recipes, the per-scenario map, and how to add
+a test are in
+[`example/integration_test/README.md`](example/integration_test/README.md).
+
+The iOS leg runs on [Codemagic](https://codemagic.io), configured in
+[`codemagic.yaml`](codemagic.yaml): the `ios-integration` workflow builds the
+example for the iOS simulator (`flutter build ios --simulator --debug`), boots
+the newest available iPhone simulator and runs the same `app_test.dart` on it.
+It runs on every push to `develop` and can be started by hand from the
+Codemagic UI or API on any branch. It signs nothing, publishes nothing and
+reads no secrets; a failure emails the repo owner. Its Flutter version is
+pinned in `codemagic.yaml` (GitHub CI uses the floating `stable` channel), so
+bump it there when stable moves on.
+
+#### One-time Codemagic setup (maintainer, outside this repo)
+
+In the Codemagic UI, add the `pebble-world/planner` repository as an app in the
+pebble-world team and set it to read `codemagic.yaml`. No code signing
+identities, integrations or environment variable groups are needed. Until the
+app exists, pushes to `develop` simply run no iOS build.
 
 ## Branching workflow
 
 - Branch off `develop` and open pull requests **into `develop`**.
-- A release is a separate `develop → main` pull request — the only place the
-  Windows integration CI job runs.
+- A release is a separate `develop → main` pull request. The integration CI
+  jobs (Windows + Android) run on it and after every merge into `develop`, not
+  on PRs into `develop`. The Codemagic iOS workflow runs after every merge into
+  `develop`.
 - Reference the issue in commits (`(#N)`) so GitHub auto-links them.
 - Run `dart format` before every commit.
 
 New work is started with the issue → branch → PR flow: every substantive change
 is tied to a GitHub issue and a focused branch. See the open
 [issues](https://github.com/pebble-world/planner/issues) for what's planned.
+
+## Releasing
+
+Releases publish to [pub.dev](https://pub.dev/packages/planner) automatically
+from GitHub Actions using pub.dev's OIDC integration — no tokens or secrets are
+stored in the repo. The trigger is a **pushed version tag**, not a PR or a merge
+to `main`: a merge to `main` is not necessarily a release, whereas a deliberate
+`vX.Y.Z` tag is the explicit "publish this version" signal.
+
+The flow:
+
+1. Finalize the version on `develop`: bump `version:` in
+   [`pubspec.yaml`](pubspec.yaml) and date the matching `CHANGELOG.md` entry.
+2. Open the `develop → main` release PR and merge it once `verify`,
+   `integration-windows` and `integration-android` are green.
+3. Sync local `main`, then tag the merge commit and push the tag:
+
+   ```sh
+   git checkout main && git pull
+   git tag vX.Y.Z        # must match pubspec.yaml's version
+   git push origin vX.Y.Z
+   ```
+
+4. The [`publish` workflow](.github/workflows/publish.yml) runs on the tag:
+   it re-checks `flutter analyze` + `flutter test` as a safety net, then runs
+   `flutter pub publish --force`. pub.dev verifies the tag matches the pubspec
+   version (tag pattern `v{{version}}`), so a mismatched or accidental tag will
+   not publish — an extra guardrail that doubles as the "did you mean to
+   publish?" check.
+5. After it finishes, confirm the new version on the
+   [pub.dev page](https://pub.dev/packages/planner) (screenshots render, links
+   resolve once analysis settles a few minutes after publish).
+
+### One-time setup (maintainer, outside this repo)
+
+Automated publishing must be enabled once on pub.dev by a package owner:
+**pub.dev → `planner` → Admin → Automated publishing → enable GitHub Actions**,
+repository `pebble-world/planner`, tag pattern `v{{version}}`. This cannot be
+done from the repo; until it is enabled, tag pushes will fail to publish.

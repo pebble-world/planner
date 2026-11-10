@@ -78,13 +78,52 @@ class Controller<T> {
     _calculateOffsets();
   }
 
-  void setSize(Size? size) {
+  /// Records the planner's laid-out size and recomputes the scroll bounds.
+  ///
+  /// The first call that yields a real (positive, finite) canvas height also
+  /// applies the configured initial view — [PlannerConfig.initialZoom] and
+  /// [PlannerConfig.initialHour] (#111) — once the bounds are known. Returns
+  /// `true` only for that call, so the widget layer can announce the changed
+  /// view after the frame (it is set silently here, since this runs during
+  /// layout, where notifying listeners would rebuild other widgets mid-build).
+  bool setSize(Size? size) {
     if (size != null) {
       _canvasWidth = size.width > 0 ? size.width : _canvasWidth;
       _canvasHeight = size.height > 0 ? size.height : _canvasHeight;
 
       _calculateOffsets();
     }
+    return _applyInitialView();
+  }
+
+  // Whether the initial view (#111) has been applied. Set once and never
+  // cleared, so later resizes, rebuilds and config updates leave the user's
+  // scroll/zoom alone.
+  bool _initialViewApplied = false;
+
+  /// Applies [PlannerConfig.initialZoom] and [PlannerConfig.initialHour] the
+  /// first time the canvas has a real height (#111). The zoom is applied first
+  /// (clamped to `[minZoom, maxZoom]`) because the time-axis bounds and the
+  /// hour's pixel offset both scale with it. The hour is clamped to
+  /// `[minHour, maxHour]` and its offset to the scroll bounds, so a late hour
+  /// never over-scrolls past the end of the grid. Writes the backing fields
+  /// directly (no [triggerUpdate]) since it runs during layout.
+  bool _applyInitialView() {
+    if (_initialViewApplied) return false;
+    if (_canvasHeight <= 0 || !_canvasHeight.isFinite) return false;
+    _initialViewApplied = true;
+
+    _zoom = config.initialZoom.clamp(config.minZoom, config.maxZoom).toDouble();
+    _previousZoom = _zoom;
+    _calculateOffsets();
+
+    final hour = (config.initialHour ?? config.minHour.toDouble())
+        .clamp(config.minHour.toDouble(), config.maxHour.toDouble())
+        .toDouble();
+    _y = ((config.minHour - hour) * config.blockHeight * _zoom)
+        .clamp(_maxYOffset, _minYOffset)
+        .toDouble();
+    return true;
   }
 
   /// Records the height of the chrome reserved above the time grid besides the
