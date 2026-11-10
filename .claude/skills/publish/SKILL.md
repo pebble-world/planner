@@ -14,12 +14,22 @@ to the start-work and cleanup skills.
 
 **What pushes the package:** a pushed tag matching `v[0-9]+.[0-9]+.[0-9]+`
 triggers [`.github/workflows/publish.yml`](../../../.github/workflows/publish.yml),
-which runs `flutter pub publish --force` via pub.dev's GitHub Actions OIDC
-integration (no stored tokens). pub.dev rejects a tag whose version does not
-match `pubspec.yaml`, so the tag must be exactly `v<pubspec version>`. Because
-that automation is live (issue #106 landed), **`/publish` stops at the pushed
-tag** — it does not run `flutter pub publish` itself. See "Publish handoff"
-below for the pre-automation fallback.
+which uploads via pub.dev's GitHub Actions OIDC integration (no stored
+tokens): its *pub.dev credentials (GitHub OIDC)* step requests a GitHub ID token
+with audience `https://pub.dev` and registers it with
+`flutter pub token add https://pub.dev --env-var PUB_TOKEN`, then *Publish to
+pub.dev* runs `flutter pub publish --force`. pub.dev rejects a tag whose version
+does not match `pubspec.yaml`, so the tag must be exactly `v<pubspec version>`.
+Because that automation exists (issues #106, #129), **`/publish` stops at the
+pushed tag** — it does not run `flutter pub publish` itself. See "Publish
+handoff" below for the fallback.
+
+**The automated upload is not yet proven.** The first tagged run (v0.3.2) hung
+on an interactive Google login because the OIDC exchange was missing (#129);
+0.3.2 was published by hand. The explicit exchange step was added afterwards
+and has not yet run against a real tag, so watch the next release's run
+closely (see Step 5) and drop this paragraph once one has published
+unattended.
 
 ## Scope of this skill (first cut)
 
@@ -161,14 +171,36 @@ Watch it to confirm the upload succeeds:
 ```
 gh run watch
 ```
+How to read the run (the job has `timeout-minutes: 15`, the credentials step 2
+and the publish step 5, so it can no longer hang for hours):
+- **Success:** the credentials step logs `Requests to "https://pub.dev" will
+  now be authenticated using the secret token stored in the environment
+  variable "PUB_TOKEN".`, and the publish step ends with
+  a line starting `Successfully uploaded https://pub.dev/packages/planner version X.Y.Z`.
+  The whole job takes a couple of minutes.
+- **Credential not picked up:** the publish step prints `Pub needs your
+  authorization to upload packages on your behalf` / `Waiting for your
+  authorization...` and then sits there until the 5-minute step timeout
+  cancels it. That is the #129 failure mode; nothing was uploaded.
+- **Rejected by pub.dev:** the publish step fails quickly with an
+  authorization error from pub.dev (e.g. wrong repository, tag pattern, or a
+  required GitHub environment that is not `pub.dev`). Check the Automated
+  publishing settings on pub.dev -> planner -> Admin against the header
+  comment in `publish.yml`.
+- **No token:** the credentials step fails with `No OIDC token returned`, or
+  a curl error. Check the job still has `permissions: id-token: write`.
+
+In any failure case, fix the cause on `develop` (or the pub.dev settings), or
+fall back to the hand upload below. Re-running the failed job re-uses the same
+tag; that is fine as long as nothing was uploaded.
 
 ### Publish handoff (fallback only)
 
-The automated publish is live, so normally you stop after the tag + release and
-let the Action upload. **Only** if the publish automation is unavailable
-(disabled, or running on a checkout from before #106) do the upload by hand —
-and note that `/publish` cannot do it autonomously, because the first run needs
-the owner-gated pub.dev OAuth:
+Normally you stop after the tag + release and let the Action upload. **Only**
+if the publish run failed without uploading (see the list in Step 5), or the
+automation is unavailable (disabled on pub.dev, or a checkout from before #106),
+do the upload by hand — and note that `/publish` cannot do it autonomously,
+because it needs the owner-gated pub.dev OAuth:
 ```
 flutter pub publish        # interactive; requires the package owner to authorize
 ```
