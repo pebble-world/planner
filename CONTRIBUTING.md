@@ -66,13 +66,26 @@ Planner (StatefulWidget)
        └─ List<Event>                         ← TextPainters laid out here
   build():
     LayoutBuilder → controller.setSize()
-      Column[
-        DateRow painter,
-        AllDayBand painter,                    ← only when there are all-day events
-        Row[ HourColumn painter,
-             Stack[ EventsPainter (grid + events), zoom buttons, context menu ] ]
+      Stack[                                   ← planner-wide, so the menu can sit over any surface
+        Column[
+          DateRow painter,                     ← or dayHeaderBuilder widgets
+          Stack[ AllDayBand painter,           ← only when there are all-day events
+                 all-day chip overlay ],       ← allDayEntryBuilder widgets, if set
+          Row[ HourColumn painter,
+               Stack[ EventsPainter (grid + events),
+                      entry overlay,           ← entryBuilder widgets, if set
+                      zoom buttons ] ]
+        ],
+        dismiss layer,                         ← these two only while the menu is open
+        CustomSingleChildLayout(ContextMenuLayout → ContextMenu)
       ]
 ```
+
+The context menu is positioned in planner-local coordinates (`menuPos`), so the
+grid and the all-day band both convert their hit position into that space.
+`ContextMenuLayout` (`lib/internal/context_menu.dart`) opens the menu at the
+click point, flips it left of / above the point when it would overflow, and
+clamps it into the planner rect.
 
 Repaint is driven by `controller.triggerUpdate` (a `ValueNotifier<int>` bumped on
 every state change), passed as the painters' `repaint` listenable.

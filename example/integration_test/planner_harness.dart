@@ -75,12 +75,27 @@ const Size kDesktopSurface = Size(1280, 720);
 /// For scenarios whose gestures and expectations are fixed pixel offsets that
 /// assume a desktop window: a drag that starts 550px into the grid, two planners
 /// side by side each wide enough for a context menu, a scroll extent of at least
-/// 100px, a second day column in view, a right-click at x 350 whose menu opens
-/// rightward from the click (#122). On a phone (411×914 logical in portrait)
-/// those fall off-screen or clamp, so without a pin the same scenario tests
-/// something different on every device (#115). Call it before pumping the app.
-void pinDesktopSurface(WidgetTester tester) {
-  tester.view.physicalSize = kDesktopSurface * tester.view.devicePixelRatio;
+/// 100px, a second day column in view. On a phone (411×914 logical in
+/// portrait) those fall off-screen or clamp, so without a pin the same scenario
+/// tests something different on every device (#115). Call it before pumping the
+/// app.
+void pinDesktopSurface(WidgetTester tester) =>
+    _pinSurface(tester, kDesktopSurface);
+
+/// The logical size [pinPhoneSurface] lays a scenario out at: the narrowest
+/// device CI runs the suite on, the Codemagic iPhone simulator in portrait
+/// (#122).
+const Size kPhoneSurface = Size(402, 874);
+
+/// Pins the test surface to the phone-sized [kPhoneSurface] for the rest of the
+/// current test, so a scenario about narrow-screen behaviour (a context menu
+/// opened near the right edge, #123) tests the same thing on the Windows and
+/// Android legs as on the iPhone. Keeps the device's pixel ratio; resets on
+/// teardown. Call it before pumping the app.
+void pinPhoneSurface(WidgetTester tester) => _pinSurface(tester, kPhoneSurface);
+
+void _pinSurface(WidgetTester tester, Size logical) {
+  tester.view.physicalSize = logical * tester.view.devicePixelRatio;
   addTearDown(tester.view.resetPhysicalSize);
 }
 

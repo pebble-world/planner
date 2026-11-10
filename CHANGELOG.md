@@ -9,6 +9,12 @@
   over-scrolls; `initialZoom` (default `1.0`) is clamped to
   `[minZoom, maxZoom]`. Both apply once, on first layout, and are never
   re-applied on later rebuilds or config updates. Defaults are unchanged.
+- Fixed the context menu overflowing the planner's right or bottom edge (#123).
+  It opened with its top-left at the click point, so a right-click near the
+  edge of a narrow (phone-width) planner, or in the rightmost column on
+  desktop, pushed part of the menu off-screen where its items couldn't be
+  tapped. The menu now flips to the left of / above the click point when it
+  would overflow, and is clamped inside the planner's bounds.
 
 ## 0.3.1 - 2026-06-08
 

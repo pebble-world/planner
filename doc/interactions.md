@@ -28,6 +28,10 @@ for panning and surfaces event actions through a long-press.
 One wheel notch always advances the same amount of *time* regardless of zoom;
 tune the base step with `scrollStep`.
 
+The context menu opens at the click point. Near the planner's right or bottom
+edge it flips to the left of / above the click point, so it always stays
+inside the planner and every item is tappable.
+
 ## Touch
 
 | Gesture | Result |
