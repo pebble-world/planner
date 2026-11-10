@@ -53,6 +53,12 @@ void spanScenarios() {
   testWidgets(
       'a span paints one box across its columns and hit-tests from each',
       (tester) async {
+    // The right-click at column 1's centre (planner-local x 350) opens the menu
+    // unclamped at the click point, so "Edit Event" lands ~60px further right:
+    // about x 409. That is on a 411-wide Android phone but off a 402-wide
+    // iPhone, so pin the desktop surface the mouse gesture belongs to (#122;
+    // clamping the menu itself is #123).
+    pinDesktopSurface(tester);
     final edited = <String>[];
 
     await tester.pumpWidget(PlannerHarness(

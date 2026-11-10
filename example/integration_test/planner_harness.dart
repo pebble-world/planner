@@ -75,7 +75,8 @@ const Size kDesktopSurface = Size(1280, 720);
 /// For scenarios whose gestures and expectations are fixed pixel offsets that
 /// assume a desktop window: a drag that starts 550px into the grid, two planners
 /// side by side each wide enough for a context menu, a scroll extent of at least
-/// 100px, a second day column in view. On a phone (411×914 logical in portrait)
+/// 100px, a second day column in view, a right-click at x 350 whose menu opens
+/// rightward from the click (#122). On a phone (411×914 logical in portrait)
 /// those fall off-screen or clamp, so without a pin the same scenario tests
 /// something different on every device (#115). Call it before pumping the app.
 void pinDesktopSurface(WidgetTester tester) {

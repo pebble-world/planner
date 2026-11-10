@@ -1,0 +1,146 @@
+# Codemagic configuration (#119): iOS build + integration suite.
+#
+# GitHub Actions (.github/workflows/ci.yml) covers Linux (`verify`), Windows
+# desktop and an Android phone emulator (#117), but GitHub has no iOS
+# simulator we use, so nothing built or ran the example on iOS. This file
+# adds that one missing platform and nothing else: it signs nothing,
+# publishes nothing, uses no integrations and reads no secrets. It is a
+# simulator debug build plus the same `app_test.dart` suite the GitHub
+# integration jobs run.
+#
+# One-time Codemagic-side setup (repo owner, Codemagic UI): add the
+# `pebble-world/planner` repository as an app in the pebble-world team and
+# set it to read this codemagic.yaml. No code signing identities,
+# integrations or environment groups are needed. CONTRIBUTING.md
+# ("Integration tests") documents the same steps.
+
+definitions:
+  toolchain: &toolchain
+    # GitHub CI runs Flutter `channel: stable` unpinned, and pubspec.yaml only
+    # sets a `>=3.0.0` floor, so there is no repo-wide pin to copy. This is the
+    # stable release that was current when the workflow was written. It is
+    # pinned rather than `stable` so that a red iOS build always means a
+    # change in this repo, never a silent toolchain bump on Codemagic's side.
+    # Bump it by hand when stable moves on and GitHub CI is green on the new
+    # version.
+    flutter: 3.47.9
+    xcode: latest
+    cocoapods: default
+
+  email: &email
+    recipients:
+      - yvan@attr-x.net
+    # Failures only: this runs on every push to develop, and a green iOS
+    # sweep needs no mail.
+    notify:
+      success: false
+      failure: true
+
+  scripts:
+    - &fetch_dependencies
+      name: Fetch dependencies
+      working_directory: example
+      script: |
+        set -euo pipefail
+        flutter pub get
+        # A CocoaPods-based iOS project needs its pods before the build. The
+        # `flutter build` below would also run `pod install`, but doing it
+        # here keeps a CocoaPods failure in its own, clearly named step. A
+        # Swift Package Manager-only project has no Podfile and skips this.
+        if [ -f ios/Podfile ]; then
+          (cd ios && pod install --repo-update)
+        fi
+
+    # A simulator debug build: needs no signing, and fails fast on a broken
+    # Xcode project before a simulator is booted.
+    - &build_ios_simulator
+      name: Build iOS app for the simulator
+      working_directory: example
+      script: |
+        set -euo pipefail
+        flutter build ios --simulator --debug
+
+    # The newest iPhone on the newest iOS runtime the image's Xcode has,
+    # chosen at build time so `xcode: latest` never points at a device name
+    # that no longer exists. Among the newest model's variants the shortest
+    # name wins (e.g. "iPhone 17" over "iPhone 17 Pro Max"): the smallest
+    # viewport catches the most layout failures (#115). Its UDID goes to
+    # CM_ENV for the test step.
+    - &boot_simulator
+      name: Boot an iPhone simulator
+      script: |
+        set -euo pipefail
+        SIMS_JSON="$(mktemp)"
+        xcrun simctl list devices available -j > "$SIMS_JSON"
+        UDID="$(python3 - "$SIMS_JSON" <<'PY'
+        import json, re, sys
+
+        with open(sys.argv[1]) as f:
+            runtimes = json.load(f)["devices"]
+
+        best = None
+        for runtime, devices in runtimes.items():
+            # e.g. com.apple.CoreSimulator.SimRuntime.iOS-18-2
+            m = re.search(r"\.iOS-(\d+(?:-\d+)*)$", runtime)
+            if not m:
+                continue
+            version = tuple(int(p) for p in m.group(1).split("-"))
+            for d in devices:
+                name = d.get("name", "")
+                if not name.startswith("iPhone") or not d.get("isAvailable", True):
+                    continue
+                model = re.match(r"iPhone (\d+)", name)
+                key = (version, int(model.group(1)) if model else 0, -len(name))
+                if best is None or key > best[0]:
+                    best = (key, d["udid"], name, runtime)
+
+        if best is None:
+            sys.exit("No available iPhone simulator found")
+        print(f"Selected {best[2]} ({best[3]})", file=sys.stderr)
+        print(best[1])
+        PY
+        )"
+        rm -f "$SIMS_JSON"
+        echo "Booting simulator $UDID"
+        # `boot` errors if the device is already booted; `bootstatus -b`
+        # boots it if needed and blocks until it has finished booting, so it
+        # is the real check.
+        xcrun simctl boot "$UDID" || true
+        xcrun simctl bootstatus "$UDID" -b
+        echo "SIMULATOR_UDID=$UDID" >> "$CM_ENV"
+
+    # As on GitHub, target app_test.dart explicitly: integration_test/ also
+    # holds screenshots_test.dart, a standalone documentation-capture target
+    # that must never run as part of the suite.
+    - &integration_tests
+      name: Run integration tests on the iOS simulator
+      working_directory: example
+      script: |
+        set -euo pipefail
+        flutter test integration_test/app_test.dart -d "$SIMULATOR_UDID"
+
+workflows:
+  # The iOS leg of the post-merge integration sweep (#117): every push to
+  # develop, like the GitHub Windows and Android jobs. No pull request
+  # trigger. It can also be started by hand in the Codemagic UI or through
+  # the Codemagic API, on any branch, to sweep a branch before it merges.
+  ios-integration:
+    name: iOS integration
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment: *toolchain
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: develop
+          include: true
+          source: true
+      cancel_previous_builds: true
+    scripts:
+      - *fetch_dependencies
+      - *build_ios_simulator
+      - *boot_simulator
+      - *integration_tests
+    publishing:
+      email: *email

@@ -114,16 +114,34 @@ CI runs the full suite on Windows desktop and on an API 35 phone emulator
 PR, and on manual dispatch (Actions → CI → Run workflow — use it to sweep a
 branch before it merges). Pull requests into `develop` run only `verify`.
 
-The Android and web (Chrome) recipes, the per-scenario map, and how to add a
-test are in
+The Android, iOS and web (Chrome) recipes, the per-scenario map, and how to add
+a test are in
 [`example/integration_test/README.md`](example/integration_test/README.md).
+
+The iOS leg runs on [Codemagic](https://codemagic.io), configured in
+[`codemagic.yaml`](codemagic.yaml): the `ios-integration` workflow builds the
+example for the iOS simulator (`flutter build ios --simulator --debug`), boots
+the newest available iPhone simulator and runs the same `app_test.dart` on it.
+It runs on every push to `develop` and can be started by hand from the
+Codemagic UI or API on any branch. It signs nothing, publishes nothing and
+reads no secrets; a failure emails the repo owner. Its Flutter version is
+pinned in `codemagic.yaml` (GitHub CI uses the floating `stable` channel), so
+bump it there when stable moves on.
+
+#### One-time Codemagic setup (maintainer, outside this repo)
+
+In the Codemagic UI, add the `pebble-world/planner` repository as an app in the
+pebble-world team and set it to read `codemagic.yaml`. No code signing
+identities, integrations or environment variable groups are needed. Until the
+app exists, pushes to `develop` simply run no iOS build.
 
 ## Branching workflow
 
 - Branch off `develop` and open pull requests **into `develop`**.
 - A release is a separate `develop → main` pull request. The integration CI
   jobs (Windows + Android) run on it and after every merge into `develop`, not
-  on PRs into `develop`.
+  on PRs into `develop`. The Codemagic iOS workflow runs after every merge into
+  `develop`.
 - Reference the issue in commits (`(#N)`) so GitHub auto-links them.
 - Run `dart format` before every commit.
 
